@@ -44,22 +44,34 @@ const FeaturesGrid = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 pb-24">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {features.map((feature) => (
           <Link 
             key={feature.id}
             to={feature.path}
-            className="glass-card p-8 flex flex-col items-center justify-center text-center group min-h-[280px]"
+            className="glass-card p-6 sm:p-8 flex items-center gap-6 group hover:-translate-y-2 hover:shadow-[0_0_40px_rgba(255,255,255,0.1)] transition-all duration-500 relative overflow-hidden"
           >
-            <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-6 border ${feature.iconBg} transition-transform group-hover:scale-110 duration-300`}>
+            {/* Background glow on hover */}
+            <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`}></div>
+            
+            <div className={`w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-2xl flex items-center justify-center border ${feature.iconBg} bg-white/5 backdrop-blur-md shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 z-10`}>
               {feature.icon}
             </div>
-            <h3 className="text-xl font-bold text-white mb-3 group-hover:text-blue-400 transition-colors">
-              {feature.title}
-            </h3>
-            <p className="text-sm text-gray-400">
-              {feature.description}
-            </p>
+            
+            <div className="z-10 flex-1 pr-8">
+              <h3 className={`text-xl sm:text-2xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r ${feature.color} brightness-110 group-hover:brightness-150 transition-all duration-300`}>
+                {feature.title}
+              </h3>
+              <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
+                {feature.description}
+              </p>
+            </div>
+            
+            <div className="absolute right-6 opacity-0 group-hover:opacity-100 transform translate-x-4 group-hover:translate-x-0 transition-all duration-500 text-white/40 group-hover:text-white/80">
+              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
           </Link>
         ))}
       </div>

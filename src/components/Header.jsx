@@ -6,12 +6,10 @@ const Header = () => {
     <header className="fixed top-0 left-0 right-0 z-50 p-4">
       <div className="max-w-7xl mx-auto glass-card rounded-2xl flex items-center justify-between p-4">
         <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-lg text-white font-bold">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-6 h-6">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
-            </svg>
+          <div className="flex items-center justify-center p-1 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.3)] hover:shadow-[0_0_25px_rgba(255,255,255,0.6)] transition-all duration-300">
+            <img src="https://i.ibb.co/wZRKCnpw/10a9a7ae1ede.png" alt="Logo" className="w-10 h-10 object-contain drop-shadow-lg" />
           </div>
-          <h1 className="text-xl font-bold tracking-wide text-white hidden sm:block">
+          <h1 className="text-xl font-bold tracking-wide text-white hidden sm:block drop-shadow-md">
             TRỢ LÝ GIÁO VIÊN TOÁN THPT
           </h1>
         </div>

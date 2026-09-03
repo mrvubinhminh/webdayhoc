@@ -4,8 +4,8 @@ import { Eye, Flame } from 'lucide-react';
 const Hero = () => {
   return (
     <div className="pt-32 pb-16 px-4 text-center">
-      <p className="text-blue-400 italic mb-8 max-w-3xl mx-auto text-sm sm:text-base">
-        "Đoàn kết – Tâm huyết – Gương mẫu tự học – Đổi mới sáng tạo, cùng kiến tạo những giờ Toán truyền cảm hứng cho học sinh Hưng Yên."
+      <p className="text-blue-400 italic mb-8 max-w-3xl mx-auto text-sm sm:text-base font-medium">
+        "Tất cả vì học sinh thân yêu - Trường THPT Nguyễn Hữu Cảnh."
       </p>
       
       <h2 className="text-5xl sm:text-6xl font-extrabold text-white mb-8 tracking-tight">
