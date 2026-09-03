@@ -10,7 +10,7 @@ const StudentsMenu = () => {
   const files = import.meta.glob('/public/students/**/*.html');
   const studentPaths = Object.keys(files);
 
-  const parsedStudents = studentsPaths.map(path => {
+  const parsedStudents = studentPaths.map(path => {
     const match = path.match(/\/public\/students\/(\d+)\/(.+)\.html$/);
     if (!match) return null;
     

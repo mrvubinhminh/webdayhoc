@@ -10,7 +10,7 @@ const ModelsMenu = () => {
   const files = import.meta.glob('/public/models/**/*.html');
   const modelPaths = Object.keys(files);
 
-  const parsedModels = modelsPaths.map(path => {
+  const parsedModels = modelPaths.map(path => {
     const match = path.match(/\/public\/models\/(\d+)\/(.+)\.html$/);
     if (!match) return null;
     

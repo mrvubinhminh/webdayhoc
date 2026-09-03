@@ -10,7 +10,7 @@ const ToolsMenu = () => {
   const files = import.meta.glob('/public/tools/**/*.html');
   const toolPaths = Object.keys(files);
 
-  const parsedTools = toolsPaths.map(path => {
+  const parsedTools = toolPaths.map(path => {
     const match = path.match(/\/public\/tools\/(\d+)\/(.+)\.html$/);
     if (!match) return null;
     
