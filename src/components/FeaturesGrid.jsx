@@ -33,12 +33,12 @@ const FeaturesGrid = () => {
     },
     {
       id: 'student',
-      title: 'Chọn học sinh',
-      description: 'Vòng quay may mắn, gọi tên ngẫu nhiên',
+      title: 'Công cụ tiện ích dạy học',
+      description: 'Vòng quay, gọi tên, bộ đếm thời gian...',
       icon: <Target className="w-8 h-8" />,
       color: 'from-red-500 to-orange-500',
       iconBg: 'bg-red-500/10 text-red-500 border-red-500/30',
-      path: '/tool/vong-quay'
+      path: '/students'
     }
   ];
 

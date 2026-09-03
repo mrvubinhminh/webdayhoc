@@ -13,10 +13,12 @@ import ModelsMenu from './pages/ModelsMenu';
 import ModelIframeWrapper from './pages/ModelIframeWrapper';
 import ToolsMenu from './pages/ToolsMenu';
 import ToolIframeWrapper from './pages/ToolIframeWrapper';
+import StudentsMenu from './pages/StudentsMenu';
+import StudentIframeWrapper from './pages/StudentIframeWrapper';
 
 const AppContent = () => {
   const location = useLocation();
-  const isGameRoute = location.pathname.startsWith('/game/') || location.pathname.startsWith('/game-nhung/') || location.pathname.startsWith('/tool/') || location.pathname.startsWith('/models/view/') || location.pathname.startsWith('/tools/view/');
+  const isGameRoute = location.pathname.startsWith('/game/') || location.pathname.startsWith('/game-nhung/') || location.pathname.startsWith('/tool/') || location.pathname.startsWith('/models/view/') || location.pathname.startsWith('/tools/view/') || location.pathname.startsWith('/students/view/');
 
   return (
     <div className={`relative min-h-screen ${!isGameRoute ? 'pb-20' : ''}`}>
@@ -39,6 +41,8 @@ const AppContent = () => {
           <Route path="/models/view/:grade/:id" element={<ModelIframeWrapper />} />
           <Route path="/tools" element={<ToolsMenu />} />
           <Route path="/tools/view/:grade/:id" element={<ToolIframeWrapper />} />
+          <Route path="/students" element={<StudentsMenu />} />
+          <Route path="/students/view/:grade/:id" element={<StudentIframeWrapper />} />
           <Route path="/game/trieu-phu" element={<MillionaireGame />} />
           <Route path="/game/tho-san" element={<ProbabilityHunter />} />
           <Route path="/game/keo-co" element={<TugOfWarGame />} />
