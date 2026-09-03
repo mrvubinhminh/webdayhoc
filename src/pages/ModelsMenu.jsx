@@ -10,16 +10,24 @@ const ModelsMenu = () => {
   const files = import.meta.glob('/public/models/**/*.html');
   const modelPaths = Object.keys(files);
 
-  const parsedModels = modelPaths.map(path => {
+  const parsedModels = modelsPaths.map(path => {
     const match = path.match(/\/public\/models\/(\d+)\/(.+)\.html$/);
     if (!match) return null;
+    
+    const titleMatch = match[2].match(/^(\d+)[.\-_]?\s*(.*)/);
+    const order = titleMatch ? parseInt(titleMatch[1], 10) : 9999;
+    
     return {
       grade: match[1],
       id: match[2],
       title: match[2].replace(/-/g, ' ').toUpperCase(),
+      order: order,
       path: `/models/view/${match[1]}/${encodeURIComponent(match[2])}`
     };
-  }).filter(Boolean);
+  }).filter(Boolean).sort((a, b) => {
+    if (a.order !== b.order) return a.order - b.order;
+    return a.title.localeCompare(b.title);
+  });
 
   const modelsByGrade = {
     '10': parsedModels.filter(m => m.grade === '10'),
@@ -72,17 +80,17 @@ const ModelsMenu = () => {
 
         {/* Models Grid */}
         {currentModels.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 w-full max-w-6xl mx-auto">
             {currentModels.map((model, idx) => (
               <div 
                 key={model.id}
                 onClick={() => navigate(model.path)}
-                className="glass-card p-6 rounded-3xl flex flex-col items-center text-center cursor-pointer group hover:scale-[1.05] transition-all duration-300 border border-emerald-500/10 hover:border-emerald-500/50 bg-slate-900/50"
+                className="glass-card p-3 rounded-xl flex flex-row items-center gap-4 cursor-pointer group hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all duration-300 border border-emerald-500/10 hover:border-emerald-500/50 bg-slate-900/60"
               >
-                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 bg-gradient-to-br from-emerald-500 to-teal-700 text-white shadow-lg group-hover:shadow-xl`}>
-                  {getIcon(idx)}
+                <div className={`w-12 h-12 shrink-0 rounded-lg flex items-center justify-center bg-gradient-to-br from-emerald-500 to-teal-700 text-white shadow-md group-hover:scale-110 transition-transform`}>
+                  getIcon(idx)
                 </div>
-                <h3 className="text-sm font-bold text-gray-300 group-hover:text-emerald-400 transition-colors leading-tight truncate w-full">
+                <h3 className="text-sm font-semibold text-gray-300 group-hover:text-emerald-400 transition-colors leading-snug line-clamp-2 text-left flex-1">
                   {model.title}
                 </h3>
               </div>
