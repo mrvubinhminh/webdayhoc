@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Khám phá Tích của một số với một Vectơ - Toán 10</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Cấu hình MathJax cho công thức Toán học -->
+    <script>
+        window.MathJax = {
+            options: { enableMenu: false },
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f8fafc; 
+            color: #334155; 
+            margin: 0;
+            overflow: hidden; 
+            user-select: none;
+        }
+        
+        .app-container { display: flex; flex-direction: column; height: 100vh; width: 100vw; }
+        .main-content { display: flex; flex: 1; overflow: hidden; }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 400px;
+            background-color: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 10;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.02);
+        }
+
+        /* Canvas Styling - Nền ô ly sáng */
+        .canvas-area {
+            flex: 1;
+            position: relative;
+            background-color: #f1f5f9;
+            background-image: 
+                linear-gradient(#cbd5e1 1px, transparent 1px),
+                linear-gradient(90deg, #cbd5e1 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+
+        /* Bottom Panel Styling */
+        .bottom-panel {
+            min-height: 120px;
+            background-color: #ffffff;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            padding: 1rem 2rem;
+            z-index: 10;
+            gap: 1.5rem;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.02);
+            align-items: center;
+        }
+
+        /* Buttons & Menu Items */
+        .menu-btn {
+            background-color: #f8fafc;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            text-align: left;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .menu-btn:hover { background-color: #e2e8f0; }
+        .menu-btn.active { 
+            background-color: #eff6ff; 
+            border-color: #bfdbfe; 
+            color: #1d4ed8; 
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1);
+        }
+        .menu-num {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 24px; height: 24px; background-color: #94a3b8; color: white;
+            border-radius: 50%; font-size: 0.75rem; flex-shrink: 0;
+        }
+        .menu-btn.active .menu-num { background-color: #3b82f6; }
+
+        /* Khung câu hỏi khám phá */
+        .discovery-box {
+            display: none; background-color: #fffbeb; border: 1px solid #fde68a;
+            border-radius: 0.75rem; padding: 1rem; margin-top: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .discovery-box.active { display: block; animation: fadeIn 0.3s ease; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Chấm điểm SVG kéo thả */
+        .draggable-point { cursor: grab; transition: r 0.1s; }
+        .draggable-point:active { cursor: grabbing; r: 35; }
+        
+        .status-badge {
+            padding: 0.25rem 0.75rem; border-radius: 9999px;
+            font-weight: bold; font-size: 0.875rem; display: inline-block;
+        }
+
+        /* Slider Custom Styling */
+        .slider-container { display: flex; flex-direction: column; width: 300px; gap: 0.5rem; }
+        input[type=range] {
+            -webkit-appearance: none; width: 100%; background: transparent; outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%;
+            background: #2563eb; cursor: pointer; margin-top: -8px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 8px; cursor: pointer; background: #cbd5e1; border-radius: 4px;
+        }
+        input[type=range]:focus::-webkit-slider-thumb { box-shadow: 0 0 0 4px rgba(37,99,235,0.2); }
+        
+        .math-text { font-family: 'JetBrains Mono', monospace; font-size: 1.1rem;}
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-20">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm border border-blue-200">
+                    $k\vec{u}$
+                </div>
+                <h1 class="text-base font-bold text-slate-700 uppercase tracking-wide">Mô phỏng Tích Của Một Số Với Một Vectơ</h1>
+            </div>
+            <button id="btnFullscreen" class="flex items-center gap-2 text-slate-500 hover:text-blue-600 px-3 py-1.5 rounded-md text-sm border border-slate-300 hover:border-blue-300 hover:bg-blue-50 transition font-medium">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                <span id="txtFullscreen">Toàn màn hình</span>
+            </button>
+        </header>
+
+        <div class="main-content">
+            <!-- Sidebar -->
+            <aside class="sidebar p-5">
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Hoạt Động Khám Phá</div>
+                
+                <div class="flex flex-col gap-2" id="menuGroup">
+                    <button class="menu-btn active" data-mode="1"><span class="menu-num">1</span> Thay đổi độ dài ($k > 0$)</button>
+                    <button class="menu-btn" data-mode="2"><span class="menu-num">2</span> Ảnh hưởng của dấu ($k < 0$)</button>
+                    <button class="menu-btn" data-mode="3"><span class="menu-num">3</span> Bảng so sánh trực quan</button>
+                    <button class="menu-btn" data-mode="4"><span class="menu-num">4</span> Khái niệm Cùng phương</button>
+                    <button class="menu-btn" data-mode="5"><span class="menu-num">5</span> Biểu diễn theo vectơ khác</button>
+                    <button class="menu-btn" data-mode="6"><span class="menu-num">6</span> Liên hệ chuyển động</button>
+                </div>
+
+                <!-- BOX 1 -->
+                <div id="q-mode-1" class="discovery-box active">
+                    <div class="text-sm font-bold text-amber-600 mb-2">Độ dài thay đổi thế nào?</div>
+                    <ul class="text-sm text-slate-700 space-y-2 list-disc pl-4">
+                        <li>Kéo thanh trượt $k$ bên dưới.</li>
+                        <li>Khi $k = 2$, độ dài vectơ mới màu đỏ gấp mấy lần vectơ gốc màu xanh?</li>
+                        <li>Khi $k = 0.5$ thì sao?</li>
+                        <li><strong>Kết luận:</strong> $|k\vec{u}| = |k| \cdot |\vec{u}|$</li>
+                    </ul>
+                </div>
+                <!-- BOX 2 -->
+                <div id="q-mode-2" class="discovery-box">
+                    <div class="text-sm font-bold text-amber-600 mb-2">Hướng thay đổi thế nào?</div>
+                    <ul class="text-sm text-slate-700 space-y-2 list-disc pl-4">
+                        <li>Kéo thanh trượt sang các giá trị âm ($k < 0$).</li>
+                        <li>Hướng của vectơ $k\vec{u}$ so với $\vec{u}$ như thế nào?</li>
+                        <li>Điều gì xảy ra khi $k = 0$?</li>
+                        <li><strong>Kết luận:</strong> $k>0$ cùng hướng, $k<0$ ngược hướng.</li>
+                    </ul>
+                </div>
+                <!-- BOX 3 -->
+                <div id="q-mode-3" class="discovery-box">
+                    <div class="text-sm font-bold text-amber-600 mb-2">Bảng tổng hợp Tích</div>
+                    <ul class="text-sm text-slate-700 space-y-2 list-disc pl-4">
+                        <li>Quan sát các vectơ được nhân với các hệ số $k$ khác nhau.</li>
+                        <li>Các vectơ này có đặc điểm chung gì về đường thẳng chứa chúng (giá của vectơ)?</li>
+                    </ul>
+                </div>
+                <!-- BOX 4 -->
+                <div id="q-mode-4" class="discovery-box">
+                    <div class="text-sm font-bold text-amber-600 mb-2">Điều kiện Cùng phương</div>
+                    <ul class="text-sm text-slate-700 space-y-2 list-disc pl-4">
+                        <li>Kéo tự do 2 điểm C và D của vectơ $\vec{v}$.</li>
+                        <li>Cố gắng điều chỉnh để $\vec{v}$ song song hoặc nằm trên cùng đường thẳng với $\vec{u}$.</li>
+                        <li>Hệ thống báo gì khi điều đó xảy ra?</li>
+                    </ul>
+                </div>
+                <!-- BOX 5 -->
+                <div id="q-mode-5" class="discovery-box">
+                    <div class="text-sm font-bold text-amber-600 mb-2">Biểu diễn Vectơ</div>
+                    <ul class="text-sm text-slate-700 space-y-2 list-disc pl-4">
+                        <li>Khi 2 vectơ $\vec{u}$ và $\vec{v}$ ĐÃ CÙNG PHƯƠNG.</li>
+                        <li>Nhìn xuống bảng kết quả, ta luôn tìm được một số $k$ sao cho $\vec{v} = k\vec{u}$.</li>
+                        <li>Kéo điểm D dài ra để xem $k$ thay đổi thế nào.</li>
+                    </ul>
+                </div>
+                <!-- BOX 6 -->
+                <div id="q-mode-6" class="discovery-box">
+                    <div class="text-sm font-bold text-amber-600 mb-2">Liên hệ Thực tiễn</div>
+                    <ul class="text-sm text-slate-700 space-y-2 list-disc pl-4">
+                        <li>Vectơ $\vec{u}$ là vận tốc của vật.</li>
+                        <li>Sau 2 giây ($k=2$), vật đi được quãng đường $2\vec{u}$.</li>
+                        <li>Dấu trừ mang ý nghĩa vật chuyển động lùi (ngược hướng ban đầu).</li>
+                    </ul>
+                </div>
+            </aside>
+
+            <main class="canvas-area" id="canvas-container">
+                <svg id="math-svg" width="100%" height="100%" viewBox="0 0 1000 600">
+                    <!-- Phóng to hệ toạ độ để nét vẽ dày dặn hơn -->
+                    <defs>
+                        <!-- Arrow for u (Blue) -->
+                        <marker id="arr-u" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb" /></marker>
+                        <!-- Arrow for ku/v (Red) -->
+                        <marker id="arr-v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#dc2626" /></marker>
+                        <!-- Arrow for multiples (Purple) -->
+                        <marker id="arr-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#7c3aed" /></marker>
+                    </defs>
+
+                    <!-- Lớp chứa các vectơ song song (Mode 3) -->
+                    <g id="multiples-layer" display="none">
+                        <!-- Sẽ được sinh tự động bằng JS -->
+                    </g>
+
+                    <!-- Vectơ chính -->
+                    <g id="vectors-layer">
+                        <line id="vec-v" x1="0" y1="0" x2="0" y2="0" stroke="#dc2626" stroke-width="6" marker-end="url(#arr-v)" display="none"/>
+                        <!-- Vẽ vec-u đè lên trên vec-ku nếu ku dài hơn -->
+                        <line id="vec-ku" x1="0" y1="0" x2="0" y2="0" stroke="#dc2626" stroke-width="8" stroke-opacity="0.5" marker-end="url(#arr-v)" display="none"/>
+                        <line id="vec-u" x1="0" y1="0" x2="0" y2="0" stroke="#2563eb" stroke-width="5" marker-end="url(#arr-u)"/>
+                    </g>
+
+                    <!-- Lớp đối tượng động (Mode 6) -->
+                    <g id="animation-layer" display="none">
+                        <circle id="anim-dot" cx="0" cy="0" r="15" fill="#f59e0b" stroke="#b45309" stroke-width="3"/>
+                        <text id="anim-text" x="0" y="-25" fill="#b45309" font-weight="bold" font-size="24" text-anchor="middle">vật</text>
+                    </g>
+
+                    <!-- Labels có dấu mũi tên tự vẽ chuẩn SVG -->
+                    <!-- Nhãn u -->
+                    <g id="lbl-u">
+                        <text x="0" y="0" fill="#2563eb" font-size="32" font-weight="bold" font-family="serif" font-style="italic">u</text>
+                        <path d="M -2 -22 L 18 -22 L 12 -26 M 18 -22 L 12 -18" stroke="#2563eb" stroke-width="2" fill="none"/>
+                    </g>
+                    <!-- Nhãn v -->
+                    <g id="lbl-v" display="none">
+                        <text x="0" y="0" fill="#dc2626" font-size="32" font-weight="bold" font-family="serif" font-style="italic">v</text>
+                        <path d="M -2 -22 L 16 -22 L 10 -26 M 16 -22 L 10 -18" stroke="#dc2626" stroke-width="2" fill="none"/>
+                    </g>
+                    <!-- Nhãn ku -->
+                    <g id="lbl-ku" display="none">
+                        <text id="txt-k-coef" x="0" y="0" fill="#dc2626" font-size="32" font-weight="bold" font-family="serif"></text>
+                        <text id="txt-ku" x="0" y="0" fill="#dc2626" font-size="32" font-weight="bold" font-family="serif" font-style="italic">u</text>
+                        <path id="path-ku" d="M -2 -22 L 18 -22 L 12 -26 M 18 -22 L 12 -18" stroke="#dc2626" stroke-width="2" fill="none"/>
+                    </g>
+
+                    <!-- Các điểm tương tác -->
+                    <g id="points-layer">
+                        <!-- O (Gốc u) - Không cho kéo, cố định để dễ nhìn -->
+                        <circle cx="500" cy="300" r="8" fill="#1e293b"/>
+                        <text x="480" y="330" fill="#1e293b" font-weight="bold" font-size="28">O</text>
+
+                        <!-- A (Ngọn u) -->
+                        <circle id="drag-A" cx="700" cy="300" r="25" fill="transparent" class="draggable-point" data-id="A"/>
+                        <circle id="vis-A" cx="700" cy="300" r="8" fill="#2563eb" pointer-events="none"/>
+                        <text id="lbl-A" x="715" y="330" fill="#1e40af" font-weight="bold" font-size="28" pointer-events="none">A</text>
+
+                        <!-- C (Gốc v) -->
+                        <g id="group-C" display="none">
+                            <circle id="drag-C" cx="300" cy="420" r="25" fill="transparent" class="draggable-point" data-id="C"/>
+                            <circle id="vis-C" cx="300" cy="420" r="8" fill="#1e293b" pointer-events="none"/>
+                            <text id="lbl-C" x="280" y="450" fill="#1e293b" font-weight="bold" font-size="28" pointer-events="none">C</text>
+                        </g>
+
+                        <!-- D (Ngọn v) -->
+                        <g id="group-D" display="none">
+                            <circle id="drag-D" cx="620" cy="420" r="25" fill="transparent" class="draggable-point" data-id="D"/>
+                            <circle id="vis-D" cx="620" cy="420" r="8" fill="#dc2626" pointer-events="none"/>
+                            <text id="lbl-D" x="635" y="450" fill="#991b1b" font-weight="bold" font-size="28" pointer-events="none">D</text>
+                        </g>
+                    </g>
+                </svg>
+            </main>
+        </div>
+
+        <footer class="bottom-panel">
+            
+            <!-- Điều khiển Slider (Chỉ hiện ở mode 1,2) -->
+            <div id="control-panel" class="slider-container bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <div class="flex justify-between text-sm font-bold text-slate-700 mb-1">
+                    <span>Hệ số $k$</span>
+                    <span id="k-display" class="text-blue-600 text-lg">2.0</span>
+                </div>
+                <input type="range" id="k-slider" min="-3" max="3" step="0.5" value="2">
+                <div class="flex justify-between text-xs text-slate-400 font-math">
+                    <span>-3</span><span>0</span><span>3</span>
+                </div>
+            </div>
+
+            <!-- Box Thông tin gốc u -->
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 flex flex-col justify-center min-w-[150px]">
+                <div class="text-xs font-bold text-blue-800 mb-1 text-center">VECTƠ GỐC</div>
+                <div class="text-center text-lg font-bold text-blue-900" id="math-vec1">$$|\vec{u}| = 5.0$$</div>
+            </div>
+
+            <!-- Box Kết quả ku / v -->
+            <div class="flex-1 bg-red-50 border border-red-200 rounded-xl p-3 flex flex-col justify-center relative">
+                <div class="text-xs font-bold text-red-800 mb-1" id="title-result">VECTƠ TÍCH</div>
+                <div class="text-center text-2xl font-bold text-red-900 absolute w-full left-0 top-1/2 -translate-y-1/2" id="math-vec2">
+                    $$|2\vec{u}| = 10.0$$
+                </div>
+            </div>
+
+            <!-- Trạng thái -->
+            <div class="w-72 bg-white border border-slate-300 rounded-xl p-3 flex flex-col justify-center shadow-sm">
+                <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Trạng Thái Hướng</div>
+                <div id="status-badge" class="status-badge bg-green-100 text-green-700 mb-1 w-max">Cùng hướng</div>
+                <div id="status-sub" class="text-sm font-bold text-slate-700">$k > 0$</div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const GRID_SIZE = 40; 
+        
+        // Tọa độ hệ thống: O cố định ở giữa
+        const O = { x: 500, y: 300 };
+        // Các điểm kéo được
+        let pts = { 
+            A: { x: 700, y: 300 }, // u = OA
+            C: { x: 300, y: 420 }, // v = CD
+            D: { x: 620, y: 420 }
+        };
+        
+        let currentMode = 1; 
+        let draggingPoint = null;
+        let kValue = 2.0;
+
+        // Hoạt hình
+        let animRequest = null;
+        let animTime = 0;
+
+        // Lấy elements
+        const svg = document.getElementById('math-svg');
+        const vecU = document.getElementById('vec-u');
+        const vecKu = document.getElementById('vec-ku');
+        const vecV = document.getElementById('vec-v');
+        const lblU = document.getElementById('lbl-u');
+        const lblKu = document.getElementById('lbl-ku');
+        const txtKu = document.getElementById('txt-ku');
+        const pathKu = document.getElementById('path-ku');
+        const lblV = document.getElementById('lbl-v');
+        const groupC = document.getElementById('group-C');
+        const groupD = document.getElementById('group-D');
+        const sliderPanel = document.getElementById('control-panel');
+        const kSlider = document.getElementById('k-slider');
+        const kDisplay = document.getElementById('k-display');
+        const multiplesLayer = document.getElementById('multiples-layer');
+        const animLayer = document.getElementById('animation-layer');
+        const animDot = document.getElementById('anim-dot');
+
+        // Khởi tạo các nhãn vectơ tĩnh
+        function initMath() {
+            if(window.MathJax) {
+                // Initial typeset
+                MathJax.typesetPromise();
+            }
+        }
+
+        function updateSVG() {
+            // Cập nhật vị trí các điểm kéo thả (Visual + Label)
+            ['A', 'C', 'D'].forEach(id => {
+                document.getElementById(`drag-${id}`).setAttribute('cx', pts[id].x);
+                document.getElementById(`drag-${id}`).setAttribute('cy', pts[id].y);
+                document.getElementById(`vis-${id}`).setAttribute('cx', pts[id].x);
+                document.getElementById(`vis-${id}`).setAttribute('cy', pts[id].y);
+                document.getElementById(`lbl-${id}`).setAttribute('x', pts[id].x + 15);
+                document.getElementById(`lbl-${id}`).setAttribute('y', pts[id].y + 30);
+            });
+
+            // Vẽ vec-u luôn cố định là OA
+            vecU.setAttribute('x1', O.x); vecU.setAttribute('y1', O.y);
+            vecU.setAttribute('x2', pts.A.x); vecU.setAttribute('y2', pts.A.y);
+
+            // Vector toán học
+            let ux = pts.A.x - O.x;
+            let uy = pts.A.y - O.y;
+            let lenU = Math.sqrt(ux*ux + uy*uy) / GRID_SIZE;
+
+            // Xử lý theo từng Mode
+            if (currentMode === 1 || currentMode === 2) {
+                // Hiện thanh trượt, vec-ku. Ẩn v
+                sliderPanel.style.display = 'flex';
+                groupC.style.display = 'none'; groupD.style.display = 'none';
+                vecV.style.display = 'none'; lblV.style.display = 'none';
+                multiplesLayer.style.display = 'none';
+                animLayer.style.display = 'none';
+
+                // Nếu vector 0 thì không vẽ mũi tên
+                if(kValue === 0) {
+                    vecKu.style.display = 'none';
+                    lblKu.style.display = 'none';
+                } else {
+                    vecKu.style.display = 'block';
+                    lblKu.style.display = 'block';
+                    
+                    let Ax_prime = O.x + kValue * ux;
+                    let Ay_prime = O.y + kValue * uy;
+
+                    vecKu.setAttribute('x1', O.x); vecKu.setAttribute('y1', O.y);
+                    vecKu.setAttribute('x2', Ax_prime); vecKu.setAttribute('y2', Ay_prime);
+                    
+                    // Tách hệ số và chữ u
+                    let coefStr = kValue === 1 ? "" : (kValue === -1 ? "-" : kValue);
+                    document.getElementById('txt-k-coef').textContent = coefStr;
+                    
+                    // Xử lý khoảng cách
+                    let coefWidth = coefStr.toString().length * 16; 
+                    
+                    document.getElementById('txt-ku').setAttribute('x', coefWidth);
+                    
+                    // Mũi tên chỉ nằm trên đầu chữ 'u'
+                    let uX = coefWidth;
+                    pathKu.setAttribute('d', `M ${uX - 2} -22 L ${uX + 20} -22 L ${uX + 14} -26 M ${uX + 20} -22 L ${uX + 14} -18`);
+
+                    // Vị trí nhãn
+                    lblKu.setAttribute('transform', `translate(${(O.x + Ax_prime)/2 - coefWidth/2 - 10}, ${(O.y + Ay_prime)/2 - 25})`);
+                }
+                
+                lblU.setAttribute('transform', `translate(${(O.x + pts.A.x)/2 + 10}, ${(O.y + pts.A.y)/2 + 25})`);
+                
+                // Toán học Panel
+                updatePanel12(lenU, kValue);
+            } 
+            else if (currentMode === 3) {
+                sliderPanel.style.display = 'none';
+                vecKu.style.display = 'none'; lblKu.style.display = 'none';
+                groupC.style.display = 'none'; groupD.style.display = 'none'; vecV.style.display = 'none'; lblV.style.display = 'none';
+                animLayer.style.display = 'none';
+                
+                multiplesLayer.style.display = 'block';
+                multiplesLayer.innerHTML = ''; // Clear cũ
+                lblU.style.display = 'none'; // Ẩn nhãn u gốc để vẽ lại trong mảng
+
+                // Các hệ số để so sánh
+                const ks = [3, 2, 1, 0.5, -1, -2, -3];
+                // Dịch các đường y để không trùng nhau (như biểu đồ thanh)
+                let yOffset = -90; 
+
+                ks.forEach((k, idx) => {
+                    let endX = O.x + k * ux;
+                    let endY = O.y + k * uy + yOffset;
+                    let startX = O.x;
+                    let startY = O.y + yOffset;
+                    
+                    // Tạo line
+                    let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    line.setAttribute('x1', startX); line.setAttribute('y1', startY);
+                    line.setAttribute('x2', endX); line.setAttribute('y2', endY);
+                    line.setAttribute('stroke', k > 0 ? '#7c3aed' : '#e11d48'); // Tím dương, Đỏ âm
+                    line.setAttribute('stroke-width', '4');
+                    line.setAttribute('marker-end', 'url(#arr-p)');
+                    
+                    // Tạo nhãn tách biệt hệ số và vectơ
+                    let g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                    let coefStr = k === 1 ? "" : (k === -1 ? "-" : k);
+                    let coefWidth = coefStr.toString().length * 14;
+                    let tW = coefWidth + 20; // Tổng chiều dài nhãn
+                    
+                    g.setAttribute('transform', `translate(${endX + (k>0?15:-tW-25)}, ${endY+10})`);
+                    
+                    g.innerHTML = `
+                        <text x="0" y="0" fill="${k > 0 ? '#7c3aed' : '#e11d48'}" font-size="24" font-weight="bold" font-family="serif">${coefStr}</text>
+                        <text x="${coefWidth}" y="0" fill="${k > 0 ? '#7c3aed' : '#e11d48'}" font-size="24" font-weight="bold" font-family="serif" font-style="italic">u</text>
+                        <path d="M ${coefWidth - 2} -17 L ${coefWidth + 14} -17 L ${coefWidth + 10} -20 M ${coefWidth + 14} -17 L ${coefWidth + 10} -14" stroke="${k > 0 ? '#7c3aed' : '#e11d48'}" stroke-width="2" fill="none"/>
+                    `;
+
+                    multiplesLayer.appendChild(line);
+                    multiplesLayer.appendChild(g);
+                    yOffset += 30;
+                });
+
+                document.getElementById('title-result').textContent = "SO SÁNH";
+                document.getElementById('math-vec2').innerHTML = 'Các vectơ cùng nằm trên một giá (song song)';
+                document.getElementById('status-badge').textContent = "Đa dạng";
+                document.getElementById('status-badge').className = "status-badge bg-purple-100 text-purple-700 mb-1 w-max";
+                document.getElementById('status-sub').textContent = "Bội số của u";
+            }
+            else if (currentMode === 4 || currentMode === 5) {
+                // Khám phá cùng phương / Biểu diễn
+                sliderPanel.style.display = 'none';
+                vecKu.style.display = 'none'; lblKu.style.display = 'none';
+                animLayer.style.display = 'none';
+                multiplesLayer.style.display = 'none';
+
+                groupC.style.display = 'block'; groupD.style.display = 'block';
+                vecV.style.display = 'block'; lblV.style.display = 'block';
+                lblU.style.display = 'block';
+
+                vecV.setAttribute('x1', pts.C.x); vecV.setAttribute('y1', pts.C.y);
+                vecV.setAttribute('x2', pts.D.x); vecV.setAttribute('y2', pts.D.y);
+
+                lblU.setAttribute('transform', `translate(${(O.x + pts.A.x)/2 - 10}, ${(O.y + pts.A.y)/2 - 20})`);
+                lblV.setAttribute('transform', `translate(${(pts.C.x + pts.D.x)/2 - 10}, ${(pts.C.y + pts.D.y)/2 - 20})`);
+
+                let vx = pts.D.x - pts.C.x;
+                let vy = pts.D.y - pts.C.y;
+                let lenV = Math.sqrt(vx*vx + vy*vy) / GRID_SIZE;
+
+                // Kiểm tra cùng phương (Cross product u x v == 0)
+                // Ép kiểu về pixel lưới cho chính xác
+                let u_grid_x = Math.round(ux / GRID_SIZE);
+                let u_grid_y = Math.round(uy / GRID_SIZE);
+                let v_grid_x = Math.round(vx / GRID_SIZE);
+                let v_grid_y = Math.round(vy / GRID_SIZE);
+
+                let cross = u_grid_x * v_grid_y - u_grid_y * v_grid_x;
+                let isCollinear = (cross === 0 && (u_grid_x!==0 || u_grid_y!==0));
+
+                let computedK = 0;
+                if(isCollinear) {
+                    if(u_grid_x !== 0) computedK = v_grid_x / u_grid_x;
+                    else computedK = v_grid_y / u_grid_y;
+                }
+
+                updatePanel45(lenU, lenV, isCollinear, computedK);
+            }
+            else if (currentMode === 6) {
+                // Hoạt hình thực tiễn
+                sliderPanel.style.display = 'none';
+                vecKu.style.display = 'none'; lblKu.style.display = 'none';
+                groupC.style.display = 'none'; groupD.style.display = 'none'; vecV.style.display = 'none'; lblV.style.display = 'none';
+                multiplesLayer.style.display = 'none';
+                lblU.style.display = 'block';
+                animLayer.style.display = 'block';
+
+                // Tính vị trí dot theo k (chạy từ -2 đến 3)
+                // Giả lập k = 2.5 * sin(time)
+                let animK = 2.5 * Math.sin(animTime);
+                let dotX = O.x + animK * ux;
+                let dotY = O.y + animK * uy;
+                
+                animDot.setAttribute('cx', dotX);
+                animDot.setAttribute('cy', dotY);
+                document.getElementById('anim-text').setAttribute('x', dotX);
+                document.getElementById('anim-text').setAttribute('y', dotY - 25);
+
+                lblU.setAttribute('transform', `translate(${(O.x + pts.A.x)/2 + 10}, ${(O.y + pts.A.y)/2 + 25})`);
+                
+                updatePanel6(lenU, animK);
+            }
+        }
+
+        const fmt = (num) => (Math.round(num * 100) / 100).toFixed(1);
+
+        function updatePanel12(lenU, k) {
+            document.getElementById('title-result').textContent = "VECTƠ TÍCH";
+            let valU = fmt(lenU);
+            let valKu = fmt(Math.abs(k) * lenU);
+            document.getElementById('math-vec1').innerHTML = `$$|\\vec{u}| = ${valU}$$`;
+            
+            let kStr = k === parseInt(k) ? k : k.toFixed(1);
+            document.getElementById('math-vec2').innerHTML = `$$|${kStr}\\vec{u}| = ${valKu}$$`;
+            
+            let badge = document.getElementById('status-badge');
+            let sub = document.getElementById('status-sub');
+            if(k > 0) {
+                badge.textContent = "Cùng hướng";
+                badge.className = "status-badge bg-green-100 text-green-700 mb-1 w-max";
+                sub.innerHTML = "$k > 0$";
+            } else if (k < 0) {
+                badge.textContent = "Ngược hướng";
+                badge.className = "status-badge bg-red-100 text-red-700 mb-1 w-max";
+                sub.innerHTML = "$k < 0$";
+            } else {
+                badge.textContent = "Vectơ không";
+                badge.className = "status-badge bg-slate-100 text-slate-700 mb-1 w-max";
+                sub.innerHTML = "$k = 0$";
+            }
+            if(window.MathJax) MathJax.typesetPromise([document.getElementById('math-vec1'), document.getElementById('math-vec2'), sub]);
+        }
+
+        function updatePanel45(lenU, lenV, isCollinear, k) {
+            document.getElementById('title-result').textContent = "VECTƠ v";
+            document.getElementById('math-vec1').innerHTML = `$$|\\vec{u}| = ${fmt(lenU)}$$`;
+            
+            let badge = document.getElementById('status-badge');
+            let sub = document.getElementById('status-sub');
+
+            if(isCollinear) {
+                let kStr = fmt(k);
+                document.getElementById('math-vec2').innerHTML = `$$\\vec{v} = ${kStr}\\vec{u}$$`;
+                badge.textContent = "Cùng phương";
+                badge.className = "status-badge bg-blue-100 text-blue-700 mb-1 w-max";
+                sub.innerHTML = "Tồn tại số k";
+                vecV.setAttribute('stroke', '#10b981'); // Đổi màu xanh lá báo hiệu đúng
+                document.getElementById('lbl-v').querySelector('text').setAttribute('fill', '#10b981');
+                document.getElementById('lbl-v').querySelector('path').setAttribute('stroke', '#10b981');
+            } else {
+                document.getElementById('math-vec2').innerHTML = `$$|\\vec{v}| = ${fmt(lenV)}$$`;
+                badge.textContent = "Không cùng phương";
+                badge.className = "status-badge bg-orange-100 text-orange-700 mb-1 w-max";
+                sub.innerHTML = "Không biểu diễn được";
+                vecV.setAttribute('stroke', '#dc2626'); // Trả lại màu đỏ
+                document.getElementById('lbl-v').querySelector('text').setAttribute('fill', '#dc2626');
+                document.getElementById('lbl-v').querySelector('path').setAttribute('stroke', '#dc2626');
+            }
+            if(window.MathJax) MathJax.typesetPromise([document.getElementById('math-vec1'), document.getElementById('math-vec2'), sub]);
+        }
+
+        function updatePanel6(lenU, animK) {
+            document.getElementById('title-result').textContent = "TRẠNG THÁI";
+            document.getElementById('math-vec1').innerHTML = `$$Vận\\ tốc\\ \\vec{u}$$`;
+            let kStr = fmt(animK);
+            document.getElementById('math-vec2').innerHTML = `$$Vị\\ trí: ${kStr}\\vec{u}$$`;
+            
+            let badge = document.getElementById('status-badge');
+            if(animK > 0) { badge.textContent = "Tiến lên"; badge.className = "status-badge bg-green-100 text-green-700 mb-1 w-max";}
+            else if(animK < 0) { badge.textContent = "Lùi lại"; badge.className = "status-badge bg-red-100 text-red-700 mb-1 w-max";}
+            else { badge.textContent = "Đứng yên"; badge.className = "status-badge bg-slate-100 text-slate-700 mb-1 w-max";}
+            document.getElementById('status-sub').innerHTML = "Chuyển động dọc giá";
+
+            if(window.MathJax) MathJax.typesetPromise([document.getElementById('math-vec1'), document.getElementById('math-vec2')]);
+        }
+
+        function setMode(modeNum) {
+            currentMode = parseInt(modeNum);
+            
+            // Cập nhật UI menu
+            document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.menu-btn[data-mode="${modeNum}"]`).classList.add('active');
+            document.querySelectorAll('.discovery-box').forEach(box => box.classList.remove('active'));
+            document.getElementById(`q-mode-${modeNum}`).classList.add('active');
+
+            // Reset Animation
+            if(animRequest) cancelAnimationFrame(animRequest);
+
+            // Reset vị trí tuỳ mode để học sinh dễ nhìn lúc ban đầu
+            if(currentMode <= 3 || currentMode === 6) {
+                pts.A = {x: 700, y: 300};
+                if(currentMode === 1) { kSlider.value = 2; kValue = 2; kDisplay.textContent = "2.0"; }
+                if(currentMode === 2) { kSlider.value = -1.5; kValue = -1.5; kDisplay.textContent = "-1.5"; }
+                if(currentMode === 6) { startAnimation(); }
+            } else {
+                pts.A = {x: 620, y: 220};
+                pts.C = {x: 300, y: 420};
+                pts.D = {x: 700, y: 340}; // Cố tình để hơi lệch không cùng phương ban đầu
+            }
+
+            updateSVG();
+        }
+
+        function startAnimation() {
+            animTime = 0;
+            function loop() {
+                animTime += 0.02;
+                updateSVG();
+                animRequest = requestAnimationFrame(loop);
+            }
+            loop();
+        }
+
+        // Event listeners cho Menu và Slider
+        document.querySelectorAll('.menu-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => setMode(e.currentTarget.dataset.mode));
+        });
+
+        kSlider.addEventListener('input', (e) => {
+            kValue = parseFloat(e.target.value);
+            kDisplay.textContent = kValue === parseInt(kValue) ? kValue + ".0" : kValue.toFixed(1);
+            updateSVG();
+        });
+
+        // Kéo thả SVG
+        svg.addEventListener('mousedown', (e) => {
+            if (e.target.classList.contains('draggable-point')) draggingPoint = e.target.dataset.id;
+        });
+        svg.addEventListener('touchstart', (e) => {
+            if (e.target.classList.contains('draggable-point')) {
+                draggingPoint = e.target.dataset.id;
+                e.preventDefault();
+            }
+        }, {passive: false});
+
+        window.addEventListener('mouseup', () => { draggingPoint = null; });
+        window.addEventListener('touchend', () => { draggingPoint = null; });
+
+        function handleDrag(clientX, clientY) {
+            if (!draggingPoint) return;
+            
+            const CTM = svg.getScreenCTM();
+            let rawX = (clientX - CTM.e) / CTM.a;
+            let rawY = (clientY - CTM.f) / CTM.d;
+
+            // Snap to Grid (Hút vào lưới để dễ tìm ra Vectơ cùng phương)
+            const snapX = Math.round(rawX / (GRID_SIZE/2)) * (GRID_SIZE/2);
+            const snapY = Math.round(rawY / (GRID_SIZE/2)) * (GRID_SIZE/2);
+            if (Math.abs(rawX - snapX) < 15) rawX = snapX;
+            if (Math.abs(rawY - snapY) < 15) rawY = snapY;
+
+            pts[draggingPoint].x = rawX;
+            pts[draggingPoint].y = rawY;
+            
+            updateSVG();
+        }
+
+        svg.addEventListener('mousemove', (e) => { handleDrag(e.clientX, e.clientY); });
+        svg.addEventListener('touchmove', (e) => {
+            if(draggingPoint) {
+                handleDrag(e.touches[0].clientX, e.touches[0].clientY);
+                e.preventDefault();
+            }
+        }, {passive: false});
+
+        // Fullscreen API chuẩn HTML5
+        const btnFullscreen = document.getElementById('btnFullscreen');
+        btnFullscreen.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Lỗi Fullscreen: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                document.getElementById('txtFullscreen').textContent = 'Thu nhỏ';
+            } else {
+                document.getElementById('txtFullscreen').textContent = 'Toàn màn hình';
+            }
+        });
+
+        // Khởi động
+        window.onload = () => { 
+            initMath();
+            setMode(1); 
+        };
+    </script>
+</body>
+</html>

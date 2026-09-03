@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Khám phá Giá trị Lượng giác (0° - 180°)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Cấu hình MathJax cho công thức Toán học -->
+    <script>
+        window.MathJax = {
+            options: { enableMenu: false },
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0f172a; 
+            color: #e2e8f0;
+            margin: 0;
+            overflow: hidden; 
+            user-select: none;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 360px;
+            background-color: #1e293b;
+            border-right: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 10;
+        }
+
+        /* Canvas Styling */
+        .canvas-area {
+            flex: 1;
+            position: relative;
+            background-color: #000000;
+            background-image: 
+                linear-gradient(rgba(30, 41, 59, 0.3) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(30, 41, 59, 0.3) 1px, transparent 1px);
+            background-size: 30px 30px;
+            background-position: center bottom;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Bottom Panel Styling */
+        .bottom-panel {
+            min-height: 160px;
+            background-color: #1e293b;
+            border-top: 1px solid #334155;
+            display: flex;
+            padding: 1rem 2rem;
+            z-index: 10;
+            gap: 2rem;
+        }
+
+        /* Custom Slider Range */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #475569;
+            border-radius: 2px;
+        }
+
+        /* Nút Góc đặc biệt */
+        .btn-angle {
+            background-color: #334155;
+            color: #e2e8f0;
+            border: 1px solid #475569;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-angle:hover { background-color: #475569; border-color: #94a3b8; }
+        .btn-angle.active { background-color: #0284c7; border-color: #38bdf8; color: white; }
+
+        /* Typography */
+        .font-math { font-family: 'JetBrains Mono', monospace; }
+        .color-cos { color: #ef4444; } /* Red */
+        .color-sin { color: #3b82f6; } /* Blue */
+        .color-tan { color: #10b981; } /* Green */
+        
+        /* Table Styles */
+        .obs-table { width: 100%; text-align: center; border-collapse: collapse; }
+        .obs-table th, .obs-table td { padding: 8px; border: 1px solid #475569; }
+        .obs-table th { background-color: #334155; font-size: 0.875rem; color: #94a3b8; }
+        .obs-table td { font-size: 1.125rem; font-weight: bold; }
+
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="h-12 bg-slate-900 border-b border-slate-700 flex items-center justify-between px-4 shrink-0">
+            <div class="flex items-center gap-4">
+                <div class="w-8 h-8 rounded-full border-2 border-sky-400 flex items-center justify-center text-sky-400 font-bold text-xs">Oxy</div>
+                <h1 class="text-sm font-semibold text-slate-200">Mô phỏng Nửa Đường Tròn Đơn Vị (Toán 10)</h1>
+            </div>
+            <button id="btnFullscreen" class="flex items-center gap-2 text-slate-400 hover:text-white px-3 py-1 rounded text-sm border border-slate-700 hover:border-slate-500 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                Toàn màn hình
+            </button>
+        </header>
+
+        <div class="main-content">
+            <!-- Sidebar Khám Phá -->
+            <aside class="sidebar p-5 flex flex-col gap-6">
+                
+                <!-- Bảng Điều Khiển Góc -->
+                <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 shadow-lg">
+                    <div class="flex justify-between items-end mb-4">
+                        <div class="text-sm font-bold text-slate-400 uppercase tracking-wider">Góc Lượng Giác $\alpha$</div>
+                        <div class="text-3xl font-math text-sky-400 font-bold" id="lblAngle">0°</div>
+                    </div>
+                    <input type="range" id="angleSlider" min="0" max="180" value="45" step="1" class="mb-4">
+                    
+                    <div class="text-xs text-slate-400 mb-2">Các góc đặc biệt:</div>
+                    <div class="flex flex-wrap gap-2" id="btnGroup">
+                        <button class="btn-angle" data-val="30">30°</button>
+                        <button class="btn-angle active" data-val="45">45°</button>
+                        <button class="btn-angle" data-val="60">60°</button>
+                        <button class="btn-angle" data-val="90">90°</button>
+                        <button class="btn-angle" data-val="120">120°</button>
+                        <button class="btn-angle" data-val="135">135°</button>
+                        <button class="btn-angle" data-val="150">150°</button>
+                    </div>
+                </div>
+
+                <!-- Nhận xét Trạng thái -->
+                <div class="bg-slate-900 rounded-xl p-4 border border-slate-700 shadow-inner flex flex-col gap-2 relative overflow-hidden">
+                    <div id="quadrant-indicator" class="absolute left-0 top-0 bottom-0 w-1 bg-sky-500"></div>
+                    <div class="text-sm font-bold text-slate-300" id="statusTitle">Góc Nhọn ($0^\circ < \alpha < 90^\circ$)</div>
+                    <div class="text-xs text-slate-500" id="statusDesc">Điểm M nằm ở góc phần tư thứ I. Cả hoành độ và tung độ đều mang dấu dương (+).</div>
+                </div>
+
+                <!-- Bảng Khám Phá -->
+                <div class="flex-1 bg-slate-800 rounded-xl p-4 border border-slate-700 shadow-lg overflow-y-auto">
+                    <div class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Câu hỏi khám phá</div>
+                    
+                    <ul class="text-sm text-slate-300 space-y-3 list-decimal pl-4">
+                        <li>Hoành độ $x_M$ của điểm M có giá trị bằng với hàm lượng giác nào?</li>
+                        <li>Tung độ $y_M$ của điểm M tương ứng với hàm lượng giác nào?</li>
+                        <li>Khi kéo $\alpha > 90^\circ$ (góc tù), hoành độ $x_M$ mang dấu gì? Vậy $\cos\alpha$ âm hay dương?</li>
+                        <li>Khi $\alpha = 90^\circ$, giá trị $\cos(90^\circ)$ bằng mấy? Tại sao $\tan(90^\circ)$ lại không xác định?</li>
+                    </ul>
+                </div>
+
+            </aside>
+
+            <!-- Khu Vực Canvas (SVG) -->
+            <main class="canvas-area">
+                <svg id="math-svg" width="100%" height="100%" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet">
+                    <!-- Trục toạ độ Oxy -->
+                    <g stroke="#475569" stroke-width="2">
+                        <!-- Trục X -->
+                        <line x1="100" y1="450" x2="900" y2="450" marker-end="url(#arrow)" />
+                        <!-- Trục Y -->
+                        <line x1="500" y1="550" x2="500" y2="50" marker-end="url(#arrow)" />
+                    </g>
+                    
+                    <!-- Lưới tọa độ phụ -->
+                    <line x1="800" y1="445" x2="800" y2="455" stroke="#94a3b8" stroke-width="2" /> <!-- x = 1 -->
+                    <line x1="200" y1="445" x2="200" y2="455" stroke="#94a3b8" stroke-width="2" /> <!-- x = -1 -->
+                    <line x1="495" y1="150" x2="505" y2="150" stroke="#94a3b8" stroke-width="2" /> <!-- y = 1 -->
+
+                    <text x="890" y="480" fill="#94a3b8" font-size="20" font-family="serif" font-style="italic">x</text>
+                    <text x="520" y="60" fill="#94a3b8" font-size="20" font-family="serif" font-style="italic">y</text>
+                    <text x="475" y="475" fill="#94a3b8" font-size="20" font-family="serif" font-style="italic" font-weight="bold">O</text>
+                    <text x="800" y="480" fill="#cbd5e1" font-size="16" text-anchor="middle">1</text>
+                    <text x="200" y="480" fill="#cbd5e1" font-size="16" text-anchor="middle">-1</text>
+                    <text x="475" y="155" fill="#cbd5e1" font-size="16" text-anchor="end">1</text>
+
+                    <!-- Nửa đường tròn đơn vị (Bán kính = 300px) -->
+                    <path d="M 800 450 A 300 300 0 0 0 200 450" fill="none" stroke="#64748b" stroke-width="3" stroke-dasharray="8 8" />
+
+                    <!-- Các phần tử Động (Dynamic Elements) -->
+                    <g id="dynamic-group">
+                        <!-- Quạt hiển thị góc Alpha -->
+                        <path id="arc-alpha" d="" fill="rgba(56, 189, 248, 0.2)" stroke="#38bdf8" stroke-width="2" />
+                        <text id="lbl-alpha-arc" x="0" y="0" fill="#38bdf8" font-size="18" font-family="serif" font-style="italic">α</text>
+
+                        <!-- Đường gióng nét đứt -->
+                        <line id="proj-x" x1="0" y1="0" x2="0" y2="450" stroke="#ef4444" stroke-width="2" stroke-dasharray="5 5" />
+                        <line id="proj-y" x1="0" y1="0" x2="500" y2="0" stroke="#3b82f6" stroke-width="2" stroke-dasharray="5 5" />
+
+                        <!-- Đoạn thẳng thể hiện Cos và Sin trên trục -->
+                        <line id="line-cos" x1="500" y1="450" x2="0" y2="450" stroke="#ef4444" stroke-width="6" />
+                        <line id="line-sin" x1="500" y1="450" x2="500" y2="0" stroke="#3b82f6" stroke-width="6" />
+
+                        <!-- Bán kính OM -->
+                        <line id="line-om" x1="500" y1="450" x2="0" y2="0" stroke="#f8fafc" stroke-width="3" />
+                        
+                        <!-- Điểm M -->
+                        <circle id="point-m" cx="0" cy="0" r="8" fill="#0f172a" stroke="#ffffff" stroke-width="3" cursor="pointer" />
+                        
+                        <!-- Nhãn tọa độ điểm M -->
+                        <g id="label-m-group">
+                            <rect x="10" y="-35" width="130" height="30" rx="4" fill="rgba(15, 23, 42, 0.8)" stroke="#475569" stroke-width="1"/>
+                            <text id="lbl-m" x="18" y="-15" fill="#f8fafc" font-size="16" class="font-math">M(x, y)</text>
+                        </g>
+
+                        <!-- Chú thích Cos và Sin trên trục -->
+                        <text id="lbl-cos-axis" x="0" y="475" fill="#ef4444" font-size="16" class="font-math" text-anchor="middle">cos(α)</text>
+                        <text id="lbl-sin-axis" x="480" y="0" fill="#3b82f6" font-size="16" class="font-math" text-anchor="end" alignment-baseline="middle">sin(α)</text>
+                    </g>
+
+                    <defs>
+                        <!-- Mũi tên trục -->
+                        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569" />
+                        </marker>
+                    </defs>
+                </svg>
+            </main>
+        </div>
+
+        <!-- Bảng Dữ Liệu Phía Dưới -->
+        <footer class="bottom-panel">
+            <!-- Bảng Giá Trị -->
+            <div class="flex-1">
+                <table class="obs-table bg-slate-900 rounded-xl overflow-hidden shadow-lg h-full">
+                    <thead>
+                        <tr>
+                            <th width="20%">Góc $\alpha$</th>
+                            <th width="20%" class="text-red-400">Hoành độ $x_M$</th>
+                            <th width="20%" class="text-blue-400">Tung độ $y_M$</th>
+                            <th width="20%" class="text-red-400">Giá trị $\cos\alpha$</th>
+                            <th width="20%" class="text-blue-400">Giá trị $\sin\alpha$</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="font-math text-slate-200" id="tb-alpha">45°</td>
+                            <td class="font-math color-cos bg-red-900/10" id="tb-x">0.71</td>
+                            <td class="font-math color-sin bg-blue-900/10" id="tb-y">0.71</td>
+                            <td class="font-math color-cos bg-red-900/20" id="tb-cos">0.71</td>
+                            <td class="font-math color-sin bg-blue-900/20" id="tb-sin">0.71</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Kết luận đúc kết -->
+            <div class="w-[450px] bg-slate-800 rounded-xl p-5 border border-sky-900/50 shadow-lg flex flex-col justify-center relative overflow-hidden">
+                <div class="absolute -right-10 -top-10 text-sky-500/10" style="font-size: 150px;">∑</div>
+                <div class="text-xs font-bold text-sky-400 uppercase tracking-wider mb-2">Kết Luận Định Nghĩa</div>
+                <div class="text-base text-slate-200 leading-relaxed font-math space-y-2">
+                    <div><span class="inline-block w-20 text-slate-400">Hoành độ</span> $\Rightarrow \cos(\alpha) = x_M$</div>
+                    <div><span class="inline-block w-20 text-slate-400">Tung độ</span> $\Rightarrow \sin(\alpha) = y_M$</div>
+                    <div class="pt-2 mt-2 border-t border-slate-700">
+                        <span class="inline-block w-20 text-slate-400">Tang</span> $\Rightarrow \tan(\alpha) = \frac{y_M}{x_M} = $<span id="tb-tan" class="color-tan font-bold ml-1">1.00</span>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // --- HẰNG SỐ & BIẾN TRẠNG THÁI ---
+        const ORIGIN_X = 500;
+        const ORIGIN_Y = 450;
+        const RADIUS = 300;
+        
+        const slider = document.getElementById('angleSlider');
+        const lblAngle = document.getElementById('lblAngle');
+        const btnGroup = document.getElementById('btnGroup');
+        const buttons = btnGroup.querySelectorAll('.btn-angle');
+        
+        // --- CÁC HÀM TÍNH TOÁN & TOẠ ĐỘ ---
+        // Chuyển độ sang Radian
+        function toRad(deg) { return deg * Math.PI / 180; }
+        
+        // Hàm tính tọa độ SVG từ góc Alpha
+        function getSvgCoords(angleDeg) {
+            const rad = toRad(angleDeg);
+            const mathX = Math.cos(rad);
+            const mathY = Math.sin(rad);
+            
+            // Map tọa độ Toán học (-1 -> 1) sang tọa độ SVG
+            const svgX = ORIGIN_X + (mathX * RADIUS);
+            const svgY = ORIGIN_Y - (mathY * RADIUS); // Y ngược trong SVG
+            
+            return { mathX, mathY, svgX, svgY };
+        }
+
+        // Tính toạ độ điểm kết thúc riêng cho góc quạt (với bán kính tùy chỉnh)
+        function getArcCoords(x, y, radius, angleDeg) {
+            const rad = toRad(angleDeg);
+            return {
+                x: x + radius * Math.cos(rad),
+                y: y - radius * Math.sin(rad)
+            };
+        }
+
+        // Tạo chuỗi Path cho góc quạt (Arc)
+        function describeArc(x, y, radius, angle){
+            if (angle === 0) return "";
+            
+            // Điểm bắt đầu luôn ở 0 độ (trên trục dương Ox)
+            const startX = x + radius;
+            const startY = y;
+            
+            // Điểm kết thúc tương ứng với góc quét (sử dụng bán kính nhỏ)
+            const end = getArcCoords(x, y, radius, angle);
+            
+            // largeArcFlag = 0 vì mô hình này chỉ quét tối đa 180 độ
+            const largeArcFlag = angle > 180 ? "1" : "0";
+
+            // path: Di chuyển tới tâm, kẻ đường ra biên 0 độ, vẽ cung tới điểm kết thúc, đóng path
+            const d = [
+                "M", x, y, 
+                "L", startX, startY, 
+                "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y,
+                "Z"
+            ].join(" ");
+            return d;
+        }
+
+        // --- HÀM CẬP NHẬT GIAO DIỆN CHÍNH ---
+        function updateSimulation(angleDeg) {
+            angleDeg = parseInt(angleDeg);
+            const { mathX, mathY, svgX, svgY } = getSvgCoords(angleDeg);
+            
+            // 1. CẬP NHẬT UI TEXT CƠ BẢN
+            lblAngle.textContent = `${angleDeg}°`;
+            document.getElementById('tb-alpha').textContent = `${angleDeg}°`;
+            
+            // Xử lý làm tròn để tránh lỗi số học 0.00000000000011
+            const cleanX = (Math.round(mathX * 1000) / 1000).toFixed(2);
+            const cleanY = (Math.round(mathY * 1000) / 1000).toFixed(2);
+
+            document.getElementById('tb-x').textContent = cleanX;
+            document.getElementById('tb-y').textContent = cleanY;
+            document.getElementById('tb-cos').textContent = cleanX;
+            document.getElementById('tb-sin').textContent = cleanY;
+
+            // Xử lý riêng giá trị Tang
+            let tanVal = "Không xác định";
+            if (angleDeg !== 90) {
+                const mathTan = Math.sin(toRad(angleDeg)) / Math.cos(toRad(angleDeg));
+                tanVal = (Math.round(mathTan * 1000) / 1000).toFixed(2);
+            }
+            document.getElementById('tb-tan').textContent = tanVal;
+
+            // 2. CẬP NHẬT SVG ĐỒ HỌA
+            // Điểm M & Đoạn OM
+            document.getElementById('point-m').setAttribute('cx', svgX);
+            document.getElementById('point-m').setAttribute('cy', svgY);
+            document.getElementById('line-om').setAttribute('x2', svgX);
+            document.getElementById('line-om').setAttribute('y2', svgY);
+
+            // Cập nhật vị trí nhãn M(x,y) sao cho không bị cắt khỏi màn hình
+            const lblGroup = document.getElementById('label-m-group');
+            let offsetX = svgX + 15;
+            let offsetY = svgY - 15;
+            if (angleDeg > 135) offsetX = svgX - 155; // Lật sang trái nếu ở góc phần tư II sát trục y
+            lblGroup.setAttribute('transform', `translate(${offsetX}, ${offsetY})`);
+            document.getElementById('lbl-m').textContent = `M(${cleanX}, ${cleanY})`;
+
+            // Đường gióng (Projections)
+            document.getElementById('proj-x').setAttribute('x1', svgX);
+            document.getElementById('proj-x').setAttribute('y1', svgY);
+            document.getElementById('proj-x').setAttribute('x2', svgX);
+            
+            document.getElementById('proj-y').setAttribute('x1', svgX);
+            document.getElementById('proj-y').setAttribute('y1', svgY);
+            document.getElementById('proj-y').setAttribute('y2', svgY);
+
+            // Đường đậm Cos, Sin
+            document.getElementById('line-cos').setAttribute('x2', svgX);
+            document.getElementById('line-sin').setAttribute('y2', svgY);
+
+            // Nhãn Cos, Sin trên trục
+            const lblCos = document.getElementById('lbl-cos-axis');
+            lblCos.setAttribute('x', ORIGIN_X + (svgX - ORIGIN_X)/2);
+            lblCos.textContent = `cos = ${cleanX}`;
+
+            const lblSin = document.getElementById('lbl-sin-axis');
+            lblSin.setAttribute('y', ORIGIN_Y - (ORIGIN_Y - svgY)/2);
+            // Dịch nhãn sang trái một chút để không đè lên trục Y
+            lblSin.setAttribute('x', ORIGIN_X - 10);
+            lblSin.textContent = `sin = ${cleanY}`;
+
+            // Góc quạt Alpha
+            if (angleDeg === 0) {
+                document.getElementById('arc-alpha').setAttribute('d', "");
+            } else {
+                // Bán kính cung hiển thị góc là 45px (nhỏ gọn, quanh gốc toạ độ)
+                const arcPath = describeArc(ORIGIN_X, ORIGIN_Y, 45, angleDeg); 
+                document.getElementById('arc-alpha').setAttribute('d', arcPath);
+            }
+            
+            // Vị trí chữ Alpha (nằm giữa cung quạt)
+            const lblAlpha = document.getElementById('lbl-alpha-arc');
+            if(angleDeg > 0) {
+                const midRad = toRad(angleDeg / 2);
+                lblAlpha.setAttribute('x', ORIGIN_X + Math.cos(midRad) * 65);
+                lblAlpha.setAttribute('y', ORIGIN_Y - Math.sin(midRad) * 65 + 5);
+                lblAlpha.setAttribute('display', 'block');
+            } else {
+                lblAlpha.setAttribute('display', 'none');
+            }
+
+            // 3. CẬP NHẬT TRẠNG THÁI SƯ PHẠM (Góc phần tư)
+            updateStatusText(angleDeg);
+        }
+
+        // --- HÀM CẬP NHẬT TEXT TRẠNG THÁI SƯ PHẠM ---
+        function updateStatusText(angle) {
+            const tTitle = document.getElementById('statusTitle');
+            const tDesc = document.getElementById('statusDesc');
+            const indicator = document.getElementById('quadrant-indicator');
+
+            if (angle === 0) {
+                tTitle.textContent = "Góc 0°";
+                tDesc.innerHTML = "Điểm M nằm ngay trên trục Ox. <br/><span class='text-red-400 font-bold'>cos(0°) = 1</span>, <span class='text-blue-400 font-bold'>sin(0°) = 0</span>";
+                indicator.className = "absolute left-0 top-0 bottom-0 w-1 bg-slate-500";
+            } 
+            else if (angle > 0 && angle < 90) {
+                tTitle.textContent = "Góc Nhọn (0° < α < 90°)";
+                tDesc.innerHTML = "Góc phần tư thứ I. <br/>M có hoành độ <b>dương</b> (cos > 0) và tung độ <b>dương</b> (sin > 0).";
+                indicator.className = "absolute left-0 top-0 bottom-0 w-1 bg-green-500";
+            } 
+            else if (angle === 90) {
+                tTitle.textContent = "Góc Vuông (α = 90°)";
+                tDesc.innerHTML = "Điểm M nằm trên trục Oy. Hoành độ triệt tiêu.<br/><span class='text-red-400 font-bold'>cos(90°) = 0</span>. <br/>$\tan(90^\circ)$ không xác định do mẫu số bằng 0.";
+                indicator.className = "absolute left-0 top-0 bottom-0 w-1 bg-yellow-500";
+                
+                // Trigger MathJax lại cho đoạn text vừa chèn
+                if(window.MathJax) MathJax.typesetPromise([tDesc]);
+            } 
+            else if (angle > 90 && angle < 180) {
+                tTitle.textContent = "Góc Tù (90° < α < 180°)";
+                tDesc.innerHTML = "Góc phần tư thứ II. <br/><b>Lưu ý:</b> Hoành độ M nằm bên trái gốc O nên mang giá trị <b>âm</b> (<span class='text-red-400'>cos < 0</span>). Tung độ vẫn <b>dương</b> (<span class='text-blue-400'>sin > 0</span>).";
+                indicator.className = "absolute left-0 top-0 bottom-0 w-1 bg-red-500";
+            } 
+            else if (angle === 180) {
+                tTitle.textContent = "Góc Bẹt (α = 180°)";
+                tDesc.innerHTML = "Điểm M nằm trên phần âm trục Ox. <br/><span class='text-red-400 font-bold'>cos(180°) = -1</span>, <span class='text-blue-400 font-bold'>sin(180°) = 0</span>";
+                indicator.className = "absolute left-0 top-0 bottom-0 w-1 bg-slate-500";
+            }
+        }
+
+        // --- GẮN SỰ KIỆN (EVENT LISTENERS) ---
+        
+        // Sự kiện Kéo thanh trượt
+        slider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            // Xóa active class của các nút
+            buttons.forEach(b => b.classList.remove('active'));
+            // Nếu trùng giá trị nút nào thì set active
+            const btn = document.querySelector(`.btn-angle[data-val="${val}"]`);
+            if (btn) btn.classList.add('active');
+            
+            updateSimulation(val);
+        });
+
+        // Sự kiện Click các nút góc đặc biệt
+        buttons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                buttons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const val = btn.getAttribute('data-val');
+                slider.value = val;
+                updateSimulation(val);
+            });
+        });
+
+        // Hỗ trợ kéo điểm M trực tiếp trên SVG
+        const svg = document.getElementById('math-svg');
+        let isDragging = false;
+
+        svg.addEventListener('mousedown', (e) => {
+            if (e.target.id === 'point-m' || e.target.id === 'dynamic-group') {
+                isDragging = true;
+            }
+        });
+
+        window.addEventListener('mouseup', () => { isDragging = false; });
+
+        svg.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            
+            const CTM = svg.getScreenCTM();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            // Toạ độ chuột trong không gian SVG
+            const mouseX = (clientX - CTM.e) / CTM.a;
+            const mouseY = (clientY - CTM.f) / CTM.d;
+
+            // Tính vector từ Tâm O đến Chuột
+            const dx = mouseX - ORIGIN_X;
+            const dy = ORIGIN_Y - mouseY; // Đảo ngược Y vì SVG Y hướng xuống
+            
+            // Tính góc bằng hàm atan2
+            let rad = Math.atan2(dy, dx);
+            if (rad < 0) rad += 2 * Math.PI;
+            
+            let deg = Math.round(rad * 180 / Math.PI);
+            
+            // Ràng buộc giới hạn từ 0 đến 180 độ
+            if (deg > 180 && deg < 270) deg = 180;
+            if (deg >= 270 && deg < 360) deg = 0;
+
+            slider.value = deg;
+            
+            // Đồng bộ UI nút
+            buttons.forEach(b => b.classList.remove('active'));
+            const btn = document.querySelector(`.btn-angle[data-val="${deg}"]`);
+            if (btn) btn.classList.add('active');
+
+            updateSimulation(deg);
+        });
+
+        // Hỗ trợ chạm trên thiết bị di động (Touch events)
+        svg.addEventListener('touchstart', (e) => { isDragging = true; }, {passive: true});
+        window.addEventListener('touchend', () => { isDragging = false; });
+        svg.addEventListener('touchmove', (e) => {
+            if (isDragging) {
+                // Tương tự mousemove, gọi thủ công dispatch event
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent("mousemove", {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                svg.dispatchEvent(mouseEvent);
+            }
+        }, {passive: true});
+
+
+        // --- CHẾ ĐỘ TOÀN MÀN HÌNH ---
+        const btnFullscreen = document.getElementById('btnFullscreen');
+        btnFullscreen.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Lỗi Fullscreen: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                btnFullscreen.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg> Thu nhỏ`;
+            } else {
+                btnFullscreen.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg> Toàn màn hình`;
+            }
+        });
+
+        // --- KHỞI CHẠY LẦN ĐẦU ---
+        window.onload = () => {
+            updateSimulation(45); // Khởi động mặc định ở góc 45 độ
+        };
+    </script>
+</body>
+</html>

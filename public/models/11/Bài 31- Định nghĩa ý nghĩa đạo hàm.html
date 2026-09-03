@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Khám phá Đạo hàm - Toán 11 KNTT</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Cấu hình MathJax -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                packages: {'[+]': ['color']}
+            },
+            loader: {load: ['[tex]/color']},
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <style>
+        /* CSS tuỳ chỉnh cho giao diện và hiệu ứng */
+        body { font-family: 'Inter', system-ui, sans-serif; background-color: #f8fafc; overscroll-behavior-y: none; touch-action: pan-x pan-y; }
+        .no-select { user-select: none; -webkit-user-select: none; }
+        
+        /* Menu Tabs */
+        .tab-btn { transition: all 0.2s; border-left: 4px solid transparent; }
+        .tab-active { background-color: #eff6ff; color: #2563eb; border-left-color: #3b82f6; font-weight: 600; }
+        .tab-active::after { content: ''; position: absolute; right: 0; top: 50%; transform: translateY(-50%); border-width: 6px; border-style: solid; border-color: transparent #f8fafc transparent transparent; }
+        .tab-inactive { color: #64748b; }
+        .tab-inactive:hover { background-color: #f1f5f9; color: #334155; }
+        
+        /* Sliders */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; background: #3b82f6; cursor: pointer; margin-top: -8px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: transform 0.1s; }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #cbd5e1; border-radius: 2px; }
+        
+        /* Hiệu ứng mượt mà cho SVG */
+        path, line, circle { transition: stroke 0.3s ease, fill 0.3s ease; }
+        #car-group { transition: transform 0.05s linear; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden text-slate-800">
+
+    <!-- Header -->
+    <header class="bg-white h-14 border-b border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-20">
+        <div class="flex items-center gap-3">
+            <div class="bg-blue-600 text-white font-bold px-2 py-1 rounded text-sm">BÀI 31</div>
+            <h1 class="text-lg font-bold text-slate-700 tracking-tight">ĐỊNH NGHĨA VÀ Ý NGHĨA CỦA ĐẠO HÀM</h1>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="toggleTeacherModal()" class="px-4 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-md font-medium text-sm flex items-center gap-2 hover:bg-amber-100 transition shadow-sm">
+                🎓 Gợi ý sư phạm
+            </button>
+            <button onclick="requestFullScreen()" class="px-3 py-1.5 bg-slate-100 text-slate-600 border border-slate-200 rounded-md text-sm hover:bg-slate-200 transition">
+                ⛶ Toàn màn hình
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex overflow-hidden">
+        <!-- Sidebar Menu -->
+        <aside class="w-64 lg:w-80 bg-white border-r border-slate-200 flex flex-col overflow-y-auto z-10 shrink-0 relative shadow-[2px_0_10px_rgba(0,0,0,0.02)]">
+            <div class="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider sticky top-0 bg-white/95 backdrop-blur z-10 border-b border-slate-100">
+                Tiến trình khám phá
+            </div>
+            <nav id="menu-tabs" class="flex flex-col py-2">
+                <!-- Javascript sinh menu động tại đây -->
+            </nav>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50 relative">
+            
+            <!-- Graphics Canvas (SVG) -->
+            <div class="flex-1 relative p-3 md:p-4 min-h-0 flex items-center justify-center" id="canvas-container">
+                <svg id="main-svg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet" class="w-full h-full max-h-full bg-white rounded-xl shadow-sm border border-slate-200 no-select block" style="touch-action: none;">
+                    <defs>
+                        <!-- Grid pattern -->
+                        <pattern id="grid-pattern" width="50" height="50" patternUnits="userSpaceOnUse">
+                            <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#e2e8f0" stroke-width="1"/>
+                        </pattern>
+                        <!-- Arrow heads -->
+                        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b" />
+                        </marker>
+                    </defs>
+                    
+                    <!-- Lưới toạ độ chung -->
+                    <rect width="100%" height="100%" fill="url(#grid-pattern)" />
+                    <g id="axes-group">
+                        <line id="axis-x" x1="0" y1="300" x2="1000" y2="300" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+                        <line id="axis-y" x1="500" y1="600" x2="500" y2="0" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+                        <text x="980" y="290" font-style="italic" fill="#64748b" font-weight="bold">x</text>
+                        <text x="510" y="20" font-style="italic" fill="#64748b" font-weight="bold">y</text>
+                        <text x="485" y="320" fill="#64748b" font-weight="bold">O</text>
+                    </g>
+
+                    <!-- Lớp đồ hoạ Bài 1 (Chiếc xe) -->
+                    <g id="layer-act1" class="hidden">
+                        <line x1="50" y1="400" x2="950" y2="400" stroke="#94a3b8" stroke-width="8" stroke-linecap="round"/>
+                        <!-- Xe ô tô -->
+                        <g id="car-group" transform="translate(50, 400)">
+                            <path d="M-30,-20 L-10,-40 L20,-40 L40,-20 L50,-20 L50,0 L-40,0 L-40,-20 Z" fill="#3b82f6"/>
+                            <circle cx="-20" cy="0" r="10" fill="#1e293b"/>
+                            <circle cx="30" cy="0" r="10" fill="#1e293b"/>
+                            <circle cx="-20" cy="0" r="4" fill="#cbd5e1"/>
+                            <circle cx="30" cy="0" r="4" fill="#cbd5e1"/>
+                            <!-- Đèn pha -->
+                            <path d="M50,-15 L70,-5 L50,5 Z" fill="#fef08a" opacity="0.6"/>
+                        </g>
+                        <!-- Các vạch đánh dấu -->
+                        <g id="road-marks"></g>
+                    </g>
+
+                    <!-- Lớp đồ hoạ Đồ thị (Bài 2,3,4,6) -->
+                    <g id="layer-graphs" class="hidden">
+                        <!-- Đường cong hàm số -->
+                        <path id="graph-curve" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round"></path>
+                        
+                        <!-- Đường Cát tuyến -->
+                        <line id="secant-line" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6,6"></line>
+                        <!-- Đường Tiếp tuyến -->
+                        <line id="tangent-line" stroke="#ef4444" stroke-width="2.5"></line>
+                        
+                        <!-- Tam giác minh hoạ delta x, delta y -->
+                        <path id="delta-triangle" fill="#fef08a" fill-opacity="0.5" stroke="#ca8a04" stroke-width="1" stroke-dasharray="4,4"></path>
+                        
+                        <!-- Điểm P (cố định) -->
+                        <circle id="point-p" r="6" fill="#1e293b"></circle>
+                        <text id="label-p" x="0" y="0" font-size="16" font-weight="bold" fill="#1e293b" class="no-select">P</text>
+                        
+                        <!-- Điểm Q (di động) -->
+                        <circle id="point-q" r="6" fill="#f59e0b"></circle>
+                        <text id="label-q" x="0" y="0" font-size="16" font-weight="bold" fill="#d97706" class="no-select">Q</text>
+                        
+                        <!-- Điểm M (Tiếp điểm) -->
+                        <circle id="point-m" r="7" fill="#ef4444"></circle>
+                        <text id="label-m" x="0" y="0" font-size="16" font-weight="bold" fill="#ef4444" class="no-select">M</text>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Bottom Panel (Controls & Info) -->
+            <div class="h-[45vh] md:h-[35vh] min-h-[240px] max-h-[400px] bg-white border-t border-slate-200 flex flex-col md:flex-row shrink-0 shadow-[0_-5px_15px_rgba(0,0,0,0.02)] z-10">
+                
+                <!-- Controls Area (Left) -->
+                <div class="w-full md:w-1/2 p-4 md:p-6 border-b md:border-b-0 md:border-r border-slate-200 flex flex-col bg-slate-50/50 overflow-y-auto relative">
+                    <!-- Panel 1: Khởi động -->
+                    <div id="ctrl-act1" class="hidden min-h-full flex-col justify-center py-2">
+                        <h3 class="text-sm font-bold text-slate-500 mb-4 uppercase tracking-wide">Điều khiển thời gian</h3>
+                        <div class="flex items-center gap-4 mb-2">
+                            <span class="font-medium text-slate-600">t = 0</span>
+                            <input type="range" id="slider-t" min="0" max="6" step="0.1" value="0" oninput="updateState('act1_t', this.value)">
+                            <span class="font-medium text-slate-600">6 (s)</span>
+                        </div>
+                        <div class="text-center text-blue-600 font-bold text-lg">Thời điểm: <span id="val-t">0</span> s</div>
+                    </div>
+
+                    <!-- Panel 2 & 3: Cát tuyến và Giới hạn -->
+                    <div id="ctrl-act2" class="hidden h-full flex-col py-2">
+                        <h3 class="text-sm font-bold text-slate-500 mb-4 uppercase tracking-wide">Thay đổi khoảng thời gian \( \Delta x \) (hay \( h \))</h3>
+                        <div class="flex items-center gap-4 mb-2">
+                            <span class="font-medium text-slate-600 min-w-[40px]">\( h \to 0 \)</span>
+                            <input type="range" id="slider-h" min="0.01" max="4" step="0.01" value="4" oninput="updateState('act2_h', this.value)" style="direction: rtl;"> <!-- Rtl để kéo sang phải là giảm về 0 -->
+                            <span class="font-medium text-slate-600 min-w-[40px]">\( h = 4 \)</span>
+                        </div>
+                        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mt-6 gap-4">
+                            <div class="text-amber-700 font-bold text-lg bg-amber-50 px-4 py-2 rounded-lg border border-amber-200 shadow-sm flex items-center gap-2">
+                                Khoảng cách \( h \) = <span id="val-h" class="text-2xl text-amber-600">4.00</span>
+                            </div>
+                            <button id="btn-conclusion-2" onclick="showConclusion()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm font-medium transition w-full lg:w-auto shrink-0">
+                                💡 Rút ra Định nghĩa
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Panel 4: Tiếp tuyến -->
+                    <div id="ctrl-act4" class="hidden h-full flex-col py-2">
+                        <h3 class="text-sm font-bold text-slate-500 mb-4 uppercase tracking-wide">Di chuyển Tiếp điểm \( M \)</h3>
+                        <div class="flex items-center gap-4 mb-2">
+                            <span class="font-medium text-slate-600 min-w-[40px]">\( x = -3 \)</span>
+                            <input type="range" id="slider-x" min="-3" max="3" step="0.05" value="-1" oninput="updateState('act4_x', this.value)">
+                            <span class="font-medium text-slate-600 min-w-[40px]">\( x = 3 \)</span>
+                        </div>
+                        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mt-6 gap-4">
+                            <div class="text-red-700 font-bold text-lg bg-red-50 px-4 py-2 rounded-lg border border-red-200 shadow-sm flex items-center gap-2">
+                                Hoành độ \( x_0 \) = <span id="val-x0" class="text-2xl text-red-600">-1.00</span>
+                            </div>
+                            <button id="btn-conclusion-4" onclick="showConclusion()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm font-medium transition w-full lg:w-auto shrink-0">
+                                💡 Ý nghĩa hình học
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Area (Right) -->
+                <div class="w-full md:w-1/2 p-4 md:p-6 flex flex-col justify-center relative bg-white overflow-y-auto" id="info-area">
+                    <!-- Nội dung MathJax được tiêm vào đây bằng JS -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Gợi ý Sư phạm -->
+    <div id="teacher-modal" class="hidden fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center backdrop-blur-sm opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col transform scale-95 transition-transform duration-300" id="teacher-modal-content">
+            <div class="bg-amber-50 p-4 border-b border-amber-200 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-amber-800 flex items-center gap-2">🎓 Gợi ý Sư phạm - Đạo hàm</h2>
+                <button onclick="toggleTeacherModal()" class="text-amber-600 hover:text-amber-900 text-xl font-bold p-1">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto text-slate-700 space-y-5 text-sm">
+                <div>
+                    <h3 class="font-bold text-blue-700 uppercase tracking-wide border-b pb-1 mb-2">1. Mục tiêu hoạt động</h3>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li>Học sinh tự cảm nhận sự bất lực của công thức <span class="font-mono">v = s/t</span> khi muốn đo <b>tốc độ tức thời</b>.</li>
+                        <li>Trực quan hoá khái niệm giới hạn $h \to 0$ thông qua sự dịch chuyển của điểm trên đồ thị (Cát tuyến biến thành Tiếp tuyến).</li>
+                        <li>Hiển thị trực tiếp mối liên hệ giữa giá trị đạo hàm và độ dốc (hệ số góc) của đồ thị.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-bold text-red-700 uppercase tracking-wide border-b pb-1 mb-2">2. Tạo mâu thuẫn nhận thức (Hoạt động 1)</h3>
+                    <p>Giáo viên yêu cầu học sinh tính vận tốc lúc $t=3s$. Học sinh sẽ dùng đoạn $[3; 3+1]$, sau đó thu nhỏ đoạn đó lại thành $[3; 3+0.1]$. GV đặt câu hỏi: <i>"Làm sao tính chính xác tuyệt đối ngay tại tích tắc $t=3$?"</i> (Mẫu số $\Delta t$ không thể bằng 0).</p>
+                </div>
+                <div>
+                    <h3 class="font-bold text-green-700 uppercase tracking-wide border-b pb-1 mb-2">3. Sai lầm thường gặp của Học sinh</h3>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li>Học sinh thường học vẹt bảng công thức đạo hàm mà không hiểu bản chất nó là "tốc độ thay đổi".</li>
+                        <li>Không phân biệt được Cát tuyến (cắt tại 2 điểm) và Tiếp tuyến (tiếp xúc).</li>
+                    </ul>
+                </div>
+                <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                    <strong class="text-blue-800">💡 Chốt kiến thức:</strong> Đạo hàm tại một điểm đo lường <b>tốc độ biến thiên tức thời</b> của hàm số. Về mặt hình học, nó chính là <b>hệ số góc của tiếp tuyến</b> tại điểm đó.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script điều khiển -->
+    <script>
+        // Cấu hình các hoạt động
+        const activities = [
+            { id: 1, title: "1. Khởi động: Đo vận tốc tức thời" },
+            { id: 2, title: "2. Tốc độ biến thiên trung bình" },
+            { id: 3, title: "3. Định nghĩa Đạo hàm" },
+            { id: 4, title: "4. Ý nghĩa Hình học" },
+            { id: 5, title: "5. Bảng tổng kết" }
+        ];
+
+        // Quản lý trạng thái State
+        let state = {
+            act: 1,
+            act1_t: 0,
+            act2_h: 4,
+            act4_x: -1,
+            showConclusion: false
+        };
+
+        // Các hàm số toán học dùng để vẽ đồ thị
+        const funcs = {
+            act2: { 
+                f: (x) => 0.5 * x * x, // Parabol y = 0.5x^2
+                df: (x) => x,
+                str: "\\frac{1}{2}x^2"
+            },
+            act4: {
+                f: (x) => (x*x*x)/3 - x, // Hàm bậc 3
+                df: (x) => x*x - 1,
+                str: "\\frac{x^3}{3} - x"
+            }
+        };
+
+        // Hàm Toạ độ Mapping (Toán học <-> SVG)
+        const SVG_W = 1000, SVG_H = 600;
+        const ORIGIN_X = 500, ORIGIN_Y = 400; // Gốc toạ độ dời xuống dưới một chút
+        const SCALE_X = 80, SCALE_Y = 80;
+
+        function mapX(x) { return ORIGIN_X + x * SCALE_X; }
+        function mapY(y) { return ORIGIN_Y - y * SCALE_Y; }
+
+        // Khởi tạo giao diện
+        function init() {
+            renderMenu();
+            setActivity(1);
+        }
+
+        // Render Menu Tab
+        function renderMenu() {
+            const menu = document.getElementById('menu-tabs');
+            menu.innerHTML = activities.map(a => `
+                <button onclick="setActivity(${a.id})" id="tab-${a.id}" class="tab-btn w-full text-left px-5 py-3.5 border-b border-slate-100 text-sm transition-colors relative ${state.act === a.id ? 'tab-active' : 'tab-inactive'}">
+                    ${a.title}
+                </button>
+            `).join('');
+        }
+
+        // Đặt lại toàn bộ
+        function resetState() {
+            state.act1_t = 0; document.getElementById('slider-t').value = 0;
+            state.act2_h = 4; document.getElementById('slider-h').value = 4;
+            state.act4_x = -1; document.getElementById('slider-x').value = -1;
+            setActivity(state.act);
+        }
+
+        // Chuyển đổi Hoạt động
+        function setActivity(id) {
+            state.act = id;
+            state.showConclusion = false;
+            
+            // Cập nhật CSS Menu
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('tab-active');
+                btn.classList.add('tab-inactive');
+            });
+            document.getElementById(`tab-${id}`).classList.remove('tab-inactive');
+            document.getElementById(`tab-${id}`).classList.add('tab-active');
+
+            // Ẩn/hiện Bảng điều khiển
+            document.getElementById('ctrl-act1').classList.add('hidden');
+            document.getElementById('ctrl-act2').classList.add('hidden');
+            document.getElementById('ctrl-act4').classList.add('hidden');
+            
+            if (id === 1) document.getElementById('ctrl-act1').classList.remove('hidden');
+            if (id === 2 || id === 3) document.getElementById('ctrl-act2').classList.remove('hidden');
+            if (id === 4) document.getElementById('ctrl-act4').classList.remove('hidden');
+            if (id === 5) { /* Bảng tổng kết không cần điều khiển */ }
+
+            // Ẩn/hiện nút Kết luận
+            if (document.getElementById(`btn-conclusion-2`)) document.getElementById(`btn-conclusion-2`).classList.remove('hidden');
+            if (document.getElementById(`btn-conclusion-4`)) document.getElementById(`btn-conclusion-4`).classList.remove('hidden');
+
+            updateUI();
+        }
+
+        function updateState(key, value) {
+            state[key] = parseFloat(value);
+            state.showConclusion = false; // Ẩn kết luận khi thay đổi thông số
+            
+            if (state.act === 2 || state.act === 3) {
+                document.getElementById('btn-conclusion-2').classList.remove('hidden');
+            }
+            if (state.act === 4) {
+                document.getElementById('btn-conclusion-4').classList.remove('hidden');
+            }
+
+            updateUI();
+        }
+
+        function showConclusion() {
+            state.showConclusion = true;
+            if (state.act === 2 || state.act === 3) document.getElementById('btn-conclusion-2').classList.add('hidden');
+            if (state.act === 4) document.getElementById('btn-conclusion-4').classList.add('hidden');
+            updateUI();
+        }
+
+        // Hàm Render Chính
+        function updateUI() {
+            drawGraphics();
+            updateInfoPanel();
+            
+            // Re-render MathJax
+            if (window.mathJaxLoaded) {
+                MathJax.typesetPromise([document.getElementById('info-area')]);
+            }
+        }
+
+        // Vẽ đồ hoạ SVG
+        function drawGraphics() {
+            const lAct1 = document.getElementById('layer-act1');
+            const lGraphs = document.getElementById('layer-graphs');
+            const lAxes = document.getElementById('axes-group');
+            
+            lAct1.classList.add('hidden');
+            lGraphs.classList.add('hidden');
+            lAxes.classList.add('hidden');
+
+            if (state.act === 1) {
+                // Bài 1: Chuyển động xe
+                lAct1.classList.remove('hidden');
+                
+                let t = state.act1_t;
+                // Hàm s = t^2. Tại t=6, s=36. Bản đồ rộng 900px => tỷ lệ 1đv s = 20px.
+                let s = t * t; 
+                let pixelX = 50 + s * 23; 
+                
+                document.getElementById('car-group').setAttribute('transform', `translate(${pixelX}, 400)`);
+                document.getElementById('val-t').innerText = t.toFixed(1);
+            } 
+            else if (state.act >= 2 && state.act <= 4) {
+                // Bài 2, 3, 4: Đồ thị hàm số
+                lGraphs.classList.remove('hidden');
+                lAxes.classList.remove('hidden');
+
+                // Lựa chọn hàm số
+                let fData = state.act === 4 ? funcs.act4 : funcs.act2;
+                
+                // 1. Vẽ đường cong hàm số (Plotting)
+                let d = "";
+                for (let x = -6; x <= 6; x += 0.1) {
+                    let py = mapY(fData.f(x));
+                    let px = mapX(x);
+                    // Giới hạn vùng vẽ để không bị tràn
+                    if (py > -100 && py < 700) {
+                        d += (d === "" ? "M" : "L") + ` ${px} ${py}`;
+                    }
+                }
+                document.getElementById('graph-curve').setAttribute('d', d);
+
+                // 2. Logic cho từng Bài
+                const pointP = document.getElementById('point-p');
+                const pointQ = document.getElementById('point-q');
+                const pointM = document.getElementById('point-m');
+                const secant = document.getElementById('secant-line');
+                const tangent = document.getElementById('tangent-line');
+                const deltaT = document.getElementById('delta-triangle');
+                
+                // Ẩn tất cả trước
+                [pointP, pointQ, pointM, secant, tangent, deltaT].forEach(el => el.style.display = 'none');
+                document.getElementById('label-p').style.display = 'none';
+                document.getElementById('label-q').style.display = 'none';
+                document.getElementById('label-m').style.display = 'none';
+
+                if (state.act === 2 || state.act === 3) {
+                    // Bài 2 & 3: Cát tuyến tiến về Tiếp tuyến
+                    let x0 = 1; // Chọn điểm cố định x=1
+                    let y0 = fData.f(x0);
+                    let h = state.act2_h;
+                    let x1 = x0 + h;
+                    let y1 = fData.f(x1);
+
+                    document.getElementById('val-h').innerText = h.toFixed(2);
+
+                    // Điểm P
+                    pointP.setAttribute('cx', mapX(x0));
+                    pointP.setAttribute('cy', mapY(y0));
+                    pointP.style.display = 'block';
+                    document.getElementById('label-p').setAttribute('x', mapX(x0) - 20);
+                    document.getElementById('label-p').setAttribute('y', mapY(y0) - 10);
+                    document.getElementById('label-p').style.display = 'block';
+
+                    // Điểm Q
+                    pointQ.setAttribute('cx', mapX(x1));
+                    pointQ.setAttribute('cy', mapY(y1));
+                    pointQ.style.display = 'block';
+                    document.getElementById('label-q').setAttribute('x', mapX(x1) + 10);
+                    document.getElementById('label-q').setAttribute('y', mapY(y1) - 10);
+                    document.getElementById('label-q').style.display = 'block';
+
+                    // Vẽ Tam giác Delta (Nếu h đủ lớn)
+                    if (h > 0.1 && state.act === 2) {
+                        deltaT.setAttribute('d', `M ${mapX(x0)} ${mapY(y0)} L ${mapX(x1)} ${mapY(y0)} L ${mapX(x1)} ${mapY(y1)} Z`);
+                        deltaT.style.display = 'block';
+                    }
+
+                    // Đường Cát tuyến (Kéo dài ra 2 phía)
+                    let slope = (y1 - y0) / h;
+                    let dx = 10; 
+                    let lineX1 = x0 - dx, lineY1 = y0 - slope * dx;
+                    let lineX2 = x1 + dx, lineY2 = y1 + slope * dx;
+                    
+                    secant.setAttribute('x1', mapX(lineX1));
+                    secant.setAttribute('y1', mapY(lineY1));
+                    secant.setAttribute('x2', mapX(lineX2));
+                    secant.setAttribute('y2', mapY(lineY2));
+                    secant.style.display = 'block';
+
+                    // Nếu h tiến rất gần 0, vẽ thêm Tiếp tuyến màu đỏ
+                    if (state.act === 3 && state.showConclusion) {
+                        let actualSlope = fData.df(x0);
+                        tangent.setAttribute('x1', mapX(x0 - 5));
+                        tangent.setAttribute('y1', mapY(y0 - actualSlope * 5));
+                        tangent.setAttribute('x2', mapX(x0 + 5));
+                        tangent.setAttribute('y2', mapY(y0 + actualSlope * 5));
+                        tangent.setAttribute('stroke', '#16a34a'); // Màu xanh lá khi chốt định nghĩa
+                        tangent.style.display = 'block';
+                    }
+
+                } else if (state.act === 4) {
+                    // Bài 4: Ý nghĩa hình học
+                    let xm = state.act4_x;
+                    let ym = fData.f(xm);
+                    let k = fData.df(xm); // Đạo hàm = Hệ số góc
+
+                    document.getElementById('val-x0').innerText = xm.toFixed(2);
+
+                    // Hiển thị M
+                    pointM.setAttribute('cx', mapX(xm));
+                    pointM.setAttribute('cy', mapY(ym));
+                    pointM.style.display = 'block';
+                    document.getElementById('label-m').setAttribute('x', mapX(xm) - 15);
+                    document.getElementById('label-m').setAttribute('y', mapY(ym) - 15);
+                    document.getElementById('label-m').style.display = 'block';
+
+                    // Vẽ Tiếp tuyến
+                    tangent.setAttribute('x1', mapX(xm - 4));
+                    tangent.setAttribute('y1', mapY(ym - k * 4));
+                    tangent.setAttribute('x2', mapX(xm + 4));
+                    tangent.setAttribute('y2', mapY(ym + k * 4));
+                    
+                    // Thay đổi màu dựa vào độ dốc
+                    if (k > 0) tangent.setAttribute('stroke', '#16a34a'); // Xanh: dốc lên
+                    else if (k < 0) tangent.setAttribute('stroke', '#ef4444'); // Đỏ: dốc xuống
+                    else tangent.setAttribute('stroke', '#3b82f6'); // Xanh dương: Nằm ngang (cực trị)
+                    
+                    tangent.style.display = 'block';
+                }
+            } else if (state.act === 5) {
+                 // Không vẽ đồ hoạ phần tổng kết
+            }
+        }
+
+        // Cập nhật nội dung bảng thông tin bên phải
+        function updateInfoPanel() {
+            const info = document.getElementById('info-area');
+            let content = '';
+
+            if (state.act === 1) {
+                let t = state.act1_t;
+                let s = t*t;
+                content = `
+                    <div class="space-y-2 text-slate-700 text-[15px] leading-snug">
+                        <div class="px-3 py-2 bg-blue-50 rounded-lg border border-blue-100">
+                            <strong>Tình huống:</strong> Xe ô tô chuyển động với phương trình: 
+                            <div class="math-compact text-center text-blue-700 font-bold my-1">$$ s(t) = t^2 $$</div>
+                        </div>
+                        <p>Tại thời điểm $t = ${t.toFixed(1)}$ s, quãng đường $s = ${s.toFixed(2)}$ m.</p>
+                        
+                        <div class="px-3 py-2 bg-amber-50 rounded-lg border border-amber-200 mt-2 shadow-sm">
+                            <h4 class="font-bold text-amber-800 mb-1 text-sm">🤔 Mâu thuẫn nhận thức:</h4>
+                            <p class="mb-1">Vận tốc trung bình trên khoảng từ $t=3$ đến $t=4$:</p>
+                            <p class="text-center font-mono bg-white p-1 rounded mb-1 text-sm">v_tb = (16 - 9) / 1 = 7 (m/s)</p>
+                            <p class="font-semibold text-red-600 text-sm">Nhưng làm sao tính vận tốc chính xác tại đúng $t = 3$ giây?</p>
+                        </div>
+                    </div>
+                `;
+            } 
+            else if (state.act === 2) {
+                let h = state.act2_h;
+                let dy = (0.5 * Math.pow(1 + h, 2)) - 0.5;
+                let ratio = dy / h;
+                
+                content = `
+                    <div class="space-y-1.5 text-slate-700 text-[15px] leading-snug">
+                        <p>Xét hàm $f(x) = \\frac{1}{2}x^2$. Lấy $P(1; 0.5)$ và $Q$ có hoành độ $x_Q = 1 + h$.</p>
+                        <div class="px-3 py-1.5 bg-slate-50 rounded border border-slate-200">
+                            <p class="font-semibold text-slate-600 text-sm">Tốc độ biến thiên trung bình trên đoạn $[1; 1+h]$:</p>
+                            <div class="math-compact">$$ \\frac{\\Delta y}{\\Delta x} = \\frac{f(1+h) - f(1)}{h} $$</div>
+                        </div>
+                        <div class="px-3 py-1.5 bg-blue-50 rounded border border-blue-200">
+                            <p class="text-sm">Khi khoảng cách $h = ${h.toFixed(2)}$:</p>
+                            <div class="math-compact">$$ \\frac{\\Delta y}{\\Delta x} = \\frac{${dy.toFixed(4)}}{${h.toFixed(2)}} = \\color{red}{${ratio.toFixed(4)}} $$</div>
+                        </div>
+                        ${state.showConclusion ? `
+                        <div class="px-3 py-2 bg-green-50 rounded border border-green-200 mt-2 animate-fade-in text-sm">
+                            <strong>Dự đoán:</strong> Khi $h \\to 0$, tỉ số $\\frac{\\Delta y}{\\Delta x}$ tiến dần tới <b class="text-green-700 text-lg">1</b>.
+                        </div>` : ''}
+                    </div>
+                `;
+            }
+            else if (state.act === 3) {
+                content = `
+                    <div class="space-y-2 text-slate-700 text-[15px] leading-snug">
+                        <p>Kéo $h \\to 0$, $Q$ tiến sát $P$. Cát tuyến biến thành tiếp tuyến.</p>
+                        
+                        <div class="px-3 py-2 bg-blue-50 rounded-lg border border-blue-200 shadow-sm mt-2">
+                            <h4 class="font-bold text-blue-800 text-center uppercase tracking-wide text-sm mb-1">Định nghĩa Đạo hàm</h4>
+                            <p class="text-sm text-center">Đạo hàm của $y=f(x)$ tại $x_0$ là giới hạn:</p>
+                            <div class="math-compact">$$ f'(x_0) = \\lim_{h \\to 0} \\frac{f(x_0+h) - f(x_0)}{h} $$</div>
+                        </div>
+                        
+                        ${state.showConclusion ? `
+                        <div class="px-3 py-2 bg-green-50 rounded border border-green-200 mt-2 text-center animate-fade-in shadow-inner">
+                            <p class="text-sm">Áp dụng với $f(x) = \\frac{1}{2}x^2$ tại $x_0 = 1$:</p>
+                            <div class="math-compact font-bold text-green-700">$$ f'(1) = 1 $$</div>
+                        </div>` : ''}
+                    </div>
+                `;
+            }
+            else if (state.act === 4) {
+                let xm = state.act4_x;
+                let k = (xm*xm) - 1; 
+                
+                let stateText, colorClass;
+                if (k > 0) { stateText = "ĐỒNG BIẾN (Dốc lên)"; colorClass = "text-green-600"; }
+                else if (k < 0) { stateText = "NGHỊCH BIẾN (Dốc xuống)"; colorClass = "text-red-600"; }
+                else { stateText = "CỰC TRỊ (Nằm ngang)"; colorClass = "text-blue-600"; }
+
+                content = `
+                    <div class="space-y-2 text-slate-700 text-[15px] leading-snug">
+                        <p>Xét đồ thị $y = \\frac{x^3}{3} - x$. Tại $x_0 = ${xm.toFixed(2)}$, đạo hàm là:</p>
+                        <div class="math-compact font-bold text-center text-lg">$$ f'(${xm.toFixed(2)}) = \\color{red}{${k.toFixed(2)}} $$</div>
+                        
+                        ${state.showConclusion ? `
+                        <div class="px-3 py-2 bg-purple-50 rounded-lg border border-purple-200 shadow-sm mt-3 animate-fade-in">
+                            <h4 class="font-bold text-purple-800 text-center uppercase tracking-wide text-sm mb-1">Ý nghĩa hình học</h4>
+                            <p class="text-sm text-center">Đạo hàm là <strong>Hệ số góc</strong> của tiếp tuyến.</p>
+                            <div class="math-compact">$$ k = f'(x_0) $$</div>
+                        </div>
+                        <div class="p-2 bg-slate-100 rounded text-center font-medium mt-2 text-sm">
+                            Trạng thái: <span class="font-bold ${colorClass}">${stateText}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            else if (state.act === 5) {
+                content = `
+                    <div class="flex flex-col justify-center h-full">
+                        <h2 class="text-lg font-bold text-slate-800 text-center mb-4">TỔNG KẾT BÀI HỌC</h2>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-blue-50 p-3 rounded-lg border border-blue-200 flex flex-col items-center">
+                                <div class="text-2xl mb-1">📐</div>
+                                <h3 class="font-bold text-blue-800 text-sm mb-1">Hình học</h3>
+                                <p class="text-xs text-slate-700 text-center leading-tight">Đạo hàm là hệ số góc của tiếp tuyến.</p>
+                                <div class="mt-1 font-bold text-blue-600 text-sm">k = f'(x_0)</div>
+                            </div>
+                            <div class="bg-green-50 p-3 rounded-lg border border-green-200 flex flex-col items-center">
+                                <div class="text-2xl mb-1">🚀</div>
+                                <h3 class="font-bold text-green-800 text-sm mb-1">Vật lí</h3>
+                                <p class="text-xs text-slate-700 text-center leading-tight">Đạo hàm của quãng đường là vận tốc tức thời.</p>
+                                <div class="mt-1 font-bold text-green-600 text-sm">v(t) = s'(t)</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            info.innerHTML = content;
+        }
+
+        // --- Hỗ trợ chức năng chung ---
+
+        // Modal Gợi ý sư phạm
+        function toggleTeacherModal() {
+            const modal = document.getElementById('teacher-modal');
+            const content = document.getElementById('teacher-modal-content');
+            if (modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modal.classList.remove('opacity-0');
+                    content.classList.remove('scale-95');
+                }, 10);
+            } else {
+                modal.classList.add('opacity-0');
+                content.classList.add('scale-95');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            }
+        }
+
+        // Toàn màn hình
+        function requestFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    alert(`Lỗi khi mở toàn màn hình: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Kích hoạt khi tải trang
+        window.onload = init;
+    </script>
+</body>
+</html>

@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Đại Chiến Cầu Tuyết</title>
+    <style>
+        /* === RESET & BASE === */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #111;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #fff;
+        }
+
+        /* === MENU SCREEN === */
+        #menu-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(135deg, #2f3640, #192a56);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .menu-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 1000px;
+            height: 90vh;
+            display: flex;
+            flex-direction: row;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.2);
+            overflow: hidden;
+        }
+
+        /* Responsive menu */
+        @media (max-width: 768px) {
+            .menu-container {
+                flex-direction: column;
+                height: 100%;
+            }
+        }
+
+        /* Left Panel - Tree View */
+        .tree-panel {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border-right: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .tree-panel h2 {
+            color: #fbc531;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            font-size: 24px;
+            text-align: center;
+            text-shadow: 2px 2px 0px #c23616;
+        }
+
+        .tree-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        /* Custom Scrollbar */
+        .tree-scroll::-webkit-scrollbar { width: 8px; }
+        .tree-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        .tree-scroll::-webkit-scrollbar-thumb { background: #7f8fa6; border-radius: 4px; }
+
+        .grade-details { margin-bottom: 10px; }
+        .grade-summary {
+            font-size: 18px;
+            font-weight: bold;
+            padding: 10px;
+            background: #353b48;
+            border-radius: 8px;
+            cursor: pointer;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            transition: 0.2s;
+        }
+        .grade-summary::before {
+            content: '📁';
+            margin-right: 10px;
+        }
+        .grade-details[open] .grade-summary::before { content: '📂'; }
+        .grade-summary:hover { background: #4cd137; }
+
+        .quiz-list {
+            list-style: none;
+            padding-left: 20px;
+            margin-top: 5px;
+        }
+
+        .quiz-item {
+            padding: 8px 10px;
+            background: rgba(255,255,255,0.05);
+            margin-bottom: 5px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .quiz-item:hover { background: rgba(255,255,255,0.15); }
+        .quiz-item.active {
+            background: #00a8ff;
+            color: white;
+            font-weight: bold;
+            border-left: 4px solid #fbc531;
+        }
+
+        .btn-delete {
+            background: #e84118;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .btn-delete:hover { background: #c23616; }
+
+        /* Right Panel - Actions */
+        .control-panel {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        .control-group {
+            background: rgba(0,0,0,0.2);
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .control-group h3 {
+            margin-bottom: 15px;
+            color: #4cd137;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            padding-bottom: 5px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .input-group label { font-size: 14px; color: #dcdde1; }
+        .input-group input, .input-group select {
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #7f8fa6;
+            background: #2f3640;
+            color: white;
+            font-size: 16px;
+        }
+        .input-group input:focus, .input-group select:focus { outline: none; border-color: #00a8ff; }
+
+        .btn-action {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-bottom: 10px;
+            text-align: center;
+            color: white;
+        }
+        .btn-upload { background: #8c7ae6; }
+        .btn-upload:hover { background: #7158e2; }
+        .btn-download { background: #7f8fa6; }
+        .btn-download:hover { background: #718093; }
+        .btn-prompt { background: #ff9f43; }
+        .btn-prompt:hover { background: #e67e22; }
+        
+        .selected-info {
+            background: #e1b12c;
+            color: #2f3640;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+            margin-top: auto;
+        }
+
+        .btn-start {
+            background: #4cd137;
+            font-size: 24px;
+            padding: 15px;
+            margin-top: 10px;
+            box-shadow: 0 4px 0 #44bd32;
+        }
+        .btn-start:hover:not(:disabled) { transform: translateY(2px); box-shadow: 0 2px 0 #44bd32; }
+        .btn-start:disabled { background: #7f8fa6; box-shadow: none; cursor: not-allowed; opacity: 0.6; }
+
+        /* === MODALS & TOASTS === */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 3000;
+            opacity: 0; pointer-events: none; transition: 0.3s;
+            padding: 20px;
+        }
+        .modal-overlay.show { opacity: 1; pointer-events: all; }
+        
+        .modal-content {
+            background: #2f3640;
+            padding: 30px;
+            border-radius: 12px;
+            width: 100%; max-width: 400px;
+            border: 2px solid #00a8ff;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-content h3 { color: #00a8ff; margin-bottom: 20px; text-align: center; }
+        
+        .prompt-content { max-width: 650px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .time-grid { grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        
+        @media (max-width: 600px) {
+            .form-grid, .time-grid { grid-template-columns: 1fr; gap: 10px; }
+        }
+
+        #p-result {
+            width: 100%; height: 160px; padding: 10px; border-radius: 6px;
+            background: #1e272e; color: #4bcffa; border: 1px solid #7f8fa6;
+            font-family: monospace; font-size: 13px; resize: vertical;
+        }
+
+        .modal-btns { display: flex; gap: 10px; margin-top: 20px; }
+        .modal-btns button { flex: 1; padding: 12px; font-weight: bold; border-radius: 8px; border: none; cursor: pointer;}
+        .btn-cancel { background: #e84118; color: white; }
+        .btn-save { background: #4cd137; color: white; }
+
+        #toast-container {
+            position: fixed; bottom: 20px; right: 20px; z-index: 4000;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .toast {
+            background: #353b48; color: white; padding: 15px 25px;
+            border-radius: 8px; border-left: 5px solid #00a8ff;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s forwards;
+            font-weight: bold;
+        }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        /* === LAYOUT: 16:9 FULLSCREEN PERFECT SCALING (Game area) === */
+        #game-wrapper {
+            display: none;
+            aspect-ratio: 16 / 9;
+            width: 100vw; max-width: calc(100vh * 16 / 9);
+            height: 100vh; max-height: calc(100vw * 9 / 16);
+            background-color: #f5f6fa;
+            position: relative;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 0 3cqh rgba(0,0,0,0.5);
+            container-type: size;
+            container-name: game;
+        }
+
+        /* === GAME STYLES === */
+        header { height: 10cqh; background: #2f3640; display: flex; justify-content: space-between; align-items: center; padding: 0 3cqw; z-index: 10; border-bottom: 0.5cqh solid #192a56; }
+        .header-title { font-size: 4cqh; font-weight: 900; letter-spacing: 0.2cqw; color: #fbc531; text-shadow: 0.2cqh 0.2cqh 0 #c23616; flex: 1; text-align: center; }
+        .score-board { display: flex; align-items: center; gap: 1.5cqw; font-size: 3cqh; font-weight: bold; }
+        .score-t1 { color: #00a8ff; }
+        .score-t2 { color: #e84118; }
+        .timer { background: #353b48; padding: 0.5cqh 1.5cqw; border-radius: 3cqh; font-size: 3.5cqh; color: #fff; border: 0.3cqh solid #7f8fa6; min-width: 8cqw; text-align: center; transition: all 0.3s; }
+        .timer.warning { color: #e84118; animation: pulse 1s infinite; }
+        
+        /* TIME CONTROLS */
+        .time-controls { display: flex; gap: 0.5cqw; }
+        .time-btn { background: rgba(0,0,0,0.3); border: 0.2cqh solid #4cd137; color: #4cd137; font-size: 1.8cqh; font-weight: bold; border-radius: 1cqh; padding: 0.5cqh 0.8cqw; cursor: pointer; transition: 0.2s; }
+        .time-btn:hover { background: #4cd137; color: #fff; }
+        .time-btn:active { transform: scale(0.9); }
+
+        .icon-btn { background: rgba(0,0,0,0.3); border: 0.3cqh solid #7f8fa6; color: #fff; font-size: 2.5cqh; padding: 0.5cqh 1cqw; border-radius: 1.5cqh; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; font-weight: bold;}
+        .icon-btn:active { transform: scale(0.9); }
+        .icon-btn:hover { background: rgba(255,255,255,0.1); }
+        .header-left { display: flex; align-items: center; gap: 1cqw; font-size: 3cqh; font-weight: bold;}
+        .font-controls { display: flex; gap: 0.5cqw; background: rgba(0,0,0,0.2); padding: 0.5cqh; border-radius: 2cqh; }
+        main { display: grid; grid-template-columns: 1fr 1.3fr 1fr; flex: 1; height: 90cqh; }
+        .panel { padding: 2.5cqw; display: flex; flex-direction: column; position: relative; z-index: 5; transition: transform 0.1s; }
+        .panel-t1 { background: linear-gradient(135deg, #0097e6, #00a8ff); border-radius: 0 5cqh 5cqh 0; box-shadow: 0.5cqw 0 1.5cqw rgba(0,0,0,0.2); }
+        .panel-t2 { background: linear-gradient(135deg, #c23616, #e84118); border-radius: 5cqh 0 0 5cqh; box-shadow: -0.5cqw 0 1.5cqw rgba(0,0,0,0.2); }
+        .panel-header { font-size: 3.5cqh; font-weight: 800; text-align: center; margin-bottom: 3cqh; text-transform: uppercase; text-shadow: 0.1cqh 0.1cqh 0.4cqh rgba(0,0,0,0.3); display: flex; justify-content: center; align-items: center; gap: 10px; flex-direction: column;}
+        
+        /* HP Text */
+        .hp-badge { font-size: 2.5cqh; background: rgba(0,0,0,0.3); color: #fff; padding: 0.5cqh 2cqw; border-radius: 1.5cqh; border: 2px solid rgba(255,255,255,0.5); transition: color 0.3s, border-color 0.3s; }
+        .hp-badge.danger { color: #ff7675; border-color: #ff7675; animation: pulse 1s infinite; }
+        .hp-badge.highlight { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); background: #fbc531; color: #000; border-color: #fff;}
+        @keyframes popIn { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+        .question-box { flex: 1; background: rgba(255,255,255,0.1); border-radius: 2cqh; padding: 3cqh 2cqw; margin-bottom: 3cqh; display: flex; align-items: center; justify-content: center; text-align: center; border: 0.2cqh solid rgba(255,255,255,0.2); }
+        .question-text { font-size: calc(2.8cqh * var(--font-scale, 1)); font-weight: 600; line-height: 1.4; transition: font-size 0.2s; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 1.5cqh; height: 40%; }
+        .btn-option { background: #fff; color: #2f3640; border: none; border-radius: 1.5cqh; font-size: calc(2.2cqh * var(--font-scale, 1)); font-weight: bold; cursor: pointer; padding: 1cqh; transition: all 0.2s; box-shadow: 0 0.8cqh 0 rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; text-align: center; }
+        .btn-option:active:not(:disabled) { transform: translateY(0.8cqh); box-shadow: 0 0 0 rgba(0,0,0,0.2); }
+        .btn-option.selected { background: #fbc531; color: #000; box-shadow: 0 0.8cqh 0 #e1b12c; }
+        .btn-option:disabled { opacity: 0.8; cursor: not-allowed; }
+        .btn-option.correct { background: #4cd137; color: white; box-shadow: 0 0.8cqh 0 #44bd32; }
+        .btn-option.wrong { background: #7f8fa6; color: white; box-shadow: 0 0.8cqh 0 #718093; opacity: 0.5; }
+        
+        .feedback-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); border-radius: inherit; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 10; }
+        .feedback-overlay.show { opacity: 1; }
+        .feedback-icon { font-size: 12cqh; margin-bottom: 2cqh; transform: scale(0); transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .feedback-overlay.show .feedback-icon { transform: scale(1); }
+        .icon-correct { color: #4cd137; }
+        .icon-wrong { color: #e84118; }
+        .explanation-text { background: rgba(255,255,255,0.9); color: #2f3640; padding: 2cqh; border-radius: 1.5cqh; width: 85%; text-align: center; font-size: 2cqh; font-weight: 600; }
+        
+        /* ARENA - CASTLE DEFENSE */
+        .arena { position: relative; background: #74b9ff; z-index: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; border-left: 0.5cqw solid #fff; border-right: 0.5cqw solid #fff; }
+        .svg-container { width: 100%; height: 100%; z-index: 2; }
+        
+        /* Visual SVG Effects */
+        .castle { transition: transform 0.1s; }
+        .castle.shake-fx { animation: shakeAnim 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+
+        #win-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.5s; }
+        #win-overlay.show { opacity: 1; pointer-events: all; }
+        .win-title { font-size: 10cqh; font-weight: 900; margin-bottom: 4cqh; text-transform: uppercase; text-shadow: 0 0 3cqh rgba(255,255,255,0.5); text-align: center;}
+        .win-t1 { color: #00a8ff; }
+        .win-t2 { color: #e84118; }
+        .win-draw { color: #fbc531; }
+        #btn-play-again, #btn-back-menu { padding: 2cqh 4cqw; font-size: 3cqh; font-weight: bold; background: #fbc531; border: none; border-radius: 4cqh; cursor: pointer; box-shadow: 0 1cqh 0 #e1b12c; transition: 0.2s; margin: 1cqh; }
+        #btn-back-menu { background: #7f8fa6; box-shadow: 0 1cqh 0 #718093; color: white;}
+        #btn-play-again:active, #btn-back-menu:active { transform: translateY(1cqh); box-shadow: 0 0 0 transparent; }
+        .win-buttons { display: flex; gap: 2cqw; }
+
+        /* PAUSE OVERLAY */
+        #pause-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 50;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+            font-size: 8cqh; font-weight: 900; color: #fbc531; letter-spacing: 0.5cqw; text-shadow: 0 0.5cqh 0 #e1b12c;
+        }
+        #pause-overlay.show { opacity: 1; pointer-events: all; }
+
+        /* TUTORIAL OVERLAY */
+        #tutorial-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(17, 17, 17, 0.95); z-index: 150;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.4s;
+        }
+        #tutorial-overlay.show { opacity: 1; pointer-events: all; }
+        .tutorial-content {
+            background: #2f3640; border: 0.3cqh solid #fbc531; border-radius: 2cqh;
+            padding: 4cqh 4cqw; max-width: 80%; box-shadow: 0 1cqh 3cqh rgba(0,0,0,0.8);
+            text-align: left; animation: slideUp 0.5s ease-out;
+        }
+        .tutorial-content h2 {
+            color: #fbc531; font-size: 5cqh; text-align: center; margin-bottom: 3cqh;
+            text-shadow: 0 0.4cqh 0 #e1b12c;
+        }
+        .tutorial-list { list-style: none; font-size: 3cqh; line-height: 1.8; margin-bottom: 4cqh; }
+        .tutorial-list li { display: flex; align-items: flex-start; gap: 1cqw; margin-bottom: 1.5cqh; }
+        .tutorial-list span { font-size: 3.5cqh; }
+        #btn-start-real-game {
+            display: block; width: 100%; padding: 2cqh; font-size: 3.5cqh; font-weight: 900;
+            background: #4cd137; color: white; border: none; border-radius: 1.5cqh;
+            cursor: pointer; box-shadow: 0 0.8cqh 0 #44bd32; transition: 0.2s;
+        }
+        #btn-start-real-game:active { transform: translateY(0.8cqh); box-shadow: 0 0 0 #44bd32; }
+        @keyframes slideUp { from { transform: translateY(5cqh); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        .shake { animation: shakeAnim 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shakeAnim { 10%, 90% { transform: translate3d(-0.2cqw, 0, 0); } 20%, 80% { transform: translate3d(0.4cqw, 0, 0); } 30%, 50%, 70% { transform: translate3d(-0.8cqw, 0, 0); } 40%, 60% { transform: translate3d(0.8cqw, 0, 0); } }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
+
+<!-- SAVE JSON MODAL -->
+<div id="save-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>Lưu Bài Học</h3>
+        <div class="input-group">
+            <label>Tên bài học:</label>
+            <input type="text" id="upload-lesson-name" placeholder="Ví dụ: Ôn tập hô hấp tế bào">
+        </div>
+        <div class="input-group">
+            <label>Chọn Khối Lớp:</label>
+            <select id="upload-grade">
+                <option value="1">Lớp 1</option><option value="2">Lớp 2</option><option value="3">Lớp 3</option>
+                <option value="4">Lớp 4</option><option value="5">Lớp 5</option><option value="6">Lớp 6</option>
+                <option value="7">Lớp 7</option><option value="8">Lớp 8</option><option value="9">Lớp 9</option>
+                <option value="10">Lớp 10</option><option value="11">Lớp 11</option><option value="12">Lớp 12</option>
+            </select>
+        </div>
+        <div class="modal-btns">
+            <button class="btn-cancel" onclick="closeSaveModal()">Hủy</button>
+            <button class="btn-save" onclick="confirmSaveUpload()">Lưu</button>
+        </div>
+    </div>
+</div>
+
+<!-- PROMPT GENERATOR MODAL -->
+<div id="prompt-modal" class="modal-overlay">
+    <div class="modal-content prompt-content">
+        <h3>🪄 Tạo Lệnh (Prompt) Cho AI</h3>
+        
+        <div class="form-grid">
+            <div class="input-group">
+                <label>Chủ đề / Tên bài học:</label>
+                <input type="text" id="p-topic" placeholder="Vd: Lịch sử nhà Trần">
+            </div>
+            <div class="input-group">
+                <label>Lớp:</label>
+                <select id="p-grade">
+                    <option value="1">Lớp 1</option><option value="2">Lớp 2</option><option value="3">Lớp 3</option>
+                    <option value="4">Lớp 4</option><option value="5">Lớp 5</option><option value="6">Lớp 6</option>
+                    <option value="7">Lớp 7</option><option value="8">Lớp 8</option><option value="9">Lớp 9</option>
+                    <option value="10">Lớp 10</option><option value="11">Lớp 11</option><option value="12">Lớp 12</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Đối tượng HS:</label>
+                <input type="text" id="p-audience" value="Trung bình - Khá" placeholder="Vd: Yếu, Khá, Giỏi">
+            </div>
+            <div class="input-group">
+                <label>Số lượng câu hỏi:</label>
+                <input type="number" id="p-count" value="10" min="1" max="50">
+            </div>
+        </div>
+        
+        <h4 style="color:#dcdde1; margin-bottom: 5px; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">Ghi chú thời gian (giây) theo độ khó:</h4>
+        <div class="time-grid">
+            <div class="input-group">
+                <label>Dễ:</label>
+                <input type="number" id="p-time-easy" value="5">
+            </div>
+            <div class="input-group">
+                <label>Trung bình:</label>
+                <input type="number" id="p-time-med" value="10">
+            </div>
+            <div class="input-group">
+                <label>Khó:</label>
+                <input type="number" id="p-time-hard" value="15">
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label style="color:#fbc531;">👇 Kết quả Lệnh (Copy & Dán vào AI):</label>
+            <textarea id="p-result" readonly placeholder="Điền thông tin ở trên và bấm 'Tạo Lệnh' để xem kết quả..."></textarea>
+        </div>
+
+        <div class="modal-btns">
+            <button class="btn-cancel" onclick="closePromptModal()">Đóng</button>
+            <button class="btn-action" style="background:#fbc531; color:#2f3640; margin-bottom:0; font-weight:bold;" onclick="generatePrompt()">⚙️ Tạo Lệnh</button>
+            <button class="btn-save" onclick="copyPrompt()">📋 Copy Lệnh</button>
+        </div>
+    </div>
+</div>
+
+<!-- MENU LOBBY -->
+<div id="menu-screen">
+    <div class="menu-container">
+        <!-- Tree Panel -->
+        <div class="tree-panel">
+            <h2>Ngân Hàng Câu Hỏi</h2>
+            <div class="tree-scroll" id="tree-container">
+                <!-- Sẽ được render bằng JS -->
+            </div>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <div class="control-group">
+                <h3>Cài đặt đội chơi</h3>
+                <div class="input-group">
+                    <label>Tên Đội 1 (Trái - Xanh):</label>
+                    <input type="text" id="input-t1" value="Đội 1" placeholder="Nhập tên đội 1">
+                </div>
+                <div class="input-group">
+                    <label>Tên Đội 2 (Phải - Đỏ):</label>
+                    <input type="text" id="input-t2" value="Đội 2" placeholder="Nhập tên đội 2">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Quản lý dữ liệu</h3>
+                <button class="btn-action btn-prompt" onclick="openPromptModal()">🪄 Tạo Lệnh Nhờ AI Viết Bài</button>
+                <hr style="border:0; border-top:1px dashed rgba(255,255,255,0.2); margin: 15px 0;">
+                <input type="file" id="file-upload" accept=".json, .xlsx, .xls" style="display: none;" onchange="handleFileUpload(event)">
+                <button class="btn-action btn-upload" onclick="document.getElementById('file-upload').click()">📂 Tải File (JSON, Excel)</button>
+                <button class="btn-action btn-download" onclick="downloadTemplate()">⬇️ Tải JSON Mẫu</button> <button class="btn-action" style="background:#27ae60; color:white; padding: 10px; border-radius: 8px; font-weight: bold; border:none; cursor:pointer; margin-left: 5px;" onclick="downloadSampleExcel()">⬇️ Tải Excel Mẫu</button>
+            </div>
+
+            <div class="selected-info" id="selected-quiz-info">
+                Chưa chọn bài học nào
+            </div>
+            
+            <button class="btn-action btn-start" id="btn-start-game" disabled onclick="startGameFromMenu()">🚀 BẮT ĐẦU TRÒ CHƠI</button>
+        </div>
+    </div>
+</div>
+
+<!-- GAME WRAPPER -->
+<div id="game-wrapper">
+    <header>
+        <div class="header-left">
+            <button class="icon-btn" id="btn-home" title="Về Menu" onclick="returnToMenu()">🏠</button>
+            <button class="icon-btn" id="btn-pause" title="Tạm dừng / Tiếp tục (Phím P)" onclick="togglePause()">⏸️ <small style="font-size: 0.6em; margin-left: 0.5cqw;">(P)</small></button>
+            <div class="font-controls">
+                <button class="icon-btn" id="btn-font-dec" title="Giảm cỡ chữ">A-</button>
+                <button class="icon-btn" id="btn-font-inc" title="Tăng cỡ chữ">A+</button>
+            </div>
+            <span class="score-t1" id="score-t1">0</span>
+        </div>
+        <div class="header-title" id="game-main-title">ĐẠI CHIẾN CẦU TUYẾT</div>
+        <div class="score-board">
+            <div class="time-controls">
+                <button class="time-btn" onclick="addTime(30)" title="Cộng 30 giây">+30s</button>
+                <button class="time-btn" onclick="addTime(60)" title="Cộng 1 phút">+1m</button>
+                <button class="time-btn" onclick="addTime(180)" title="Cộng 3 phút">+3m</button>
+            </div>
+            <div class="timer" id="timer">12</div>
+            <span class="score-t2" id="score-t2">0</span>
+            <button class="icon-btn" id="mute-btn" title="Âm thanh">🔊</button>
+        </div>
+    </header>
+
+    <main>
+        <!-- TEAM 1 PANEL -->
+        <section class="panel panel-t1" id="panel-t1">
+            <div class="panel-header">
+                <span id="header-t1">Team 1</span>
+                <span id="hp-text-t1" class="hp-badge">HP: 100/100</span>
+            </div>
+            <div class="question-box">
+                <div class="question-text" id="q-text-t1">Loading...</div>
+            </div>
+            <div class="options-grid" id="options-t1"></div>
+            <div class="feedback-overlay" id="feedback-t1">
+                <div class="feedback-icon" id="icon-t1">✓</div>
+                <div class="explanation-text" id="exp-t1"></div>
+            </div>
+        </section>
+
+        <!-- MIDDLE ARENA -->
+        <section class="arena">
+            <svg class="svg-container" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet">
+                <!-- Sky Background Elements -->
+                <circle cx="150" cy="100" r="50" fill="#ecf0f1" opacity="0.6"/>
+                <circle cx="200" cy="120" r="60" fill="#ecf0f1" opacity="0.6"/>
+                <circle cx="850" cy="90" r="40" fill="#ecf0f1" opacity="0.6"/>
+
+                <!-- Snowy Ground -->
+                <rect x="-10" y="450" width="1020" height="160" fill="#dfe6e9" />
+                <path d="M -10 450 Q 250 400 500 450 T 1020 450" fill="#dfe6e9" stroke="#b2bec3" stroke-width="2"/>
+
+                <!-- HP BARS ABOVE CASTLES -->
+                <rect x="50" y="160" width="200" height="15" fill="#c23616" rx="5"/>
+                <rect id="hp-bar-t1" x="50" y="160" width="200" height="15" fill="#4cd137" rx="5" style="transition: width 0.3s ease-out;"/>
+                <rect x="750" y="160" width="200" height="15" fill="#c23616" rx="5"/>
+                <rect id="hp-bar-t2" x="750" y="160" width="200" height="15" fill="#4cd137" rx="5" style="transition: width 0.3s ease-out;"/>
+
+                <!-- CASTLE TEAM 1 (BLUE) -->
+                <g id="castle-t1" class="castle" transform="translate(50, 200)">
+                    <!-- Base -->
+                    <rect x="0" y="100" width="200" height="150" fill="#0984e3" stroke="#2d3436" stroke-width="3"/>
+                    <!-- Door -->
+                    <path d="M 75 250 L 75 200 A 25 25 0 0 1 125 200 L 125 250 Z" fill="#2d3436"/>
+                    <!-- Towers -->
+                    <rect x="-20" y="50" width="60" height="200" fill="#74b9ff" stroke="#2d3436" stroke-width="3"/>
+                    <polygon points="-30,50 10,0 50,50" fill="#00a8ff" stroke="#2d3436" stroke-width="3"/>
+                    <rect x="160" y="50" width="60" height="200" fill="#74b9ff" stroke="#2d3436" stroke-width="3"/>
+                    <polygon points="150,50 190,0 230,50" fill="#00a8ff" stroke="#2d3436" stroke-width="3"/>
+                    <!-- Battlements (Top of Base) -->
+                    <rect x="20" y="80" width="25" height="20" fill="#0984e3" stroke="#2d3436" stroke-width="3"/>
+                    <rect x="85" y="80" width="25" height="20" fill="#0984e3" stroke="#2d3436" stroke-width="3"/>
+                    <rect x="150" y="80" width="25" height="20" fill="#0984e3" stroke="#2d3436" stroke-width="3"/>
+                    <!-- Flag -->
+                    <line x1="10" y1="0" x2="10" y2="-40" stroke="#2d3436" stroke-width="3"/>
+                    <polygon points="10,-40 40,-25 10,-10" fill="#0984e3"/>
+                </g>
+
+                <!-- CASTLE TEAM 2 (RED) -->
+                <g id="castle-t2" class="castle" transform="translate(750, 200)">
+                    <!-- Base -->
+                    <rect x="0" y="100" width="200" height="150" fill="#d63031" stroke="#2d3436" stroke-width="3"/>
+                    <!-- Door -->
+                    <path d="M 75 250 L 75 200 A 25 25 0 0 1 125 200 L 125 250 Z" fill="#2d3436"/>
+                    <!-- Towers -->
+                    <rect x="-20" y="50" width="60" height="200" fill="#ff7675" stroke="#2d3436" stroke-width="3"/>
+                    <polygon points="-30,50 10,0 50,50" fill="#d63031" stroke="#2d3436" stroke-width="3"/>
+                    <rect x="160" y="50" width="60" height="200" fill="#ff7675" stroke="#2d3436" stroke-width="3"/>
+                    <polygon points="150,50 190,0 230,50" fill="#d63031" stroke="#2d3436" stroke-width="3"/>
+                    <!-- Battlements -->
+                    <rect x="20" y="80" width="25" height="20" fill="#d63031" stroke="#2d3436" stroke-width="3"/>
+                    <rect x="85" y="80" width="25" height="20" fill="#d63031" stroke="#2d3436" stroke-width="3"/>
+                    <rect x="150" y="80" width="25" height="20" fill="#d63031" stroke="#2d3436" stroke-width="3"/>
+                    <!-- Flag -->
+                    <line x1="190" y1="0" x2="190" y2="-40" stroke="#2d3436" stroke-width="3"/>
+                    <polygon points="190,-40 160,-25 190,-10" fill="#d63031"/>
+                </g>
+
+                <!-- PROJECTILES (SNOWBALLS) -->
+                <circle id="proj-t1" cx="250" cy="300" r="15" fill="#fff" stroke="#b2bec3" stroke-width="3" opacity="0" />
+                <circle id="proj-t2" cx="750" cy="300" r="15" fill="#fff" stroke="#b2bec3" stroke-width="3" opacity="0" />
+                
+                <!-- HIT EXPLOSIONS -->
+                <circle id="exp-t1" cx="150" cy="300" r="40" fill="#ff9f43" opacity="0" />
+                <circle id="exp-t2" cx="850" cy="300" r="40" fill="#ff9f43" opacity="0" />
+            </svg>
+        </section>
+
+        <!-- TEAM 2 PANEL -->
+        <section class="panel panel-t2" id="panel-t2">
+            <div class="panel-header">
+                <span id="hp-text-t2" class="hp-badge">HP: 100/100</span>
+                <span id="header-t2">Team 2</span>
+            </div>
+            <div class="question-box">
+                <div class="question-text" id="q-text-t2">Loading...</div>
+            </div>
+            <div class="options-grid" id="options-t2"></div>
+            <div class="feedback-overlay" id="feedback-t2">
+                <div class="feedback-icon" id="icon-t2">✓</div>
+                <div class="explanation-text" id="exp-t2"></div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- PAUSE OVERLAY -->
+    <div id="pause-overlay">TẠM DỪNG</div>
+
+    <!-- WIN OVERLAY -->
+    <div id="win-overlay">
+        <div class="win-title" id="win-msg">TEAM 1 WINS!</div>
+        <div class="win-buttons">
+            <button id="btn-play-again">Chơi Lại Bài Này</button>
+            <button id="btn-back-menu" onclick="returnToMenu()">Về Menu Chính</button>
+        </div>
+    </div>
+    
+    <!-- TUTORIAL OVERLAY -->
+    <div id="tutorial-overlay">
+        <div class="tutorial-content">
+            <h2>🏰 HƯỚNG DẪN LUẬT CHƠI</h2>
+            <ul class="tutorial-list">
+                <li><span>⚔️</span> <b>Mục tiêu:</b> Phá hủy lâu đài của đối phương bằng cách bắn cầu tuyết. Đội nào hết máu (HP) trước sẽ thua!</li>
+                <li><span>✅</span> <b>Tấn công:</b> Trả lời đúng để ném tuyết sang lâu đài địch (-20 HP).</li>
+                <li><span>❌</span> <b>Sụp đổ:</b> Trả lời sai, lâu đài của bạn sẽ tự sụp đổ và trừ máu phòng thủ (-10 HP).</li>
+                <li><span>⏱️</span> <b>Thời gian:</b> Mỗi câu hỏi có giới hạn thời gian, đừng để hết giờ.</li>
+                <li><span>⏸️</span> <b>Phím tắt:</b> Nhấn phím <b>P</b> để Tạm dừng / Tiếp tục.</li>
+            </ul>
+            <button id="btn-start-real-game" onclick="startRealGame()">BẢO VỆ LÂU ĐÀI! 🛡️</button>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    function parseExcelToJSON(file, callback) {
+        if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+                parseExcelToJSON(file, function(err, parsedData) {
+                    if (err) { alert('Lỗi đọc Excel!'); return; }
+                    const e = { target: { result: JSON.stringify(parsedData) } };
+                    try {
+                        const parsedData2 = JSON.parse(e.target.result);
+                        if (!Array.isArray(parsedData2) || parsedData2.length === 0) throw new Error("File phải chứa một mảng.");
+                        pendingUploadData = parsedData2;
+                        document.getElementById('upload-lesson-name').value = file.name.replace(/\.[^/.]+$/, "");
+                        document.getElementById('save-modal').classList.add('show');
+                    } catch (error) { showToast('Lỗi đọc file: ' + error.message, 'error'); }
+                });
+                event.target.value = "";
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+            try {
+                const data = e.target.result;
+                const wb = XLSX.read(data, { type: 'binary' });
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+                
+                let questions = [];
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row || row.length < 6) continue;
+                    if (String(row[0]).toLowerCase().includes('câu hỏi') || String(row[1]).toLowerCase().includes('đáp án')) continue;
+                    
+                    
+                        const ansMap = {1: 'A', 2: 'B', 3: 'C', 4: 'D'};
+                        questions.push({
+                            id: i,
+                            question: String(row[0]),
+                            options: { A: String(row[1]), B: String(row[2]), C: String(row[3]), D: String(row[4]) },
+                            answer: ansMap[parseInt(row[5], 10)],
+                            explain: ""
+                        });
+                        
+                }
+                callback(null, questions);
+            } catch (error) {
+                callback(error, null);
+            }
+        };
+        reader.readAsBinaryString(file);
+    }
+    
+
+// --- TOAST SYSTEM ---
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = message;
+    if (type === 'error') toast.style.borderLeftColor = '#e84118';
+    if (type === 'success') toast.style.borderLeftColor = '#4cd137';
+    
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// --- PROMPT GENERATOR SYSTEM ---
+const elPrompt = {
+    modal: document.getElementById('prompt-modal'),
+    topic: document.getElementById('p-topic'),
+    grade: document.getElementById('p-grade'),
+    audience: document.getElementById('p-audience'),
+    count: document.getElementById('p-count'),
+    timeE: document.getElementById('p-time-easy'),
+    timeM: document.getElementById('p-time-med'),
+    timeH: document.getElementById('p-time-hard'),
+    result: document.getElementById('p-result')
+};
+
+function openPromptModal() { elPrompt.modal.classList.add('show'); }
+function closePromptModal() { elPrompt.modal.classList.remove('show'); }
+
+function generatePrompt() {
+    const topic = elPrompt.topic.value.trim() || "[Chủ đề của bạn]";
+    const grade = elPrompt.grade.value;
+    const audience = elPrompt.audience.value.trim() || "học sinh";
+    const count = elPrompt.count.value || 10;
+    const te = elPrompt.timeE.value || 5;
+    const tm = elPrompt.timeM.value || 10;
+    const th = elPrompt.timeH.value || 15;
+
+    const promptText = `Hãy đóng vai là một giáo viên kinh nghiệm, biên soạn ngân hàng câu hỏi trắc nghiệm về chủ đề: "${topic}" dành cho học sinh Lớp ${grade}.
+Đối tượng học sinh: ${audience}.
+Số lượng yêu cầu: ${count} câu hỏi.
+
+Yêu cầu phân bổ độ khó dựa trên thời gian suy nghĩ dự kiến:
+- Mức độ Dễ: Học sinh có thể đọc hiểu và trả lời trong khoảng ${te} giây.
+- Mức độ Trung bình: Trả lời trong khoảng ${tm} giây.
+- Mức độ Khó: Cần suy nghĩ sâu, tính toán hoặc tư duy trong khoảng ${th} giây.
+
+BẮT BUỘC: Bạn phải trả về kết quả ĐÚNG định dạng mảng JSON (Array of Objects) chính xác theo mẫu dưới đây. KHÔNG giải thích, KHÔNG thêm bất kỳ văn bản markdown (như \`\`\`json) ở đầu hay cuối đoạn JSON để tôi có thể sao chép trực tiếp vào phần mềm.
+
+[
+    {
+        "id": 1,
+        "question": "Nội dung câu hỏi?",
+        "options": {
+            "A": "Đáp án A",
+            "B": "Đáp án B",
+            "C": "Đáp án C",
+            "D": "Đáp án D"
+        },
+        "answer": "A",
+        "explain": "Giải thích ngắn gọn lý do chọn đáp án này."
+    }
+]`;
+
+    elPrompt.result.value = promptText;
+}
+
+function copyPrompt() {
+    if (!elPrompt.result.value) {
+        showToast('Vui lòng tạo lệnh trước khi Copy!', 'error');
+        return;
+    }
+    elPrompt.result.select();
+    elPrompt.result.setSelectionRange(0, 99999); 
+    try {
+        document.execCommand('copy');
+        showToast('Đã copy Lệnh vào Clipboard!', 'success');
+    } catch (err) {
+        showToast('Lỗi khi copy, vui lòng copy thủ công.', 'error');
+    }
+}
+
+// --- LOBBY/DATA MANAGEMENT ---
+let quizBank = JSON.parse(localStorage.getItem('tug_quiz_bank'));
+if (!quizBank) {
+    quizBank = {};
+    for (let i = 1; i <= 12; i++) quizBank[i] = [];
+}
+
+let activeQuizData = null;
+let pendingUploadData = null;
+
+const elMenu = {
+    screen: document.getElementById('menu-screen'),
+    gameWrapper: document.getElementById('game-wrapper'),
+    treeContainer: document.getElementById('tree-container'),
+    btnStart: document.getElementById('btn-start-game'),
+    infoBox: document.getElementById('selected-quiz-info'),
+    saveModal: document.getElementById('save-modal'),
+    uploadName: document.getElementById('upload-lesson-name'),
+    uploadGrade: document.getElementById('upload-grade'),
+    inputT1: document.getElementById('input-t1'),
+    inputT2: document.getElementById('input-t2'),
+    headerT1: document.getElementById('header-t1'),
+    headerT2: document.getElementById('header-t2'),
+    gameTitle: document.getElementById('game-main-title')
+};
+
+function saveBank() {
+    localStorage.setItem('tug_quiz_bank', JSON.stringify(quizBank));
+}
+
+function renderTree() {
+    elMenu.treeContainer.innerHTML = '';
+    for (let i = 1; i <= 12; i++) {
+        const quizzes = quizBank[i] || [];
+        const details = document.createElement('details');
+        details.className = 'grade-details';
+        const summary = document.createElement('summary');
+        summary.className = 'grade-summary';
+        summary.textContent = `Lớp ${i} (${quizzes.length} bài)`;
+        details.appendChild(summary);
+        
+        const ul = document.createElement('ul');
+        ul.className = 'quiz-list';
+        
+        quizzes.forEach((quiz) => {
+            const li = document.createElement('li');
+            li.className = 'quiz-item';
+            if (activeQuizData && activeQuizData.id === quiz.id) li.classList.add('active');
+            
+            const span = document.createElement('span');
+            span.textContent = quiz.name;
+            span.onclick = () => selectQuiz(quiz, li);
+            
+            const delBtn = document.createElement('button');
+            delBtn.className = 'btn-delete';
+            delBtn.textContent = 'Xóa';
+            delBtn.onclick = (e) => {
+                e.stopPropagation();
+                deleteQuiz(i, quiz.id);
+            };
+            
+            li.appendChild(span);
+            li.appendChild(delBtn);
+            ul.appendChild(li);
+        });
+        
+        details.appendChild(ul);
+        elMenu.treeContainer.appendChild(details);
+    }
+}
+
+function selectQuiz(quiz, liElement) {
+    activeQuizData = quiz;
+    document.querySelectorAll('.quiz-item').forEach(el => el.classList.remove('active'));
+    if (liElement) liElement.classList.add('active');
+    elMenu.infoBox.textContent = `Đã chọn: ${quiz.name} (${quiz.questions.length} câu hỏi)`;
+    elMenu.btnStart.disabled = false;
+}
+
+function deleteQuiz(grade, quizId) {
+    quizBank[grade] = quizBank[grade].filter(q => q.id !== quizId);
+    if (activeQuizData && activeQuizData.id === quizId) {
+        activeQuizData = null;
+        elMenu.infoBox.textContent = "Chưa chọn bài học nào";
+        elMenu.btnStart.disabled = true;
+    }
+    saveBank();
+    renderTree();
+    showToast('Đã xóa bài học', 'success');
+}
+
+// --- XỬ LÝ UPLOAD JSON ---
+function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const parsedData = JSON.parse(e.target.result);
+            if (!Array.isArray(parsedData) || parsedData.length === 0) throw new Error("File JSON phải chứa một mảng (array).");
+            if (!parsedData[0].question || !parsedData[0].options || !parsedData[0].answer) throw new Error("Sai cấu trúc JSON.");
+            
+            pendingUploadData = parsedData;
+            elMenu.uploadName.value = file.name.replace('.json', '');
+            elMenu.saveModal.classList.add('show');
+            
+        } catch (error) {
+            showToast('Lỗi đọc file: ' + error.message, 'error');
+        }
+        event.target.value = "";
+    };
+    reader.readAsText(file);
+}
+
+function closeSaveModal() {
+    elMenu.saveModal.classList.remove('show');
+    pendingUploadData = null;
+}
+
+function confirmSaveUpload() {
+    if (!pendingUploadData) return;
+    const name = elMenu.uploadName.value.trim();
+    const grade = elMenu.uploadGrade.value;
+    
+    if (!name) { showToast("Vui lòng nhập tên bài học!", "error"); return; }
+
+    const newQuiz = {
+        id: 'quiz_' + Date.now(),
+        name: name,
+        questions: pendingUploadData
+    };
+
+    if (!quizBank[grade]) quizBank[grade] = [];
+    quizBank[grade].push(newQuiz);
+    
+    saveBank(); renderTree(); closeSaveModal();
+    showToast(`Đã lưu "${name}" vào Lớp ${grade}`, 'success');
+    
+    const summaries = document.querySelectorAll('.grade-summary');
+    if(summaries[grade-1]) summaries[grade-1].parentElement.open = true;
+}
+
+function downloadTemplate() {
+    const template = [
+        {
+            "id": 1,
+            "question": "Câu hỏi mẫu: 1 + 1 bằng mấy?",
+            "options": { "A": "1", "B": "2", "C": "3", "D": "4" },
+            "answer": "B",
+            "explain": "Giải thích: 1 + 1 = 2 theo toán học cơ bản."
+        }
+    ];
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(template, null, 4));
+    const dlAnchorElem = document.createElement('a');
+    dlAnchorElem.setAttribute("href", dataStr);
+    dlAnchorElem.setAttribute("download", "Mau_Cau_Hoi.json");
+    dlAnchorElem.click();
+}
+
+function startGameFromMenu() {
+    if (!activeQuizData || activeQuizData.questions.length === 0) { showToast("Dữ liệu trống!", "error"); return; }
+    
+    const t1Name = elMenu.inputT1.value.trim() || "Đội 1";
+    const t2Name = elMenu.inputT2.value.trim() || "Đội 2";
+    
+    elMenu.headerT1.textContent = t1Name; elMenu.headerT2.textContent = t2Name;
+    elMenu.gameTitle.textContent = "ĐẠI CHIẾN: " + activeQuizData.name.toUpperCase();
+    QUESTION_BANK = [...activeQuizData.questions];
+    
+    state.team1.name = t1Name;
+    state.team2.name = t2Name;
+    
+    elMenu.screen.style.display = 'none'; elMenu.gameWrapper.style.display = 'flex';
+    document.getElementById('tutorial-overlay').classList.add('show');
+    
+    if (!isAudioInitialized) initAudio();
+}
+
+function startRealGame() {
+    playSFX('click');
+    document.getElementById('tutorial-overlay').classList.remove('show');
+    initGame();
+}
+
+function returnToMenu() {
+    elMenu.screen.style.display = 'flex'; elMenu.gameWrapper.style.display = 'none';
+    state.isGameOver = true; clearInterval(state.timerInterval);
+    if(state.isPaused) togglePause();
+    if(audioCtx) audioCtx.suspend();
+}
+
+// --- FONT SCALING SYSTEM ---
+let fontScale = 1;
+const MAX_FONT_SCALE = 1.6;
+const MIN_FONT_SCALE = 0.6;
+
+document.getElementById('btn-font-inc').addEventListener('click', () => {
+    if (fontScale < MAX_FONT_SCALE) {
+        fontScale += 0.1;
+        document.getElementById('game-wrapper').style.setProperty('--font-scale', fontScale);
+    }
+});
+
+document.getElementById('btn-font-dec').addEventListener('click', () => {
+    if (fontScale > MIN_FONT_SCALE) {
+        fontScale -= 0.1;
+        document.getElementById('game-wrapper').style.setProperty('--font-scale', fontScale);
+    }
+});
+
+// ==========================================
+// --- GAME LOGIC (CASTLE DEFENSE) ---
+// ==========================================
+
+let QUESTION_BANK = [];
+const state = {
+    roundIndex: 0, qSequenceT1: [], qSequenceT2: [],
+    timeLeft: 12, timerInterval: null,
+    isRoundActive: false, isGameOver: false, isPaused: false,
+    audioMuted: localStorage.getItem('tug_muted') === 'true',
+    // Máu của các lâu đài, max 100. projActive dùng cho đồ hoạ đạn bay.
+    team1: { name: "Đội 1", score: 0, selectedOption: null, locked: false, isCorrect: null, hp: 100, projX: 250, projY: 300, projActive: false },
+    team2: { name: "Đội 2", score: 0, selectedOption: null, locked: false, isCorrect: null, hp: 100, projX: 750, projY: 300, projActive: false }
+};
+
+const el = {
+    scoreT1: document.getElementById('score-t1'), scoreT2: document.getElementById('score-t2'), timer: document.getElementById('timer'),
+    qTextT1: document.getElementById('q-text-t1'), qTextT2: document.getElementById('q-text-t2'),
+    optT1: document.getElementById('options-t1'), optT2: document.getElementById('options-t2'),
+    feedT1: document.getElementById('feedback-t1'), feedT2: document.getElementById('feedback-t2'),
+    iconT1: document.getElementById('icon-t1'), iconT2: document.getElementById('icon-t2'),
+    expT1: document.getElementById('exp-t1'), expT2: document.getElementById('exp-t2'),
+    panelT1: document.getElementById('panel-t1'), panelT2: document.getElementById('panel-t2'),
+    castle1: document.getElementById('castle-t1'), castle2: document.getElementById('castle-t2'),
+    hpText1: document.getElementById('hp-text-t1'), hpText2: document.getElementById('hp-text-t2'),
+    hpBar1: document.getElementById('hp-bar-t1'), hpBar2: document.getElementById('hp-bar-t2'),
+    proj1: document.getElementById('proj-t1'), proj2: document.getElementById('proj-t2'),
+    visualExp1: document.getElementById('exp-t1'), visualExp2: document.getElementById('exp-t2'),
+    winOverlay: document.getElementById('win-overlay'), winMsg: document.getElementById('win-msg'),
+    btnPlayAgain: document.getElementById('btn-play-again'), btnMute: document.getElementById('mute-btn'),
+    btnPause: document.getElementById('btn-pause'), pauseOverlay: document.getElementById('pause-overlay')
+};
+
+let audioCtx; let bgmGain, sfxGain; let isAudioInitialized = false;
+
+function initAudio() {
+    if (isAudioInitialized) { if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); return; }
+    try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        bgmGain = audioCtx.createGain(); sfxGain = audioCtx.createGain();
+        bgmGain.connect(audioCtx.destination); sfxGain.connect(audioCtx.destination);
+        updateMuteState(); playProceduralBGM(); isAudioInitialized = true;
+    } catch (e) { console.warn("WebAudio err", e); }
+}
+
+function updateMuteState() {
+    el.btnMute.textContent = state.audioMuted ? '🔇' : '🔊';
+    if(audioCtx) { bgmGain.gain.value = state.audioMuted ? 0 : 0.15; sfxGain.gain.value = state.audioMuted ? 0 : 0.5; }
+}
+
+el.btnMute.addEventListener('click', () => {
+    state.audioMuted = !state.audioMuted; localStorage.setItem('tug_muted', state.audioMuted);
+    if (!isAudioInitialized && !state.audioMuted) initAudio(); updateMuteState();
+});
+
+function playProceduralBGM() {
+    if(!audioCtx) return; let nextNoteTime = audioCtx.currentTime + 0.1; let step = 0;
+    function scheduler() {
+        while (nextNoteTime < audioCtx.currentTime + 0.1) {
+            // Nhạc nền dồn dập (Battle drums)
+            if (step % 8 === 0 || step % 8 === 3) {
+                let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(bgmGain);
+                osc.frequency.setValueAtTime(80, nextNoteTime); osc.frequency.exponentialRampToValueAtTime(0.01, nextNoteTime + 0.5);
+                gain.gain.setValueAtTime(0.9, nextNoteTime); gain.gain.exponentialRampToValueAtTime(0.01, nextNoteTime + 0.5);
+                osc.start(nextNoteTime); osc.stop(nextNoteTime + 0.5);
+            }
+            if (step % 4 === 2) {
+                let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
+                osc.type = 'square'; osc.connect(gain); gain.connect(bgmGain);
+                osc.frequency.setValueAtTime(150, nextNoteTime); gain.gain.setValueAtTime(0.1, nextNoteTime); gain.gain.exponentialRampToValueAtTime(0.01, nextNoteTime + 0.1);
+                osc.start(nextNoteTime); osc.stop(nextNoteTime + 0.1);
+            }
+            nextNoteTime += 0.20; step = (step + 1) % 16;
+        }
+        if(!state.isGameOver) requestAnimationFrame(scheduler);
+    }
+    scheduler();
+}
+
+function playSFX(type) {
+    if(!audioCtx || state.audioMuted) return;
+    let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain(); osc.connect(gain); gain.connect(sfxGain); let t = audioCtx.currentTime;
+    if (type === 'click') { 
+        osc.type = 'sine'; osc.frequency.setValueAtTime(600, t); gain.gain.setValueAtTime(0.5, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1); osc.start(); osc.stop(t + 0.1); 
+    } 
+    else if (type === 'correct') { 
+        osc.type = 'triangle'; osc.frequency.setValueAtTime(400, t); osc.frequency.setValueAtTime(600, t + 0.1); gain.gain.setValueAtTime(0.8, t); gain.gain.linearRampToValueAtTime(0, t + 0.3); osc.start(); osc.stop(t + 0.3); 
+    } 
+    else if (type === 'wrong') { 
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(200, t); osc.frequency.exponentialRampToValueAtTime(50, t + 0.3); gain.gain.setValueAtTime(0.8, t); gain.gain.linearRampToValueAtTime(0, t + 0.3); osc.start(); osc.stop(t + 0.3); 
+    } 
+    else if (type === 'shoot') { 
+        // Whoosh sound (Snowball throw)
+        osc.type = 'sine'; osc.frequency.setValueAtTime(300, t); osc.frequency.exponentialRampToValueAtTime(50, t + 0.3);
+        gain.gain.setValueAtTime(0.5, t); gain.gain.linearRampToValueAtTime(0, t + 0.3);
+        osc.start(t); osc.stop(t + 0.3); 
+    }
+    else if (type === 'hit' || type === 'crumble') {
+        // Boom/Crumble sound
+        let bufferSize = audioCtx.sampleRate * 0.4;
+        let buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        let data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+        let noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+        let filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass'; filter.frequency.value = 500;
+        noise.connect(filter); filter.connect(gain);
+        gain.gain.setValueAtTime(0.8, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+        noise.start(t);
+    }
+}
+
+function togglePause() {
+    if (state.isGameOver || !state.isRoundActive) return;
+    state.isPaused = !state.isPaused;
+    if (state.isPaused) {
+        clearInterval(state.timerInterval);
+        el.btnPause.innerHTML = '▶️ <small style="font-size: 0.6em; margin-left: 0.5cqw;">(P)</small>';
+        el.pauseOverlay.classList.add('show');
+        if (audioCtx && audioCtx.state === 'running') audioCtx.suspend();
+    } else {
+        el.btnPause.innerHTML = '⏸️ <small style="font-size: 0.6em; margin-left: 0.5cqw;">(P)</small>';
+        el.pauseOverlay.classList.remove('show');
+        if (audioCtx && audioCtx.state === 'suspended' && !state.audioMuted) audioCtx.resume();
+        state.timerInterval = setInterval(() => { state.timeLeft--; updateTimerDisplay(); if (state.timeLeft <= 0) evaluateRound(); }, 1000);
+    }
+}
+
+function initGame() {
+    let baseIndices = Array.from({length: QUESTION_BANK.length}, (_, i) => i);
+    for (let i = baseIndices.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [baseIndices[i], baseIndices[j]] = [baseIndices[j], baseIndices[i]]; }
+    state.qSequenceT1 = [...baseIndices]; let half = Math.floor(QUESTION_BANK.length / 2);
+    if(QUESTION_BANK.length === 1) { state.qSequenceT2 = [...state.qSequenceT1]; } else { state.qSequenceT2 = [...state.qSequenceT1.slice(half), ...state.qSequenceT1.slice(0, half)]; }
+
+    state.roundIndex = 0; 
+    state.isGameOver = false; state.isPaused = false;
+    
+    // Reset Team states for Castle Defense
+    [state.team1, state.team2].forEach(t => {
+        t.score = 0; t.hp = 100; t.locked = false; t.projActive = false;
+    });
+    state.team1.projX = 250; state.team2.projX = 750;
+    
+    el.btnPause.innerHTML = '⏸️ <small style="font-size: 0.6em; margin-left: 0.5cqw;">(P)</small>';
+    el.pauseOverlay.classList.remove('show');
+    
+    // Ẩn đạn & vụ nổ
+    el.proj1.setAttribute('opacity', '0'); el.proj2.setAttribute('opacity', '0');
+    el.visualExp1.setAttribute('opacity', '0'); el.visualExp2.setAttribute('opacity', '0');
+
+    updateScores(); updateHpUI(); el.winOverlay.classList.remove('show'); startRound();
+    if(!window.animationStarted) { requestAnimationFrame(animationLoop); window.animationStarted = true; }
+}
+
+function startRound() {
+    if (state.isGameOver) return;
+    state.isRoundActive = true; 
+    state.timeLeft = 12; updateTimerDisplay(); 
+    el.feedT1.classList.remove('show'); el.feedT2.classList.remove('show');
+    
+    const q1 = QUESTION_BANK[state.qSequenceT1[state.roundIndex]]; 
+    const q2 = QUESTION_BANK[state.qSequenceT2[state.roundIndex]];
+    
+    el.qTextT1.textContent = q1.question; 
+    el.qTextT2.textContent = q2.question;
+
+    state.team1.locked = false; state.team1.selectedOption = null; state.team1.isCorrect = null;
+    renderOptions(el.optT1, q1.options, 1);
+
+    state.team2.locked = false; state.team2.selectedOption = null; state.team2.isCorrect = null;
+    renderOptions(el.optT2, q2.options, 2);
+
+    clearInterval(state.timerInterval);
+    state.timerInterval = setInterval(() => { state.timeLeft--; updateTimerDisplay(); if (state.timeLeft <= 0) evaluateRound(); }, 1000);
+}
+
+function renderOptions(container, optionsObj, teamNum) {
+    container.innerHTML = '';
+    for (const [key, value] of Object.entries(optionsObj)) {
+        const btn = document.createElement('button'); btn.className = 'btn-option'; btn.textContent = `${key}: ${value}`; btn.dataset.key = key;
+        btn.addEventListener('click', () => handleOptionSelect(teamNum, key));
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); handleOptionSelect(teamNum, key); }, {passive: false});
+        container.appendChild(btn);
+    }
+}
+
+function handleOptionSelect(teamNum, optionKey) {
+    if (!state.isRoundActive || state.isPaused) return; 
+    if (!isAudioInitialized) initAudio();
+    const teamState = teamNum === 1 ? state.team1 : state.team2; if (teamState.locked) return;
+    
+    playSFX('click'); teamState.selectedOption = optionKey;
+    const container = teamNum === 1 ? el.optT1 : el.optT2;
+    Array.from(container.children).forEach(btn => { btn.classList.remove('selected'); if (btn.dataset.key === optionKey) btn.classList.add('selected'); });
+
+    setTimeout(() => {
+        if (!state.isRoundActive || state.isPaused) return; 
+        teamState.locked = true; 
+        Array.from(container.children).forEach(btn => btn.disabled = true);
+        if (state.team1.locked && state.team2.locked) evaluateRound();
+    }, 300);
+}
+
+function evaluateRound() {
+    clearInterval(state.timerInterval); if (!state.isRoundActive) return; state.isRoundActive = false;
+    
+    const q1 = QUESTION_BANK[state.qSequenceT1[state.roundIndex]]; 
+    const q2 = QUESTION_BANK[state.qSequenceT2[state.roundIndex]];
+
+    let t1IsShooting = false; let t2IsShooting = false;
+
+    // T1 Evaluation
+    if (state.team1.selectedOption === q1.answer) { 
+        state.team1.isCorrect = true; state.team1.score += 10;
+        state.team2.hp -= 20; // Bắn đối phương
+        t1IsShooting = true;
+    } else { 
+        state.team1.isCorrect = false;
+        state.team1.hp -= 10; // Tự sụp
+        triggerCastleHit(1, true); // True = self hit
+    }
+    showFeedback(1, q1);
+
+    // T2 Evaluation
+    if (state.team2.selectedOption === q2.answer) { 
+        state.team2.isCorrect = true; state.team2.score += 10;
+        state.team1.hp -= 20; // Bắn đối phương
+        t2IsShooting = true;
+    } else { 
+        state.team2.isCorrect = false; 
+        state.team2.hp -= 10; // Tự sụp
+        triggerCastleHit(2, true); 
+    }
+    showFeedback(2, q2);
+
+    // Cập nhật HP logic nhưng không qua vạch 0
+    if (state.team1.hp < 0) state.team1.hp = 0;
+    if (state.team2.hp < 0) state.team2.hp = 0;
+
+    // Kích hoạt hoạt ảnh bắn đạn
+    if (t1IsShooting) { state.team1.projActive = true; state.team1.projX = 250; playSFX('shoot'); }
+    if (t2IsShooting) { state.team2.projActive = true; state.team2.projX = 750; playSFX('shoot'); }
+
+    // Chờ 0.5s cho đạn bay xong rồi mới update UI máu và check Win
+    setTimeout(() => {
+        updateScores(); updateHpUI(); checkWinCondition();
+        if (!state.isGameOver) {
+            setTimeout(() => { state.roundIndex = (state.roundIndex + 1) % QUESTION_BANK.length; startRound(); }, 2500);
+        }
+    }, 500); // 0.5s là thời gian ước tính đạn chạm đích
+}
+
+function triggerCastleHit(team, isSelfDamage) {
+    const castle = team === 1 ? el.castle1 : el.castle2;
+    const exp = team === 1 ? el.visualExp1 : el.visualExp2;
+    
+    if (isSelfDamage) playSFX('crumble');
+    else playSFX('hit');
+
+    // Rung lâu đài
+    castle.classList.remove('shake-fx'); void castle.offsetWidth; castle.classList.add('shake-fx');
+    
+    // Bật hiệu ứng nổ nhỏ
+    exp.setAttribute('opacity', '0.8');
+    setTimeout(() => { exp.setAttribute('opacity', '0'); }, 200);
+}
+
+function showFeedback(teamNum, qData) {
+    const teamState = teamNum === 1 ? state.team1 : state.team2; 
+    const container = teamNum === 1 ? el.optT1 : el.optT2; 
+    const overlay = teamNum === 1 ? el.feedT1 : el.feedT2; 
+    const icon = teamNum === 1 ? el.iconT1 : el.iconT2; 
+    const exp = teamNum === 1 ? el.expT1 : el.expT2; 
+    const panel = teamNum === 1 ? el.panelT1 : el.panelT2;
+    
+    Array.from(container.children).forEach(btn => { 
+        if (btn.dataset.key === qData.answer) btn.classList.add('correct'); 
+        else if (btn.dataset.key === teamState.selectedOption) btn.classList.add('wrong'); 
+        btn.disabled = true; 
+    });
+    exp.textContent = qData.explain || "Không có giải thích";
+    if (teamState.isCorrect) { 
+        icon.textContent = '✓'; icon.className = 'feedback-icon icon-correct'; playSFX('correct'); 
+    } else { 
+        icon.textContent = '✕'; icon.className = 'feedback-icon icon-wrong'; playSFX('wrong'); 
+        if (panel) { panel.classList.remove('shake'); void panel.offsetWidth; panel.classList.add('shake'); }
+    }
+    overlay.classList.add('show');
+}
+
+function checkWinCondition() {
+    let t1Dead = state.team1.hp <= 0;
+    let t2Dead = state.team2.hp <= 0;
+
+    if (t1Dead && t2Dead) {
+        // Cùng chết -> Xét điểm phụ
+        if (state.team1.score > state.team2.score) triggerWin(1);
+        else if (state.team2.score > state.team1.score) triggerWin(2);
+        else triggerWin(0); // Hòa
+    } else if (t2Dead) {
+        triggerWin(1);
+    } else if (t1Dead) {
+        triggerWin(2);
+    }
+}
+
+function triggerWin(team) {
+    state.isGameOver = true; clearInterval(state.timerInterval);
+    setTimeout(() => { 
+        if(team === 0) {
+            el.winMsg.textContent = `CÙNG SỤP ĐỔ! HÒA!`; 
+            el.winMsg.className = `win-title win-draw`;
+        } else {
+            const winName = team === 1 ? state.team1.name : state.team2.name;
+            el.winMsg.textContent = `${winName} PHÒNG THỦ THÀNH CÔNG!`; 
+            el.winMsg.className = `win-title win-t${team}`;
+        }
+        el.winOverlay.classList.add('show'); 
+    }, 1000); 
+}
+
+function updateScores() { el.scoreT1.textContent = state.team1.score; el.scoreT2.textContent = state.team2.score; }
+
+function updateHpUI() {
+    // UI Panel Badges
+    el.hpText1.textContent = `HP: ${state.team1.hp}/100`;
+    el.hpText2.textContent = `HP: ${state.team2.hp}/100`;
+    
+    if (state.team1.hp <= 30) el.hpText1.classList.add('danger'); else el.hpText1.classList.remove('danger');
+    if (state.team2.hp <= 30) el.hpText2.classList.add('danger'); else el.hpText2.classList.remove('danger');
+    
+    el.hpText1.classList.remove('highlight'); void el.hpText1.offsetWidth; el.hpText1.classList.add('highlight');
+    el.hpText2.classList.remove('highlight'); void el.hpText2.offsetWidth; el.hpText2.classList.add('highlight');
+
+    // SVG Bars above castles
+    el.hpBar1.setAttribute('width', (state.team1.hp / 100) * 200);
+    el.hpBar2.setAttribute('width', (state.team2.hp / 100) * 200);
+
+    // Color shift for bars
+    el.hpBar1.setAttribute('fill', state.team1.hp > 50 ? '#4cd137' : (state.team1.hp > 20 ? '#fbc531' : '#e84118'));
+    el.hpBar2.setAttribute('fill', state.team2.hp > 50 ? '#4cd137' : (state.team2.hp > 20 ? '#fbc531' : '#e84118'));
+}
+
+function updateTimerDisplay() { el.timer.textContent = state.timeLeft; if (state.timeLeft <= 3) el.timer.classList.add('warning'); else el.timer.classList.remove('warning'); }
+
+function addTime(seconds) {
+    if (state.isGameOver || !state.isRoundActive) { showToast('Chỉ có thể cộng thời gian khi câu hỏi đang diễn ra!', 'error'); return; }
+    state.timeLeft += seconds; updateTimerDisplay(); playSFX('click');
+    el.timer.style.color = '#4cd137'; el.timer.style.borderColor = '#4cd137'; el.timer.style.transform = 'scale(1.2)';
+    setTimeout(() => { el.timer.style.color = ''; el.timer.style.borderColor = ''; el.timer.style.transform = ''; }, 300);
+}
+
+function animationLoop() {
+    const projSpeed = 30; // pixels per frame
+
+    // T1 Projectile Animation (Shoots left to right: 250 -> 800)
+    if (state.team1.projActive) {
+        state.team1.projX += projSpeed;
+        el.proj1.setAttribute('cx', state.team1.projX);
+        el.proj1.setAttribute('opacity', '1');
+        
+        if (state.team1.projX >= 800) {
+            state.team1.projActive = false;
+            el.proj1.setAttribute('opacity', '0');
+            triggerCastleHit(2, false); // Hit Castle 2
+        }
+    }
+
+    // T2 Projectile Animation (Shoots right to left: 750 -> 200)
+    if (state.team2.projActive) {
+        state.team2.projX -= projSpeed;
+        el.proj2.setAttribute('cx', state.team2.projX);
+        el.proj2.setAttribute('opacity', '1');
+        
+        if (state.team2.projX <= 200) {
+            state.team2.projActive = false;
+            el.proj2.setAttribute('opacity', '0');
+            triggerCastleHit(1, false); // Hit Castle 1
+        }
+    }
+
+    requestAnimationFrame(animationLoop);
+}
+
+// --- KEYBOARD CONTROLS ---
+window.addEventListener('keydown', (e) => {
+    if ((e.key === 'p' || e.key === 'P') && elMenu.gameWrapper.style.display === 'flex') { togglePause(); }
+});
+
+el.btnPlayAgain.addEventListener('click', () => initGame());
+renderTree();
+
+</script>
+</body>
+</html>

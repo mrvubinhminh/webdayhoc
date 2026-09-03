@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô Phỏng Đường Tròn Lượng Giác</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- MathJax để hiển thị công thức toán học đẹp hơn nếu cần -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0f172a; /* Nền tối giống dark theme */
+            color: #e2e8f0;
+            margin: 0;
+            overflow: hidden; /* Ngăn cuộn trang để giữ bố cục full-screen */
+        } 
+        
+        /* Đảm bảo toàn bộ khung nhìn duy trì tỷ lệ gần với 16:9 nhất có thể trên màn hình */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Sidebar bên trái */
+        .sidebar {
+            width: 320px;
+            background-color: #1e293b;
+            border-right: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        
+        /* Khu vực hiển thị 3D/2D chính */
+        .canvas-area {
+            flex: 1;
+            position: relative;
+            background-color: #000000; /* Nền đen tuyền */
+        }
+
+        /* Thanh panel phía dưới */
+        .bottom-panel {
+            height: 140px;
+            background-color: #1e293b;
+            border-top: 1px solid #334155;
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            gap: 2rem;
+        }
+
+        /* Tùy chỉnh thanh trượt (slider) */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            margin-top: -10px;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+            border: 2px solid #fff;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #475569;
+            border-radius: 2px;
+        }
+        input[type=range]:focus { outline: none; }
+        
+        /* Tùy chỉnh scrollbar cho sidebar */
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .sidebar::-webkit-scrollbar-track {
+            background: #1e293b; 
+        }
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #475569; 
+            border-radius: 4px;
+        }
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: #64748b; 
+        }
+
+        /* Các tab menu trong sidebar */
+        .menu-item {
+            padding: 0.75rem 1rem;
+            margin: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            background-color: #334155;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border: 1px solid transparent;
+        }
+        .menu-item:hover {
+            background-color: #475569;
+        }
+        .menu-item.active {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-color: #3b82f6;
+        }
+        .menu-number {
+            background-color: #1e293b;
+            color: #94a3b8;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .menu-item.active .menu-number {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        /* Thẻ hiển thị giá trị nổi */
+        .value-badge {
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-family: monospace;
+            font-size: 1.125rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Header (Tương tự ảnh mẫu, thanh mỏng phía trên) -->
+        <header class="h-12 bg-slate-900 border-b border-slate-700 flex items-center justify-between px-4 shrink-0">
+            <div class="flex items-center gap-4">
+                <button class="flex items-center gap-2 bg-red-900/30 text-red-400 hover:text-red-300 hover:bg-red-900/50 px-3 py-1.5 rounded text-sm transition-colors border border-red-900/50">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    Đóng
+                </button>
+                <h1 class="text-sm font-semibold text-slate-200">Mô Phỏng 2D Đường Tròn Lượng Giác</h1>
+            </div>
+            <button id="btnFullscreen" class="flex items-center gap-2 text-slate-400 hover:text-white px-3 py-1.5 rounded text-sm transition-colors border border-slate-700 hover:border-slate-500">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                Toàn màn hình
+            </button>
+        </header>
+
+        <div class="main-content">
+            <!-- Sidebar -->
+            <aside class="sidebar py-4">
+                <div class="px-6 mb-6 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full border-2 border-yellow-500 flex items-center justify-center text-yellow-500 font-bold text-sm shrink-0">
+                        TC
+                    </div>
+                    <div>
+                        <div class="font-bold text-sm tracking-wide">LƯỢNG GIÁC</div>
+                        <div class="text-[10px] text-slate-400">MÔ PHỎNG HÀM SỐ</div>
+                    </div>
+                </div>
+
+                <div class="text-xs font-semibold text-slate-500 px-6 mb-2 uppercase tracking-wider">Khám phá</div>
+                
+                <div class="menu-item active" onclick="selectMenu(0, this)">
+                    <div class="menu-number">1</div>
+                    <span class="text-sm font-medium">Tọa độ điểm M(cosα, sinα)</span>
+                </div>
+                <div class="menu-item" onclick="selectMenu(1, this)">
+                    <div class="menu-number">2</div>
+                    <span class="text-sm font-medium">Trục Cos (Trục hoành)</span>
+                </div>
+                <div class="menu-item" onclick="selectMenu(2, this)">
+                    <div class="menu-number">3</div>
+                    <span class="text-sm font-medium">Trục Sin (Trục tung)</span>
+                </div>
+                <div class="menu-item" onclick="selectMenu(3, this)">
+                    <div class="menu-number">4</div>
+                    <span class="text-sm font-medium">Dấu của các hàm số</span>
+                </div>
+                <div class="menu-item" onclick="selectMenu(4, this)">
+                    <div class="menu-number">5</div>
+                    <span class="text-sm font-medium">Tính tuần hoàn (Chu kỳ)</span>
+                </div>
+
+                <!-- Bảng giá trị thu gọn trong sidebar -->
+                <div class="mt-auto px-4 pb-4">
+                     <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                        <h3 class="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">Bảng Giá Trị</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-slate-400">Góc α:</span>
+                                <span id="valAngle" class="font-mono text-white bg-slate-900 px-2 py-1 rounded">45°</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm group relative">
+                                <span class="text-red-400 flex items-center gap-1">
+                                    <div class="w-2 h-2 bg-red-500 rounded-full"></div> cos(α):
+                                </span>
+                                <span id="valCos" class="font-mono text-white bg-slate-900 px-2 py-1 rounded w-16 text-right">0.71</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-blue-400 flex items-center gap-1">
+                                    <div class="w-2 h-2 bg-blue-500 rounded-full"></div> sin(α):
+                                </span>
+                                <span id="valSin" class="font-mono text-white bg-slate-900 px-2 py-1 rounded w-16 text-right">0.71</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm pt-2 border-t border-slate-700">
+                                <span class="text-purple-400">tan(α):</span>
+                                <span id="valTan" class="font-mono text-white bg-slate-900 px-2 py-1 rounded w-16 text-right">1.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Khu vực Canvas -->
+            <main class="canvas-area">
+                <canvas id="mathCanvas" class="w-full h-full"></canvas>
+            </main>
+        </div>
+
+        <!-- Bottom Panel (Hiển thị kết luận, công thức và điều khiển) -->
+        <footer class="bottom-panel shrink-0">
+            <!-- Icon ý tưởng -->
+            <div class="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center shrink-0 border border-yellow-500/20">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+            </div>
+            
+            <!-- Nội dung giải thích (thay đổi theo menu) -->
+            <div class="flex-1 min-w-0" id="infoContent">
+                <h2 class="text-xl font-bold text-white mb-1 truncate" id="infoTitle">Tọa độ điểm M trên đường tròn lượng giác</h2>
+                <p class="text-sm text-slate-400 truncate" id="infoDesc">
+                    Điểm M có tọa độ là x = cos(α) và y = sin(α).
+                </p>
+            </div>
+
+            <!-- Box công thức nổi bật -->
+            <div class="bg-slate-900 border border-slate-700 rounded-xl px-6 py-3 flex items-center justify-center shrink-0 shadow-inner min-w-[200px]" id="formulaBox">
+                <span class="text-5xl md:text-6xl font-serif text-yellow-400 italic">M(\cos\alpha, \sin\alpha)</span>
+            </div>
+
+            <!-- Khu vực điều khiển góc (Thanh trượt & Nút play) -->
+            <div class="flex flex-col gap-2 w-80 shrink-0 border-l border-slate-700 pl-6 ml-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Điều khiển góc α</span>
+                    <button id="btnAnimate" class="text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 rounded-full p-1.5 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    </button>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-medium text-slate-500 w-8 text-right">-720°</span>
+                    <input type="range" id="angleSlider" min="-720" max="720" value="45" step="1" class="flex-grow">
+                    <span class="text-xs font-medium text-slate-500 w-8">720°</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // --- CÁC BIẾN DOM VÀ TRẠNG THÁI ---
+        const canvas = document.getElementById('mathCanvas');
+        const ctx = canvas.getContext('2d');
+        const angleSlider = document.getElementById('angleSlider');
+        const btnAnimate = document.getElementById('btnAnimate');
+        const btnFullscreen = document.getElementById('btnFullscreen');
+        
+        const valAngle = document.getElementById('valAngle');
+        const valCos = document.getElementById('valCos');
+        const valSin = document.getElementById('valSin');
+        const valTan = document.getElementById('valTan');
+
+        const infoTitle = document.getElementById('infoTitle');
+        const infoDesc = document.getElementById('infoDesc');
+        const formulaBox = document.getElementById('formulaBox');
+
+        let angleDeg = 45;
+        let isAnimating = false;
+        let animationId;
+        
+        let centerX, centerY;
+        let radius;
+        let scale;
+        
+        // Trạng thái hiển thị (dựa theo menu đang chọn)
+        // 0: Tổng hợp, 1: Nhấn mạnh Cos, 2: Nhấn mạnh Sin, 3: Xét dấu, 4: Tuần hoàn
+        let currentMode = 0; 
+
+        // Dữ liệu nội dung cho thanh panel dưới
+        const infoData = [
+            {
+                title: "Tọa độ điểm M trên đường tròn lượng giác",
+                desc: "Hoành độ là cos(α), tung độ là sin(α).",
+                formula: "M(\\cos\\alpha, \\sin\\alpha)"
+            },
+            {
+                title: "Trục Cos (Trục hoành)",
+                desc: "Hình chiếu vuông góc của M lên trục Ox có độ dài đại số bằng cos(α).",
+                formula: "\\cos\\alpha = x_M"
+            },
+            {
+                title: "Trục Sin (Trục tung)",
+                desc: "Hình chiếu vuông góc của M lên trục Oy có độ dài đại số bằng sin(α).",
+                formula: "\\sin\\alpha = y_M"
+            },
+            {
+                title: "Dấu của các hàm số lượng giác",
+                desc: "Phụ thuộc vào điểm M nằm ở Góc phần tư nào (I, II, III, IV).",
+                formula: "I(+,+), II(-,+), III(-,-), IV(+,-)"
+            },
+            {
+                title: "Tính tuần hoàn",
+                desc: "Quỹ đạo M lặp lại sau mỗi vòng (360°). Giá trị sin, cos lặp lại.",
+                formula: "\\sin(\\alpha + k360^\\circ) = \\sin\\alpha"
+            }
+        ];
+
+        // --- HÀM TIỆN ÍCH ---
+        function selectMenu(index, el) {
+            // Đổi active class
+            document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+            el.classList.add('active');
+            
+            // Cập nhật trạng thái
+            currentMode = index;
+            
+            // Cập nhật text ở bottom panel
+            infoTitle.textContent = infoData[index].title;
+            infoDesc.textContent = infoData[index].desc;
+            
+            // Xử lý MathJax formula (đơn giản hóa bằng text HTML nếu MathJax chưa load kịp)
+            // Trong thực tế nếu dùng MathJax đầy đủ cần gọi MathJax.typeset()
+            let formulaHtml = '';
+            if(index === 0) formulaHtml = 'M(cos<span class="text-slate-400">α</span>, sin<span class="text-slate-400">α</span>)';
+            else if(index === 1) formulaHtml = '<span class="text-red-400">cos(α)</span> = x<sub>M</sub>';
+            else if(index === 2) formulaHtml = '<span class="text-blue-400">sin(α)</span> = y<sub>M</sub>';
+            else if(index === 3) formulaHtml = '<span class="text-3xl">Góc phần tư xét dấu</span>';
+            else if(index === 4) formulaHtml = 'f(α + k360°) = f(α)';
+            
+            formulaBox.innerHTML = `<span class="text-5xl md:text-6xl font-serif text-yellow-400">${formulaHtml}</span>`;
+
+            // Vẽ lại canvas với focus mới
+            draw();
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable full-screen mode: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+        
+        btnFullscreen.addEventListener('click', toggleFullscreen);
+
+        // Lắng nghe sự kiện thay đổi fullscreen để cập nhật nút
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                btnFullscreen.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg> Thu nhỏ`;
+            } else {
+                btnFullscreen.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg> Toàn màn hình`;
+            }
+        });
+
+        // --- STREAMING_CHUNK:Quản lý Canvas Resize (Responsive) ---
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const rect = container.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            canvas.style.width = `${rect.width}px`;
+            canvas.style.height = `${rect.height}px`;
+            
+            ctx.scale(dpr, dpr);
+
+            // Tâm hệ trục ở giữa
+            centerX = rect.width / 2;
+            centerY = rect.height / 2;
+            
+            // Bán kính đường tròn. Trên màn rộng 16:9, bán kính phụ thuộc vào chiều cao
+            scale = (Math.min(rect.width, rect.height) / 2) * 0.75; 
+            radius = scale;
+
+            draw();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // Hàm đổi tọa độ
+        function mathToCanvasX(mathX) { return centerX + mathX * scale; }
+        function mathToCanvasY(mathY) { return centerY - mathY * scale; }
+
+        // --- STREAMING_CHUNK:Vẽ Nền, Trục, Lưới ---
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawAxes();
+            
+            // Đánh dấu góc phần tư nếu đang ở mode 3
+            if(currentMode === 3) drawQuadrants();
+
+            drawUnitCircle();
+            drawDynamicElements();
+            updateValues();
+        }
+
+        function drawAxes() {
+            ctx.strokeStyle = '#ffffff'; // Màu trục trắng
+            ctx.lineWidth = 6; // Đậm nét gấp 2
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'italic 18px Inter, serif'; // Font to hơn
+
+            // Ox
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(canvas.width, centerY);
+            ctx.stroke();
+            // Mũi tên Ox
+            ctx.beginPath();
+            ctx.moveTo(canvas.width - 20, centerY - 8);
+            ctx.lineTo(canvas.width, centerY);
+            ctx.lineTo(canvas.width - 20, centerY + 8);
+            ctx.fill();
+            
+            // Oy
+            ctx.beginPath();
+            ctx.moveTo(centerX, canvas.height);
+            ctx.lineTo(centerX, 0);
+            ctx.stroke();
+            // Mũi tên Oy
+            ctx.beginPath();
+            ctx.moveTo(centerX - 8, 20);
+            ctx.lineTo(centerX, 0);
+            ctx.lineTo(centerX + 8, 20);
+            ctx.fill();
+
+            // Nhãn trục
+            ctx.fillStyle = (currentMode === 1) ? '#ef4444' : '#ffffff';
+            ctx.fillText('x (cos)', canvas.width - 70, centerY + 30);
+            
+            ctx.fillStyle = (currentMode === 2) ? '#3b82f6' : '#ffffff';
+            ctx.fillText('y (sin)', centerX + 20, 30);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText('O', centerX - 25, centerY + 25);
+
+            // Số trên trục
+            ctx.font = 'bold 16px Inter';
+            ctx.fillText('1', centerX + scale + 12, centerY + 25);
+            ctx.fillText('-1', centerX - scale - 30, centerY + 25);
+            ctx.fillText('1', centerX + 12, centerY - scale - 12);
+            ctx.fillText('-1', centerX + 12, centerY + scale + 30);
+        }
+
+        function drawUnitCircle() {
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.strokeStyle = '#ffffff'; // Vòng tròn màu trắng
+            ctx.lineWidth = 8; // Đậm nét gấp 2
+            ctx.stroke();
+        }
+
+        function drawQuadrants() {
+            ctx.font = 'bold 40px Inter';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.08)'; // Chữ mờ to ở nền
+            const qOffX = radius * 0.5;
+            const qOffY = radius * 0.5;
+            
+            // I (+, +)
+            ctx.fillText('I', centerX + qOffX, centerY - qOffY);
+            // II (-, +)
+            ctx.fillText('II', centerX - qOffX - 25, centerY - qOffY);
+            // III (-, -)
+            ctx.fillText('III', centerX - qOffX - 35, centerY + qOffY + 30);
+            // IV (+, -)
+            ctx.fillText('IV', centerX + qOffX, centerY + qOffY + 30);
+        }
+
+        // --- STREAMING_CHUNK:Vẽ Điểm M, Cung và Giá trị ---
+        function drawDynamicElements() {
+            const rad = angleDeg * (Math.PI / 180);
+            const mX_math = Math.cos(rad);
+            const mY_math = Math.sin(rad);
+            
+            const mX_canvas = mathToCanvasX(mX_math);
+            const mY_canvas = mathToCanvasY(mY_math);
+
+            // Điều chỉnh độ mờ (opacity) dựa trên currentMode
+            const alphaCos = (currentMode === 0 || currentMode === 1 || currentMode === 3) ? 1 : 0.2;
+            const alphaSin = (currentMode === 0 || currentMode === 2 || currentMode === 3) ? 1 : 0.2;
+
+            // 1. Bán kính OM
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(mX_canvas, mY_canvas);
+            ctx.strokeStyle = (currentMode === 4) ? '#f59e0b' : '#94a3b8'; 
+            ctx.lineWidth = 8; // Gấp 2
+            ctx.stroke();
+
+            // 2. Cung lượng giác (Màu cam)
+            ctx.beginPath();
+            const arcRadius = radius * 0.15; 
+            const counterClockwise = angleDeg > 0; 
+            ctx.arc(centerX, centerY, arcRadius, 0, -rad, counterClockwise);
+            ctx.strokeStyle = '#eab308'; 
+            ctx.lineWidth = 8; // Gấp 2
+            ctx.stroke();
+            
+            // Nếu ở mode 4 (Tuần hoàn) và góc lớn hơn 360, vẽ vòng xoắn ốc mờ để biểu thị
+            if(currentMode === 4 && Math.abs(angleDeg) >= 360) {
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, arcRadius + 15, 0, 2*Math.PI);
+                ctx.strokeStyle = 'rgba(234, 179, 8, 0.5)';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+            }
+
+            // Chữ hiển thị góc gần cung
+            ctx.fillStyle = '#fde047';
+            ctx.font = 'bold 16px Inter';
+            const textAngle = rad / 2; 
+            const textX = centerX + (arcRadius + 30) * Math.cos(textAngle);
+            const textY = centerY - (arcRadius + 30) * Math.sin(textAngle);
+            ctx.fillText(`${angleDeg}°`, textX - 15, textY + 8);
+
+            // 3. Hình chiếu và Đoạn Cos (Màu Đỏ)
+            ctx.beginPath();
+            ctx.setLineDash([8, 8]); // Nét đứt thưa và to hơn
+            ctx.moveTo(mX_canvas, mY_canvas);
+            ctx.lineTo(mX_canvas, centerY);
+            ctx.strokeStyle = `rgba(239, 68, 68, ${alphaCos * 0.5})`; 
+            ctx.lineWidth = 4; 
+            ctx.stroke();
+            ctx.setLineDash([]); 
+
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(mX_canvas, centerY);
+            ctx.strokeStyle = `rgba(239, 68, 68, ${alphaCos})`; 
+            ctx.lineWidth = (currentMode === 1) ? 16 : 10; // Dày hơn
+            ctx.stroke();
+            
+            if(alphaCos > 0.5) {
+                ctx.fillStyle = '#ef4444';
+                ctx.font = 'bold 18px Inter';
+                ctx.fillText('cos', centerX + (mX_canvas - centerX)/2 - 15, centerY + (mY_math > 0 ? 25 : -15));
+            }
+
+            // 4. Hình chiếu và Đoạn Sin (Màu Xanh Lam)
+            ctx.beginPath();
+            ctx.setLineDash([8, 8]);
+            ctx.moveTo(mX_canvas, mY_canvas);
+            ctx.lineTo(centerX, mY_canvas); 
+            ctx.strokeStyle = `rgba(59, 130, 246, ${alphaSin * 0.5})`;
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(centerX, mY_canvas);
+            ctx.strokeStyle = `rgba(59, 130, 246, ${alphaSin})`; 
+            ctx.lineWidth = (currentMode === 2) ? 16 : 10;
+            ctx.stroke();
+
+            if(alphaSin > 0.5) {
+                ctx.fillStyle = '#3b82f6';
+                ctx.font = 'bold 18px Inter';
+                ctx.fillText('sin', centerX + (mX_math > 0 ? -35 : 15), centerY + (mY_canvas - centerY)/2 + 6);
+            }
+
+            // 5. Điểm M
+            ctx.beginPath();
+            ctx.arc(mX_canvas, mY_canvas, 12, 0, 2 * Math.PI); // Điểm to hơn
+            ctx.fillStyle = '#f8fafc'; // Trắng
+            ctx.fill();
+            
+            ctx.fillStyle = '#f8fafc';
+            ctx.font = 'bold 22px Inter';
+            let mLabelX = mX_canvas + (mX_math >= 0 ? 18 : -35);
+            let mLabelY = mY_canvas + (mY_math >= 0 ? -18 : 30);
+            ctx.fillText('M', mLabelX, mLabelY);
+            
+            // Bổ sung hiển thị dấu nếu ở Mode 3
+            if (currentMode === 3) {
+                 ctx.font = 'bold 18px monospace';
+                 let signText = `(${mX_math >= 0 ? '+' : '-'}, ${mY_math >= 0 ? '+' : '-'})`;
+                 ctx.fillStyle = '#cbd5e1';
+                 ctx.fillText(signText, mLabelX - 10, mLabelY + 25);
+            }
+        }
+
+        // --- STREAMING_CHUNK:Điều khiển & Logic Hoạt hình ---
+        function updateValues() {
+            const rad = angleDeg * (Math.PI / 180);
+            const cosVal = Math.cos(rad);
+            const sinVal = Math.sin(rad);
+            
+            angleSlider.value = angleDeg;
+            
+            const formatNum = (num) => {
+                let val = num.toFixed(2);
+                if(val === "-0.00") val = "0.00";
+                return val;
+            };
+
+            valAngle.textContent = `${angleDeg}°`;
+            valCos.textContent = formatNum(cosVal);
+            valSin.textContent = formatNum(sinVal);
+
+            if (Math.abs(cosVal) < 0.0001) {
+                valTan.textContent = "||";
+                valTan.classList.add("text-slate-500");
+            } else {
+                valTan.textContent = formatNum(sinVal / cosVal);
+                valTan.classList.remove("text-slate-500");
+            }
+        }
+
+        angleSlider.addEventListener('input', (e) => {
+            angleDeg = parseInt(e.target.value);
+            draw();
+            if(isAnimating) toggleAnimation(); 
+        });
+
+        function animate() {
+            if(!isAnimating) return;
+            
+            angleDeg += 1; 
+            if(angleDeg > 720) angleDeg = -720; 
+            
+            draw();
+            animationId = requestAnimationFrame(animate);
+        }
+
+        function toggleAnimation() {
+            isAnimating = !isAnimating;
+            if(isAnimating) {
+                // Đổi icon sang Dừng (Pause)
+                btnAnimate.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
+                btnAnimate.classList.add('text-yellow-400');
+                animate();
+            } else {
+                // Đổi icon sang Phát (Play)
+                btnAnimate.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
+                btnAnimate.classList.remove('text-yellow-400');
+                cancelAnimationFrame(animationId);
+            }
+        }
+
+        btnAnimate.addEventListener('click', toggleAnimation);
+
+        // Khởi chạy
+        window.onload = () => {
+            // Setup MathJax nếu có gọi
+            if (window.MathJax) {
+                // Tùy chọn cấu hình MathJax nếu cần
+            }
+            resizeCanvas();
+        };
+
+    </script>
+</body>
+</html>

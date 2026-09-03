@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô Phỏng Đạn Đạo - Dẫn Nhập PT Lượng Giác</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    
+    <script>
+        window.MathJax = {
+            options: {
+                enableMenu: false // Ẩn menu chuột phải của MathJax để giao diện gọn hơn
+            },
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']] // Kích hoạt cú pháp $$ để hiển thị công thức lớn
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0f172a; 
+            color: #e2e8f0;
+            margin: 0;
+            overflow: hidden; 
+        } 
+        
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 320px;
+            background-color: #1e293b;
+            border-right: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        
+        .canvas-area {
+            flex: 1;
+            position: relative;
+            background-color: #000000; 
+            background-image: 
+                linear-gradient(rgba(51, 65, 85, 0.3) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(51, 65, 85, 0.3) 1px, transparent 1px);
+            background-size: 50px 50px; /* Lưới nền mô phỏng */
+        }
+
+        .bottom-panel {
+            height: 140px;
+            background-color: #1e293b;
+            border-top: 1px solid #334155;
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            gap: 2rem;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #f59e0b; /* Màu cam nổi bật cho đạn đạo */
+            cursor: pointer;
+            margin-top: -10px;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+            border: 2px solid #fff;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #475569;
+            border-radius: 2px;
+        }
+        input[type=range]:focus { outline: none; }
+        
+        .sidebar::-webkit-scrollbar { width: 6px; }
+        .sidebar::-webkit-scrollbar-track { background: #1e293b; }
+        .sidebar::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        
+        .menu-item {
+            padding: 0.75rem 1rem;
+            margin: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            background-color: #334155;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border: 1px solid transparent;
+        }
+        .menu-item:hover { background-color: #475569; }
+        .menu-item.active {
+            background-color: rgba(245, 158, 11, 0.1);
+            border-color: #f59e0b;
+        }
+        .menu-number {
+            background-color: #1e293b;
+            color: #94a3b8;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .menu-item.active .menu-number {
+            background-color: #f59e0b;
+            color: white;
+        }
+
+        .data-box {
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+            min-width: 60px;
+            text-align: right;
+        }
+
+        /* Thêm style cho chế độ giả toàn màn hình */
+        .fake-fullscreen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 9999 !important;
+            background-color: #0f172a;
+        }
+    </style>
+</head>
+<body>
+    <div id="appContainer" class="app-container">
+        <!-- Header -->
+        <header class="h-12 bg-slate-900 border-b border-slate-700 flex items-center justify-between px-4 shrink-0">
+            <div class="flex items-center gap-4">
+                <button class="flex items-center gap-2 bg-red-900/30 text-red-400 hover:text-red-300 hover:bg-red-900/50 px-3 py-1.5 rounded text-sm transition-colors border border-red-900/50">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    Đóng
+                </button>
+                <h1 class="text-sm font-semibold text-slate-200">Bài Toán Đạn Đạo - Khởi Động Phương Trình Lượng Giác</h1>
+            </div>
+            <button id="btnFullscreen" class="flex items-center gap-2 text-slate-400 hover:text-white px-3 py-1.5 rounded text-sm transition-colors border border-slate-700 hover:border-slate-500">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                Toàn màn hình
+            </button>
+        </header>
+
+        <div class="main-content">
+            <aside class="sidebar py-4 flex flex-col">
+                <div class="px-6 mb-6 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full border-2 border-orange-500 flex items-center justify-center text-orange-500 font-bold text-sm shrink-0">
+                        TC
+                    </div>
+                    <div>
+                        <div class="font-bold text-sm tracking-wide uppercase">Tình huống mở đầu</div>
+                        <div class="text-[10px] text-slate-400">ỨNG DỤNG THỰC TIỄN</div>
+                    </div>
+                </div>
+
+                <div class="text-xs font-semibold text-slate-500 px-6 mb-2 uppercase tracking-wider">Tiến trình khám phá</div>
+                
+                <div class="menu-item active" onclick="selectMenu(0, this)">
+                    <div class="menu-number">1</div>
+                    <span class="text-sm font-medium">Đặt vấn đề & Dự đoán</span>
+                </div>
+                <div class="menu-item" onclick="selectMenu(1, this)">
+                    <div class="menu-number">2</div>
+                    <span class="text-sm font-medium">Thực nghiệm (α = 20°, 30°...)</span>
+                </div>
+                <div class="menu-item" onclick="selectMenu(2, this)">
+                    <div class="menu-number">3</div>
+                    <span class="text-sm font-medium">Toán học hóa (Công thức R)</span>
+                </div>
+                <div class="menu-item" onclick="selectMenu(3, this)">
+                    <div class="menu-number">4</div>
+                    <span class="text-sm font-medium">Nhu cầu giải PT Lượng Giác</span>
+                </div>
+
+                <!-- Bảng số liệu Real-time -->
+                <div class="mt-auto px-4 pb-4">
+                     <div class="bg-slate-800 rounded-lg p-4 border border-slate-700 shadow-lg">
+                        <h3 class="text-xs font-bold text-slate-400 mb-4 uppercase tracking-wider flex items-center justify-between">
+                            Dữ liệu Rada
+                            <span class="flex h-2 w-2 relative">
+                              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                              <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                            </span>
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-slate-300">Vận tốc đầu (v₀):</span>
+                                <span class="data-box text-slate-400">50 m/s</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm group relative">
+                                <span class="text-orange-400 font-semibold">Góc bắn (α):</span>
+                                <span id="valAngle" class="data-box text-orange-400 font-bold text-base">45°</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-blue-400">Tầm xa (R):</span>
+                                <span id="valRange" class="data-box text-blue-400">255.1 m</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-green-400">Độ cao max (H):</span>
+                                <span id="valHeight" class="data-box text-green-400">63.8 m</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Khu vực Canvas -->
+            <main class="canvas-area">
+                <canvas id="physicsCanvas" class="w-full h-full"></canvas>
+            </main>
+        </div>
+
+        <footer class="bottom-panel shrink-0">
+            <div class="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center shrink-0 border border-orange-500/20">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            </div>
+            
+            <div class="flex-1 min-w-0" id="infoContent">
+                <h2 class="text-xl font-bold text-white mb-1 truncate" id="infoTitle">Tìm góc bắn cho tầm xa lớn nhất</h2>
+                <p class="text-sm text-slate-400" id="infoDesc">
+                    Một quả đạn pháo được bắn với vận tốc v₀ = 50m/s. Theo em góc bắn bằng bao nhiêu để đạn bay xa nhất?
+                </p>
+            </div>
+
+            <!-- Hộp chứa công thức (ẩn/hiện theo tiến trình) -->
+            <div class="bg-slate-900 border border-slate-700 rounded-xl px-6 py-3 flex items-center justify-center shrink-0 shadow-inner min-w-[280px]" id="formulaBox">
+                <span class="text-3xl text-slate-500 italic" id="formulaText">?</span>
+            </div>
+
+            <!-- Bảng điều khiển góc -->
+            <div class="flex flex-col gap-2 w-80 shrink-0 border-l border-slate-700 pl-6 ml-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Chỉnh góc bắn & Bắn thử</span>
+                    <button id="btnFire" class="text-white bg-red-600 hover:bg-red-500 rounded px-4 py-1 text-sm font-bold transition-colors shadow-lg shadow-red-900/50">
+                        BẮN ĐẠN
+                    </button>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-medium text-slate-500 w-6 text-right">0°</span>
+                    <input type="range" id="angleSlider" min="0" max="90" value="45" step="1" class="flex-grow">
+                    <span class="text-xs font-medium text-slate-500 w-6">90°</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+        const angleSlider = document.getElementById('angleSlider');
+        const btnFire = document.getElementById('btnFire');
+        const btnFullscreen = document.getElementById('btnFullscreen');
+        const appContainer = document.getElementById('appContainer');
+        
+        // Element hiển thị dữ liệu
+        const valAngle = document.getElementById('valAngle');
+        const valRange = document.getElementById('valRange');
+        const valHeight = document.getElementById('valHeight');
+        const infoTitle = document.getElementById('infoTitle');
+        const infoDesc = document.getElementById('infoDesc');
+        const formulaBox = document.getElementById('formulaBox');
+        const formulaText = document.getElementById('formulaText');
+
+        // Thông số Vật lý
+        const g = 9.81; // Gia tốc trọng trường
+        const v0 = 50;  // Vận tốc đầu (m/s)
+        let angleDeg = 45; // Góc bắn mặc định
+        
+        // Trạng thái Animation
+        let isAnimating = false;
+        let time = 0;
+        let animationId;
+        
+        // Tọa độ hệ quy chiếu Canvas
+        let originX, originY;
+        let pixelsPerMeter = 1;
+        
+        let currentMode = 0; 
+        let shotHistory = []; // Lưu các vệt đạn bắn thử
+        
+        // Trạng thái đạn bay & hiệu ứng nổ
+        let isFlying = false;
+        let isExploding = false;
+        let explosionTimer = 0;
+        let particles = [];
+
+        // --- HỆ THỐNG ÂM THANH VÀ HẠT (PARTICLES) ---
+        let flySynth; // Biến lưu trữ âm thanh đạn rít
+
+        function playFireSound(flightDuration) {
+            try {
+                if (typeof Tone !== 'undefined') {
+                    if (flySynth) {
+                        flySynth.triggerRelease();
+                        flySynth.dispose();
+                    }
+                    // Tạo âm thanh rít (Sine wave)
+                    flySynth = new Tone.Synth({
+                        oscillator: { type: 'triangle' },
+                        envelope: { attack: 0.1, decay: 0.1, sustain: 1, release: 0.5 }
+                    }).toDestination();
+                    
+                    flySynth.volume.value = -12; // Âm lượng vừa phải
+                    
+                    // Bắt đầu ở tần số cao (tiếng rít)
+                    flySynth.triggerAttack(1000);
+                    // Tần số giảm dần tạo hiệu ứng Doppler khi đạn bay xa
+                    flySynth.oscillator.frequency.rampTo(200, flightDuration);
+                }
+            } catch (e) {
+                console.log("Không thể phát âm thanh rít", e);
+            }
+        }
+
+        function stopFireSound() {
+            if (flySynth) {
+                flySynth.triggerRelease();
+            }
+        }
+
+        function playExplosionSound() {
+            try {
+                if (typeof Tone !== 'undefined') {
+                    // Tạo âm thanh noise giống tiếng nổ sầm
+                    const noiseSynth = new Tone.NoiseSynth({
+                        noise: { type: 'brown' },
+                        envelope: { attack: 0.01, decay: 0.4, sustain: 0.1, release: 1.5 }
+                    }).toDestination();
+                    noiseSynth.volume.value = -5; // Tăng âm lượng nhẹ
+                    noiseSynth.triggerAttackRelease("8n");
+                }
+            } catch (e) {
+                console.log("Không thể phát âm thanh", e);
+            }
+        }
+
+        function createExplosion(x, y) {
+            particles = [];
+            // Tạo 50 mảnh vỡ
+            for (let i = 0; i < 50; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 20, // Tốc độ ngang ngẫu nhiên
+                    vy: (Math.random() - 0.5) * 20 - 5, // Tốc độ dọc (hướng lên trên) ngẫu nhiên
+                    life: 2.0, // Tồn tại trong 2 giây
+                    color: Math.random() > 0.5 ? '#ef4444' : '#f59e0b' // Mảnh vỡ màu đỏ hoặc cam
+                });
+            }
+        }
+
+        // Nội dung các bước sư phạm
+        const stepData = [
+            {
+                title: "1. Đặt vấn đề & Dự đoán",
+                desc: "Vận tốc v₀ = 50 m/s không đổi. Góc α thay đổi từ 0° - 90°. Em dự đoán α bằng bao nhiêu thì viên đạn bay xa nhất?",
+                formulaHTML: `<div class="text-3xl text-slate-300 font-serif">$$R_{max} = ?$$</div>`
+            },
+            {
+                title: "2. Thực nghiệm quỹ đạo",
+                desc: "Thử kéo thanh trượt góc α đến các giá trị 20°, 30°, 45°, 60°, 70° và nhấn nút BẮN ĐẠN để so sánh.",
+                formulaHTML: `<div class="text-3xl text-orange-400 font-serif">$$\\alpha \\in [0^\\circ, 90^\\circ]$$</div>`
+            },
+            {
+                title: "3. Toán học hóa vấn đề",
+                desc: "Dựa vào các định luật Vật Lý, ta có thể chứng minh được công thức tính tầm bay xa R phụ thuộc vào α.",
+                formulaHTML: `<div class="text-3xl text-yellow-400 font-serif">$$R = \\frac{v_0^2}{g}\\sin(2\\alpha)$$</div>`
+            },
+            {
+                title: "4. Nhu cầu giải Phương trình Lượng giác",
+                desc: "Muốn R max thì sin(2α) phải lớn nhất. Giá trị lớn nhất của sin là 1. Vậy ta cần tìm α sao cho sin(2α) = 1.",
+                formulaHTML: `<div class="text-3xl text-green-400 font-serif">$$\\sin(2\\alpha) = 1$$</div>`
+            }
+        ];
+
+        // --- STREAMING_CHUNK:Xử lý Giao Diện ---
+        function selectMenu(index, el) {
+            document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+            if(el) el.classList.add('active');
+            currentMode = index;
+            
+            infoTitle.textContent = stepData[index].title;
+            infoDesc.textContent = stepData[index].desc;
+            formulaBox.innerHTML = stepData[index].formulaHTML;
+            
+            // Re-render MathJax
+            if(window.MathJax && window.MathJax.typesetPromise) {
+                // Xoá trạng thái render cũ trước khi nạp công thức mới
+                MathJax.typesetClear([formulaBox]); 
+                MathJax.typesetPromise([formulaBox]).catch((err) => console.log(err.message));
+            }
+        }
+
+        // Thay thế API Fullscreen native bằng "Fake Fullscreen" để tránh lỗi Permissions Policy trong iframe
+        let isFakeFullscreen = false;
+        
+        function updateFullscreenButton(isFullscreen) {
+            if (isFullscreen) {
+                btnFullscreen.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg> Thu nhỏ`;
+            } else {
+                btnFullscreen.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg> Toàn màn hình`;
+            }
+            // Đảm bảo canvas được resize lại sau khi chuyển chế độ
+            setTimeout(resizeCanvas, 100);
+        }
+
+        btnFullscreen.addEventListener('click', () => {
+            if (!document.fullscreenElement && !isFakeFullscreen) {
+                // Ưu tiên dùng Native Fullscreen của trình duyệt
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        // Nếu bị chặn (vd: chạy trong iframe), chuyển sang Fake Fullscreen
+                        console.warn(`Trình duyệt chặn Fullscreen: ${err.message}. Chuyển sang dự phòng.`);
+                        isFakeFullscreen = true;
+                        appContainer.classList.add('fake-fullscreen');
+                        updateFullscreenButton(true);
+                    });
+                } else {
+                    // Trình duyệt không hỗ trợ API
+                    isFakeFullscreen = true;
+                    appContainer.classList.add('fake-fullscreen');
+                    updateFullscreenButton(true);
+                }
+            } else {
+                // Thoát toàn màn hình
+                if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                } else if (isFakeFullscreen) {
+                    isFakeFullscreen = false;
+                    appContainer.classList.remove('fake-fullscreen');
+                    updateFullscreenButton(false);
+                }
+            }
+        });
+
+        // Đồng bộ trạng thái nút khi người dùng nhấn phím ESC để thoát
+        document.addEventListener('fullscreenchange', () => {
+            updateFullscreenButton(!!document.fullscreenElement);
+        });
+
+        // --- STREAMING_CHUNK:Core Vẽ Canvas & Động lực học ---
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const rect = container.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            canvas.style.width = `${rect.width}px`;
+            canvas.style.height = `${rect.height}px`;
+            
+            ctx.scale(dpr, dpr);
+
+            // Gốc tọa độ nằm ở góc dưới bên trái
+            originX = 80;
+            originY = rect.height - 80; // Nâng lên 1 chút để đủ chỗ vẽ bánh xe pháo
+            
+            // Tính toán scale (1 meter = ? pixels)
+            // Tầm xa tối đa lý thuyết (ở 45 độ) là R_max = v0^2 / g = 50^2 / 9.81 = 254.8m
+            // Cao tối đa (ở 90 độ) là H_max = v0^2 / 2g = 50^2 / 19.62 = 127.4m
+            const maxR = (v0 * v0) / g; 
+            
+            // Dành lại một chút margin
+            const availableWidth = rect.width - originX - 50; 
+            const availableHeight = originY - 50;
+            
+            // Lấy scale nhỏ hơn để đảm bảo không bị méo tỷ lệ thực tế (aspect ratio 1:1)
+            pixelsPerMeter = Math.min(availableWidth / (maxR * 1.1), availableHeight / (maxR * 0.6));
+            
+            drawFrame();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // Chuyển đổi tọa độ Toán (m) sang Tọa độ Canvas (pixel)
+        function cx(mathX) { return originX + mathX * pixelsPerMeter; }
+        function cy(mathY) { return originY - mathY * pixelsPerMeter; }
+
+        function drawAxes() {
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2; // Giảm lại nét trục để nhường nổi bật cho quỹ đạo
+            
+            // Trục mặt đất (Ox)
+            ctx.beginPath();
+            ctx.moveTo(0, originY);
+            ctx.lineTo(canvas.width, originY);
+            ctx.stroke();
+
+            // Trục cao độ (Oy)
+            ctx.beginPath();
+            ctx.moveTo(originX, canvas.height);
+            ctx.lineTo(originX, 0);
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 16px Inter';
+            ctx.fillText('R (m)', canvas.width / window.devicePixelRatio - 50, originY + 25);
+            ctx.fillText('H (m)', originX - 45, 30);
+            ctx.fillText('O', originX - 25, originY + 20);
+
+            // Vẽ vạch chia khoảng cách 50m
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '12px Inter';
+            for (let i = 50; i <= 300; i += 50) {
+                let xPx = cx(i);
+                ctx.beginPath();
+                ctx.moveTo(xPx, originY - 5);
+                ctx.lineTo(xPx, originY + 5);
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillText(i, xPx - 10, originY + 25);
+            }
+        }
+
+        function drawCannon() {
+            const rad = angleDeg * Math.PI / 180;
+            
+            ctx.save();
+            // 1. Vẽ nòng pháo (quay theo góc)
+            // Lấy tâm quay là gốc tọa độ (originX, originY)
+            ctx.translate(originX, originY);
+            ctx.rotate(-rad);
+            
+            // Thân nòng pháo (hình thang)
+            ctx.beginPath();
+            ctx.moveTo(-15, -10); // Phía sau nòng (buồng đốt)
+            ctx.lineTo(45, -6);   // Đầu nòng trên
+            ctx.lineTo(45, 6);    // Đầu nòng dưới
+            ctx.lineTo(-15, 10);  // Phía sau nòng dưới
+            ctx.closePath();
+            
+            // Tạo gradient cho nòng pháo trông bằng kim loại
+            const barrelGrad = ctx.createLinearGradient(0, -10, 0, 10);
+            barrelGrad.addColorStop(0, '#64748b'); // Sáng
+            barrelGrad.addColorStop(0.5, '#334155'); // Tối giữa
+            barrelGrad.addColorStop(1, '#1e293b'); // Tối rìa
+            
+            ctx.fillStyle = barrelGrad;
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#0f172a';
+            ctx.stroke();
+
+            // Họng pháo (loe ra ở đầu)
+            ctx.beginPath();
+            ctx.moveTo(40, -8);
+            ctx.lineTo(55, -10);
+            ctx.lineTo(55, 10);
+            ctx.lineTo(40, 8);
+            ctx.closePath();
+            ctx.fillStyle = '#475569';
+            ctx.fill();
+            ctx.stroke();
+            
+            ctx.restore(); // Trả lại hệ tọa độ không xoay
+
+            // 2. Vẽ đế pháo & bánh xe (cố định trên mặt đất)
+            
+            // Khung / Đế đỡ pháo
+            ctx.beginPath();
+            ctx.moveTo(originX - 25, originY + 20); // Chân đế chạm đất
+            ctx.lineTo(originX + 25, originY + 20);
+            ctx.lineTo(originX + 15, originY - 5);  // Đỉnh bệ đỡ
+            ctx.lineTo(originX - 15, originY - 5);
+            ctx.closePath();
+            ctx.fillStyle = '#1e293b';
+            ctx.fill();
+            
+            // Bánh xe
+            ctx.beginPath();
+            ctx.arc(originX, originY + 5, 18, 0, Math.PI * 2);
+            ctx.fillStyle = '#334155';
+            ctx.fill();
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#0f172a';
+            ctx.stroke();
+            
+            // Nan hoa (Căm xe)
+            ctx.beginPath();
+            for(let i=0; i<6; i++) {
+                const angle = i * Math.PI / 3;
+                ctx.moveTo(originX, originY + 5);
+                ctx.lineTo(originX + 18 * Math.cos(angle), originY + 5 + 18 * Math.sin(angle));
+            }
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Trục bánh xe (Điểm neo nổi bật)
+            ctx.beginPath();
+            ctx.arc(originX, originY + 5, 5, 0, Math.PI * 2);
+            ctx.fillStyle = '#f59e0b'; 
+            ctx.fill();
+
+            // 3. Vẽ biểu tượng cung góc nâng hiển thị (màu cam)
+            ctx.beginPath();
+            ctx.arc(originX, originY, 45, 0, -rad, true);
+            ctx.strokeStyle = 'rgba(245, 158, 11, 0.9)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Chữ số hiển thị độ
+            ctx.fillStyle = '#f59e0b';
+            ctx.font = 'bold 15px Inter';
+            // Căn vị trí text để không bị đè vào nòng
+            const textX = originX + 55 * Math.cos(-rad/2);
+            const textY = originY + 55 * Math.sin(-rad/2);
+            ctx.fillText(`${angleDeg}°`, textX, textY + 5);
+        }
+
+        // --- STREAMING_CHUNK:Tính toán và vẽ Quỹ đạo ---
+        function getPhysicsData(angleInDeg) {
+            const rad = angleInDeg * Math.PI / 180;
+            const vx = v0 * Math.cos(rad);
+            const vy = v0 * Math.sin(rad);
+            
+            const timeOfFlight = (2 * vy) / g;
+            const range = (v0 * v0 * Math.sin(2 * rad)) / g;
+            const maxHeight = (vy * vy) / (2 * g);
+            
+            return { rad, vx, vy, timeOfFlight, range, maxHeight };
+        }
+
+        function updateDataBoard(data) {
+            valAngle.textContent = `${angleDeg}°`;
+            // Bỏ việc cập nhật R và H ở đây để tự kiểm soát thời điểm hiển thị
+        }
+
+        function drawTrajectory(angleToDraw, color, isDashed = false) {
+            const data = getPhysicsData(angleToDraw);
+            ctx.beginPath();
+            
+            for (let t = 0; t <= data.timeOfFlight; t += 0.1) {
+                let x = data.vx * t;
+                let y = data.vy * t - 0.5 * g * t * t;
+                
+                if (t === 0) ctx.moveTo(cx(x), cy(y));
+                else ctx.lineTo(cx(x), cy(y));
+            }
+            
+            // Vẽ điểm rơi cuối cùng
+            ctx.lineTo(cx(data.range), cy(0));
+            
+            if(isDashed) ctx.setLineDash([10, 10]);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Điểm rơi
+            ctx.beginPath();
+            ctx.arc(cx(data.range), cy(0), 6, 0, 2*Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+        }
+
+        function drawFrame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawAxes();
+            
+            // Vẽ lại lịch sử bắn (mờ hơn)
+            shotHistory.forEach(shot => {
+                drawTrajectory(shot.angle, 'rgba(148, 163, 184, 0.5)', false);
+            });
+
+            // Lấy thông số hiện tại (nhưng KHÔNG tự động hiển thị lên bảng)
+            const currentData = getPhysicsData(angleDeg);
+            
+            // Nếu đang bắn, vẽ quả đạn và vệt bay
+            if (isAnimating) {
+                // Vệt bay
+                ctx.beginPath();
+                for (let t = 0; t <= time; t += 0.05) {
+                    let x = currentData.vx * t;
+                    let y = currentData.vy * t - 0.5 * g * t * t;
+                    if(y < 0) y = 0;
+                    if (t === 0) ctx.moveTo(cx(x), cy(y));
+                    else ctx.lineTo(cx(x), cy(y));
+                }
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 6;
+                ctx.stroke();
+
+                // Quả đạn
+                let currentX = currentData.vx * time;
+                let currentY = currentData.vy * time - 0.5 * g * time * time;
+                if(currentY < 0) currentY = 0;
+
+                ctx.beginPath();
+                ctx.arc(cx(currentX), cy(currentY), 10, 0, Math.PI * 2);
+                ctx.fillStyle = '#ef4444'; // Đỏ rực
+                ctx.fill();
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = 'red';
+                ctx.stroke();
+                ctx.shadowBlur = 0; // Reset
+            }
+
+            // Vẽ hiệu ứng vụ nổ
+            if (isExploding && particles.length > 0) {
+                particles.forEach(p => {
+                    if (p.life > 0) {
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, Math.max(1, p.life * 3), 0, Math.PI * 2);
+                        ctx.fillStyle = p.color;
+                        ctx.globalAlpha = Math.max(0, p.life / 2.0); // Mờ dần theo thời gian
+                        ctx.fill();
+                        
+                        // Cập nhật vị trí hạt nổ
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        p.vy += 0.5; // Trọng lực kéo mảnh vỡ rơi xuống
+                        p.life -= 1/60; // Giảm tuổi thọ
+                    }
+                });
+                ctx.globalAlpha = 1.0; // Reset độ trong suốt
+            }
+
+            drawCannon(); // Vẽ đè lên trên cùng
+        }
+
+        // --- STREAMING_CHUNK:Vòng lặp Animation & Events ---
+        function animateBullet() {
+            if (!isAnimating) return;
+            
+            const data = getPhysicsData(angleDeg);
+            
+            if (isFlying) {
+                time += 0.035; // GIẢM TỐC ĐỘ BAY (Trọng tâm: Giúp học sinh quan sát rõ quỹ đạo)
+                
+                if (time >= data.timeOfFlight) {
+                    time = data.timeOfFlight; // Gắn cứng điểm kết thúc
+                    isFlying = false;
+                    
+                    // Dừng tiếng rít, phát tiếng nổ
+                    stopFireSound();
+                    isExploding = true;
+                    explosionTimer = 2.0; 
+                    playExplosionSound();
+                    createExplosion(cx(data.range), cy(0));
+                    
+                    // CHẠM ĐẤT: Bắt đầu hiển thị Tầm xa và Độ cao thực tế
+                    valRange.textContent = `${data.range.toFixed(1)} m`;
+                    valHeight.textContent = `${data.maxHeight.toFixed(1)} m`;
+                    
+                    // Thêm vào lịch sử quỹ đạo bay (sẽ biến mất sau 10s)
+                    const currentAngle = angleDeg;
+                    
+                    // Xóa vết cũ của cùng góc này (nếu có) để tạo vết mới và reset bộ đếm
+                    const existingIdx = shotHistory.findIndex(s => s.angle === currentAngle);
+                    if (existingIdx > -1) {
+                        shotHistory.splice(existingIdx, 1);
+                    }
+
+                    const shotObj = { angle: currentAngle };
+                    shotHistory.push(shotObj);
+                    if (shotHistory.length > 5) shotHistory.shift(); // Lưu tối đa 5 đường
+                    
+                    // Tự động xóa quỹ đạo này khỏi canvas sau 10 giây
+                    setTimeout(() => {
+                        const idx = shotHistory.indexOf(shotObj);
+                        if (idx > -1) {
+                            shotHistory.splice(idx, 1);
+                            // Cập nhật lại canvas để xóa vệt mờ (chỉ gọi nếu không có viên đạn nào khác đang bay)
+                            if (!isAnimating) { 
+                                drawFrame();
+                            }
+                        }
+                    }, 10000);
+                    
+                    btnFire.textContent = 'BẮN LẠI';
+                    btnFire.classList.remove('bg-gray-600');
+                    btnFire.classList.add('bg-red-600', 'hover:bg-red-500');
+                }
+            } else if (isExploding) {
+                // Giảm thời gian nổ
+                explosionTimer -= 1/60;
+                if (explosionTimer <= 0) {
+                    isExploding = false;
+                    isAnimating = false; // Kết thúc hoàn toàn
+                }
+            }
+            
+            drawFrame();
+            
+            if(isAnimating) {
+                animationId = requestAnimationFrame(animateBullet);
+            }
+        }
+
+        btnFire.addEventListener('click', async () => {
+            if(isAnimating && isFlying) return; // Đang bay thì ko bắn chồng lên
+            
+            // Yêu cầu trình duyệt cấp quyền phát Audio khi người dùng click (có kiểm tra an toàn)
+            try {
+                if (typeof Tone !== 'undefined') {
+                    await Tone.start(); 
+                }
+            } catch (e) {
+                console.log("Audio không thể khởi động", e);
+            }
+
+            // HIỂN THỊ TRẠNG THÁI CHỜ KẾT QUẢ KHI ĐẠN ĐANG BAY
+            valRange.textContent = `... m`;
+            valHeight.textContent = `... m`;
+
+            const data = getPhysicsData(angleDeg);
+            // Tính toán thời gian thực chạy animation (để đồng bộ âm thanh rít)
+            const realDurationSeconds = (data.timeOfFlight / 0.035) / 60;
+            playFireSound(realDurationSeconds);
+
+            time = 0;
+            isAnimating = true;
+            isFlying = true;
+            isExploding = false;
+            btnFire.textContent = 'ĐANG BAY...';
+            btnFire.classList.remove('bg-red-600', 'hover:bg-red-500');
+            btnFire.classList.add('bg-gray-600');
+            
+            cancelAnimationFrame(animationId);
+            animateBullet();
+        });
+
+        angleSlider.addEventListener('input', (e) => {
+            angleDeg = parseInt(e.target.value);
+            
+            // KHI CHỈNH GÓC: Ẩn kết quả (Chờ bắn mới biết)
+            valAngle.textContent = `${angleDeg}°`;
+            valRange.textContent = `? m`;
+            valHeight.textContent = `? m`;
+            
+            // Nếu đổi góc khi đang bay hoặc nổ, hủy tiến trình
+            isAnimating = false;
+            isFlying = false;
+            isExploding = false;
+            stopFireSound(); // Ngắt tiếng rít nếu đổi góc giữa chừng
+            
+            cancelAnimationFrame(animationId);
+            btnFire.textContent = 'BẮN ĐẠN';
+            btnFire.classList.remove('bg-gray-600');
+            btnFire.classList.add('bg-red-600', 'hover:bg-red-500');
+            
+            drawFrame();
+        });
+
+        // Khởi động
+        window.onload = () => {
+            // Hiển thị trạng thái ẩn số liệu ban đầu
+            valAngle.textContent = `${angleDeg}°`;
+            valRange.textContent = `? m`;
+            valHeight.textContent = `? m`;
+            
+            // Hiển thị công thức đầu tiên ngay khi tải trang
+            selectMenu(0, document.querySelector('.menu-item.active'));
+            resizeCanvas();
+        };
+
+    </script>
+</body>
+</html>

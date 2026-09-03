@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Khám Phá Sơ Đồ Venn - Toán 10 KNTT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    
+    <script>
+        window.MathJax = {
+            options: { enableMenu: false },
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0f172a; 
+            color: #e2e8f0;
+            margin: 0;
+            overflow: hidden; 
+            user-select: none; /* Tránh bôi đen text khi kéo thả */
+        } 
+        
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 320px;
+            background-color: #1e293b;
+            border-right: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 10;
+        }
+        
+        .canvas-area {
+            flex: 1;
+            position: relative;
+            background-color: #000000; 
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(30, 41, 59, 0.4) 0%, transparent 60%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .bottom-panel {
+            height: 160px;
+            background-color: #1e293b;
+            border-top: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 2rem;
+            z-index: 10;
+        }
+
+        .menu-item {
+            padding: 0.75rem 1rem;
+            margin: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            background-color: #334155;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border: 1px solid transparent;
+        }
+        .menu-item:hover { background-color: #475569; }
+        .menu-item.active {
+            background-color: rgba(56, 189, 248, 0.1);
+            border-color: #38bdf8;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+        }
+        .menu-icon {
+            background-color: #1e293b;
+            color: #94a3b8;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+        .menu-item.active .menu-icon {
+            background-color: #38bdf8;
+            color: #0f172a;
+        }
+
+        /* --- SVG STYLES --- */
+        #venn-svg {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+        
+        .venn-bg {
+            fill: #020617;
+            stroke: #475569;
+            stroke-width: 4;
+            stroke-dasharray: 10 10;
+        }
+
+        /* Logical Regions (Base) */
+        .region { fill-opacity: 0; transition: fill-opacity 0.3s ease, fill 0.3s ease; }
+        
+        /* Outline strokes */
+        .outline {
+            fill: none;
+            stroke-width: 4;
+            cursor: move;
+            transition: stroke-width 0.2s;
+        }
+        .outline:hover { stroke-width: 8; }
+        .outline-a { stroke: #38bdf8; } /* Xanh dương nhạt */
+        .outline-b { stroke: #fcd34d; } /* Vàng nhạt */
+
+        /* Element styles (Numbers) */
+        .element-group { cursor: move; }
+        .element-circle { fill: #334155; stroke: #94a3b8; stroke-width: 2; transition: fill 0.2s; }
+        .element-text { fill: #ffffff; font-family: monospace; font-size: 18px; font-weight: bold; text-anchor: middle; dominant-baseline: central; pointer-events: none;}
+        .element-group:hover .element-circle { fill: #475569; stroke: #ffffff; }
+
+        /* Highlight Classes for active operations */
+        .hl-a { fill: #38bdf8; }
+        .hl-b { fill: #fcd34d; }
+        .hl-intersect { fill: #4ade80; } /* Xanh lá */
+        .hl-u { fill: #cbd5e1; }
+        
+        .active-region { 
+            fill-opacity: 0.45; 
+            /* Đã xoá filter: drop-shadow(...) để khắc phục lỗi viền hình chữ nhật bao quanh */
+        }
+        
+        /* Chỉnh lại riêng cho Phần Bù */
+        #region-u.active-region {
+            fill-opacity: 0.15;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="appContainer" class="app-container">
+        <!-- Header -->
+        <header class="h-12 bg-slate-900 border-b border-slate-700 flex items-center justify-between px-4 shrink-0">
+            <div class="flex items-center gap-4">
+                <button class="flex items-center gap-2 bg-red-900/30 text-red-400 hover:text-red-300 hover:bg-red-900/50 px-3 py-1.5 rounded text-sm transition-colors border border-red-900/50">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    Đóng
+                </button>
+                <h1 class="text-sm font-semibold text-slate-200">Khám phá: Các Phép Toán Trên Tập Hợp (Sơ đồ Venn)</h1>
+            </div>
+            <button id="btnFullscreen" class="flex items-center gap-2 text-slate-400 hover:text-white px-3 py-1.5 rounded text-sm transition-colors border border-slate-700 hover:border-slate-500">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                Toàn màn hình
+            </button>
+        </header>
+
+        <div class="main-content">
+            <!-- Sidebar -->
+            <aside class="sidebar py-4 flex flex-col">
+                <div class="px-6 mb-4 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full border-2 border-sky-400 flex items-center justify-center text-sky-400 font-bold text-sm shrink-0">
+                        VN
+                    </div>
+                    <div>
+                        <div class="font-bold text-sm tracking-wide uppercase text-sky-400">Sơ đồ Venn</div>
+                        <div class="text-[10px] text-slate-400">Đại số 10 - KNTT</div>
+                    </div>
+                </div>
+
+                <div class="text-xs font-semibold text-slate-500 px-6 mb-2 uppercase tracking-wider">Chọn Phép Toán</div>
+                
+                <div class="menu-item active" onclick="setOperation('UNION', this)">
+                    <div class="menu-icon" id="ic-union"></div>
+                    <span class="text-sm font-medium">Hợp ($A \cup B$)</span>
+                </div>
+                <div class="menu-item" onclick="setOperation('INTERSECT', this)">
+                    <div class="menu-icon" id="ic-intersect"></div>
+                    <span class="text-sm font-medium">Giao ($A \cap B$)</span>
+                </div>
+                <div class="menu-item" onclick="setOperation('DIFF_A', this)">
+                    <div class="menu-icon" id="ic-diff-a"></div>
+                    <span class="text-sm font-medium">Hiệu ($A \setminus B$)</span>
+                </div>
+                <div class="menu-item" onclick="setOperation('DIFF_B', this)">
+                    <div class="menu-icon" id="ic-diff-b"></div>
+                    <span class="text-sm font-medium">Hiệu ($B \setminus A$)</span>
+                </div>
+                <div class="menu-item" onclick="setOperation('COMPLEMENT_A', this)">
+                    <div class="menu-icon" id="ic-comp-a"></div>
+                    <span class="text-sm font-medium">Phần bù ($C_U A$)</span>
+                </div>
+                <div class="menu-item" onclick="setOperation('SYMMETRIC', this)">
+                    <div class="menu-icon" id="ic-symm"></div>
+                    <span class="text-sm font-medium">Hiệu đối xứng ($A \triangle B$)</span>
+                </div>
+
+                <!-- Bảng điều khiển phần tử -->
+                <div class="mt-auto px-4 pb-4">
+                     <div class="bg-slate-800 rounded-lg p-4 border border-slate-700 shadow-lg">
+                        <h3 class="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">Tương tác tự do</h3>
+                        <p class="text-xs text-slate-400 mb-3">Kéo thả các <strong>hình Elip</strong> hoặc các <strong>con số</strong> để xem tập hợp biến đổi.</p>
+                        <div class="flex gap-2">
+                            <button onclick="addRandomElement()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white text-xs py-2 rounded transition border border-slate-600">+ Thêm phần tử</button>
+                            <button onclick="resetElements()" class="flex-1 bg-red-900/40 hover:bg-red-800/60 text-red-300 text-xs py-2 rounded transition border border-red-900/50">Làm mới</button>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Khu vực SVG Canvas -->
+            <main class="canvas-area" id="svgContainer">
+                <svg id="venn-svg" viewBox="0 0 900 600" preserveAspectRatio="xMidYMid meet" class="w-full h-full" style="outline: none;">
+                    <defs>
+                        <!-- Mask cho phần giao (A intersect B) -->
+                        <clipPath id="clip-intersect">
+                            <ellipse id="mask-ellipse-b" cx="0" cy="0" rx="0" ry="0" />
+                        </clipPath>
+                        
+                        <!-- Mask cho A hiệu B (A \ B): Ép giới hạn mask (x, y, width, height) cực lớn để chống lỗi Bounding Box -->
+                        <mask id="mask-diff-a" x="-2000" y="-2000" width="5000" height="5000" maskUnits="userSpaceOnUse">
+                            <rect x="-2000" y="-2000" width="5000" height="5000" fill="white" stroke="none" />
+                            <ellipse id="mask-cut-b" cx="0" cy="0" rx="0" ry="0" fill="black" stroke="none" />
+                        </mask>
+
+                        <!-- Mask cho B hiệu A (B \ A) -->
+                        <mask id="mask-diff-b" x="-2000" y="-2000" width="5000" height="5000" maskUnits="userSpaceOnUse">
+                            <rect x="-2000" y="-2000" width="5000" height="5000" fill="white" stroke="none" />
+                            <ellipse id="mask-cut-a" cx="0" cy="0" rx="0" ry="0" fill="black" stroke="none" />
+                        </mask>
+                        
+                        <!-- Mask cho Phần bù của A (U \ A) -->
+                        <mask id="mask-comp-a" x="-2000" y="-2000" width="5000" height="5000" maskUnits="userSpaceOnUse">
+                            <rect x="-2000" y="-2000" width="5000" height="5000" fill="white" stroke="none" />
+                            <ellipse id="mask-cut-a2" cx="0" cy="0" rx="0" ry="0" fill="black" stroke="none" />
+                        </mask>
+                    </defs>
+
+                    <!-- Tập Vũ Trụ (U) -->
+                    <rect id="bg-u" class="venn-bg" x="50" y="50" rx="15" ry="15" width="800" height="500" />
+                    <text x="60" y="80" fill="#94a3b8" font-size="24" font-weight="bold" font-style="italic">U</text>
+
+                    <!-- Vùng nền U (Cho phép toán phần bù) -->
+                    <rect id="region-u" mask="url(#mask-comp-a)" class="region hl-u" x="50" y="50" rx="15" ry="15" width="800" height="500" />
+                    
+                    <!-- Vùng A \ B -->
+                    <ellipse id="region-a" mask="url(#mask-diff-a)" class="region hl-a" />
+                    
+                    <!-- Vùng B \ A -->
+                    <ellipse id="region-b" mask="url(#mask-diff-b)" class="region hl-b" />
+                    
+                    <!-- Vùng Giao (A ∩ B) -->
+                    <ellipse id="region-intersect" clip-path="url(#clip-intersect)" class="region hl-intersect" />
+
+                    <g id="drag-group-a">
+                        <ellipse id="outline-a" class="outline outline-a" />
+                        <text id="label-a" fill="#38bdf8" font-size="28" font-weight="bold" pointer-events="none">A</text>
+                    </g>
+                    
+                    <g id="drag-group-b">
+                        <ellipse id="outline-b" class="outline outline-b" />
+                        <text id="label-b" fill="#fcd34d" font-size="28" font-weight="bold" pointer-events="none">B</text>
+                    </g>
+
+                    <!-- Vùng chứa các phần tử (các con số) -->
+                    <g id="elements-container"></g>
+                </svg>
+            </main>
+        </div>
+
+        <!-- Bottom Panel: Hiển thị kết quả -->
+        <footer class="bottom-panel flex flex-row items-center justify-between">
+            
+            <div class="flex-1 pr-6">
+                <!-- Hàng 1: Hiển thị tập A và B (Đã tăng kích thước chữ và làm nổi bật) -->
+                <div class="flex flex-wrap gap-10 text-2xl text-slate-200 font-mono mb-4 bg-slate-800/80 inline-flex px-6 py-3 rounded-xl border border-slate-600 shadow-lg" id="setsDisplay">
+                    <div class="whitespace-nowrap">A = { <span id="valSetA" class="text-sky-400 font-bold tracking-widest"></span> }</div>
+                    <div class="whitespace-nowrap">B = { <span id="valSetB" class="text-amber-300 font-bold tracking-widest"></span> }</div>
+                </div>
+                
+                <!-- Hàng 2: Giải thích phép toán -->
+                <div>
+                    <h2 class="text-xl font-bold text-white mb-1" id="opTitle">Hợp của hai tập hợp</h2>
+                    <p class="text-base text-slate-400" id="opDesc">Gồm các phần tử thuộc A hoặc thuộc B.</p>
+                </div>
+            </div>
+
+            <!-- Hàng 3: Công thức kết quả Toán học -->
+            <div class="bg-slate-900 border border-slate-700 rounded-xl px-8 py-3 flex items-center justify-center shadow-inner min-w-[350px]">
+                <div class="text-4xl text-green-400 font-bold font-mono tracking-widest" id="resultMath"></div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // --- STREAMING_CHUNK:Cấu hình Dữ liệu và Khởi tạo ---
+        const svg = document.getElementById('venn-svg');
+        const elementsContainer = document.getElementById('elements-container');
+        
+        // Trạng thái các hình Elip
+        const shapeA = { cx: 350, cy: 300, rx: 180, ry: 220, isDragging: false };
+        const shapeB = { cx: 550, cy: 300, rx: 180, ry: 220, isDragging: false };
+        const rectU = { x: 50, y: 50, w: 800, h: 500 };
+        
+        // Dữ liệu các phần tử (Số học)
+        let elements = [];
+        let nextElementId = 1;
+        let currentOperation = 'UNION';
+        
+        // Đối tượng đang bị kéo
+        let dragTarget = null;
+        let offset = { x: 0, y: 0 };
+
+        // Render các icon toán học ban đầu (Sử dụng Unicode HTML Entities thay cho MathJax để tránh lỗi hiển thị bất đồng bộ)
+        function renderMenuIcons() {
+            document.getElementById('ic-union').innerHTML = '&#8746;'; // U
+            document.getElementById('ic-intersect').innerHTML = '&#8745;'; // n
+            document.getElementById('ic-diff-a').innerHTML = '&#8726;'; // \
+            document.getElementById('ic-diff-b').innerHTML = '&#8726;'; // \
+            document.getElementById('ic-comp-a').innerHTML = 'C';
+            document.getElementById('ic-symm').innerHTML = '&#9651;'; // Tam giác
+        }
+
+        // --- STREAMING_CHUNK:Đồng bộ hóa SVG Elements ---
+        function syncSVG() {
+            // Cập nhật tọa độ cho Elip A (Hiển thị và Masks)
+            const elsA = ['outline-a', 'region-a', 'mask-cut-a', 'mask-cut-a2', 'region-intersect'];
+            elsA.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) {
+                    el.setAttribute('cx', shapeA.cx); el.setAttribute('cy', shapeA.cy);
+                    el.setAttribute('rx', shapeA.rx); el.setAttribute('ry', shapeA.ry);
+                }
+            });
+            // Label A
+            const lblA = document.getElementById('label-a');
+            lblA.setAttribute('x', shapeA.cx - shapeA.rx + 30);
+            lblA.setAttribute('y', shapeA.cy - shapeA.ry + 30);
+
+            // Cập nhật tọa độ cho Elip B (Hiển thị và Masks)
+            const elsB = ['outline-b', 'region-b', 'mask-cut-b', 'mask-ellipse-b'];
+            elsB.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) {
+                    el.setAttribute('cx', shapeB.cx); el.setAttribute('cy', shapeB.cy);
+                    el.setAttribute('rx', shapeB.rx); el.setAttribute('ry', shapeB.ry);
+                }
+            });
+            // Label B
+            const lblB = document.getElementById('label-b');
+            lblB.setAttribute('x', shapeB.cx + shapeB.rx - 50);
+            lblB.setAttribute('y', shapeB.cy - shapeB.ry + 30);
+
+            updateLogic();
+        }
+
+        // Kiểm tra 1 điểm có nằm trong Elip không (Phương trình Elip)
+        function isInsideEllipse(x, y, elip) {
+            const dx = x - elip.cx;
+            const dy = y - elip.cy;
+            return (dx * dx) / (elip.rx * elip.rx) + (dy * dy) / (elip.ry * elip.ry) <= 1;
+        }
+
+        // --- STREAMING_CHUNK:Tính toán Tập hợp và Cập nhật Giao diện ---
+        function updateLogic() {
+            let setA = [];
+            let setB = [];
+            let setIntersect = [];
+            let resultSet = [];
+
+            // Phân loại các phần tử
+            elements.forEach(el => {
+                const inA = isInsideEllipse(el.x, el.y, shapeA);
+                const inB = isInsideEllipse(el.x, el.y, shapeB);
+                
+                // Thuộc tính trực quan của phần tử (sẽ thay đổi nếu nằm trong vùng được highlight)
+                let domEl = document.getElementById(`el-circle-${el.id}`);
+                if(domEl) {
+                    domEl.setAttribute('stroke', '#94a3b8'); // Mặc định
+                }
+
+                if (inA) setA.push(el.val);
+                if (inB) setB.push(el.val);
+                if (inA && inB) setIntersect.push(el.val);
+            });
+
+            // Sắp xếp tăng dần để hiển thị đẹp
+            setA.sort((a,b)=>a-b);
+            setB.sort((a,b)=>a-b);
+            
+            // Xử lý phép toán hiện tại
+            let opString = "";
+            elements.forEach(el => {
+                const inA = isInsideEllipse(el.x, el.y, shapeA);
+                const inB = isInsideEllipse(el.x, el.y, shapeB);
+                let isInResult = false;
+
+                switch(currentOperation) {
+                    case 'UNION':
+                        isInResult = inA || inB;
+                        opString = "A \\cup B";
+                        break;
+                    case 'INTERSECT':
+                        isInResult = inA && inB;
+                        opString = "A \\cap B";
+                        break;
+                    case 'DIFF_A':
+                        isInResult = inA && !inB;
+                        opString = "A \\setminus B";
+                        break;
+                    case 'DIFF_B':
+                        isInResult = inB && !inA;
+                        opString = "B \\setminus A";
+                        break;
+                    case 'COMPLEMENT_A':
+                        isInResult = !inA; // Thuộc U nhưng không thuộc A
+                        opString = "C_U A";
+                        break;
+                    case 'SYMMETRIC':
+                        isInResult = (inA && !inB) || (inB && !inA);
+                        opString = "A \\triangle B";
+                        break;
+                }
+
+                if(isInResult) {
+                    resultSet.push(el.val);
+                    // Làm nổi bật phần tử nằm trong vùng kết quả
+                    let domEl = document.getElementById(`el-circle-${el.id}`);
+                    if(domEl) domEl.setAttribute('stroke', '#ffffff');
+                }
+            });
+
+            resultSet.sort((a,b)=>a-b);
+
+            // Cập nhật DOM chữ
+            document.getElementById('valSetA').textContent = setA.join(', ');
+            document.getElementById('valSetB').textContent = setB.join(', ');
+            
+            // Render MathJax cho kết quả
+            const resultBox = document.getElementById('resultMath');
+            resultBox.innerHTML = `$$${opString} = \\{${resultSet.join(', ')}\\}$$`;
+            
+            if(window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetClear([resultBox]); 
+                MathJax.typesetPromise([resultBox]).catch((err) => console.log(err.message));
+            }
+        }
+
+        // --- STREAMING_CHUNK:Xử lý hiệu ứng tô màu (Color Coding) ---
+        function updateHighlights() {
+            // Reset tất cả
+            document.getElementById('region-a').classList.remove('active-region');
+            document.getElementById('region-b').classList.remove('active-region');
+            document.getElementById('region-intersect').classList.remove('active-region');
+            document.getElementById('region-u').classList.remove('active-region');
+
+            switch(currentOperation) {
+                case 'UNION':
+                    document.getElementById('region-a').classList.add('active-region');
+                    document.getElementById('region-b').classList.add('active-region');
+                    document.getElementById('region-intersect').classList.add('active-region');
+                    break;
+                case 'INTERSECT':
+                    document.getElementById('region-intersect').classList.add('active-region');
+                    break;
+                case 'DIFF_A':
+                    document.getElementById('region-a').classList.add('active-region');
+                    break;
+                case 'DIFF_B':
+                    document.getElementById('region-b').classList.add('active-region');
+                    break;
+                case 'COMPLEMENT_A':
+                    document.getElementById('region-u').classList.add('active-region');
+                    document.getElementById('region-b').classList.add('active-region');
+                    break;
+                case 'SYMMETRIC':
+                    document.getElementById('region-a').classList.add('active-region');
+                    document.getElementById('region-b').classList.add('active-region');
+                    break;
+            }
+            updateLogic();
+        }
+
+        // Đổi phép toán từ Menu
+        const opData = {
+            'UNION': { title: "Hợp của hai tập hợp", desc: "Tập hợp các phần tử thuộc A HOẶC thuộc B." },
+            'INTERSECT': { title: "Giao của hai tập hợp", desc: "Tập hợp các phần tử VỪA thuộc A, VỪA thuộc B." },
+            'DIFF_A': { title: "Hiệu: A \\ B", desc: "Tập hợp các phần tử thuộc A nhưng KHÔNG thuộc B." },
+            'DIFF_B': { title: "Hiệu: B \\ A", desc: "Tập hợp các phần tử thuộc B nhưng KHÔNG thuộc A." },
+            'COMPLEMENT_A': { title: "Phần bù của A trong U", desc: "Tập hợp các phần tử thuộc U nhưng không thuộc A." },
+            'SYMMETRIC': { title: "Hiệu đối xứng", desc: "Các phần tử chỉ thuộc riêng A hoặc riêng B (không lấy phần giao)." }
+        };
+
+        window.setOperation = function(op, el) {
+            document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+            if(el) el.classList.add('active');
+            
+            currentOperation = op;
+            document.getElementById('opTitle').textContent = opData[op].title;
+            document.getElementById('opDesc').textContent = opData[op].desc;
+            
+            updateHighlights();
+        };
+
+        // --- STREAMING_CHUNK:Quản lý Kéo Thả (Drag & Drop) ---
+        function getMousePosition(evt) {
+            const CTM = svg.getScreenCTM();
+            // Xử lý cả mouse và touch
+            const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+            const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+            return {
+                x: (clientX - CTM.e) / CTM.a,
+                y: (clientY - CTM.f) / CTM.d
+            };
+        }
+
+        function startDrag(evt) {
+            if (evt.target.classList.contains('outline-a')) {
+                dragTarget = shapeA;
+            } else if (evt.target.classList.contains('outline-b')) {
+                dragTarget = shapeB;
+            } else if (evt.target.parentNode.classList.contains('element-group')) {
+                const id = parseInt(evt.target.parentNode.getAttribute('data-id'));
+                dragTarget = elements.find(el => el.id === id);
+            }
+
+            if (dragTarget) {
+                const coord = getMousePosition(evt);
+                // Với Elip là cx, cy. Với Element là x, y
+                const targetX = dragTarget.cx !== undefined ? dragTarget.cx : dragTarget.x;
+                const targetY = dragTarget.cy !== undefined ? dragTarget.cy : dragTarget.y;
+                
+                offset.x = coord.x - targetX;
+                offset.y = coord.y - targetY;
+            }
+        }
+
+        function drag(evt) {
+            if (dragTarget) {
+                evt.preventDefault(); // Chặn cuộn màn hình trên mobile
+                const coord = getMousePosition(evt);
+                const newX = coord.x - offset.x;
+                const newY = coord.y - offset.y;
+
+                if (dragTarget.cx !== undefined) {
+                    // Đang kéo Elip
+                    dragTarget.cx = newX;
+                    dragTarget.cy = newY;
+                    syncSVG();
+                } else {
+                    // Đang kéo Phần tử
+                    dragTarget.x = newX;
+                    dragTarget.y = newY;
+                    
+                    const group = document.getElementById(`el-group-${dragTarget.id}`);
+                    group.setAttribute('transform', `translate(${newX}, ${newY})`);
+                    updateLogic(); // Tính toán lại ngay khi thả
+                }
+            }
+        }
+
+        function endDrag(evt) {
+            dragTarget = null;
+        }
+
+        svg.addEventListener('mousedown', startDrag);
+        svg.addEventListener('mousemove', drag);
+        svg.addEventListener('mouseup', endDrag);
+        svg.addEventListener('mouseleave', endDrag);
+        // Hỗ trợ cảm ứng (Điện thoại/Tablet)
+        svg.addEventListener('touchstart', startDrag, {passive: false});
+        svg.addEventListener('touchmove', drag, {passive: false});
+        svg.addEventListener('touchend', endDrag);
+        svg.addEventListener('touchcancel', endDrag);
+
+        // --- STREAMING_CHUNK:Quản lý phần tử động ---
+        window.addRandomElement = function(val = null) {
+            if (elements.length > 20) return; // Giới hạn số lượng
+            
+            let num = val;
+            if (val === null) {
+                // Đảm bảo tạo ra số không bị trùng lặp
+                do {
+                    num = Math.floor(Math.random() * 30) + 1;
+                } while (elements.some(e => e.val === num));
+            }
+            
+            // Vị trí random ngẫu nhiên trong vùng 3 miền
+            const areaRand = Math.random();
+            let rx, ry;
+            if (areaRand < 0.3) { rx = shapeA.cx - 50; ry = shapeA.cy; } // Rơi vào A
+            else if (areaRand < 0.6) { rx = shapeB.cx + 50; ry = shapeB.cy; } // Rơi vào B
+            else if (areaRand < 0.8) { rx = (shapeA.cx + shapeB.cx)/2; ry = shapeA.cy; } // Giao
+            else { rx = rectU.x + Math.random()*rectU.w; ry = rectU.y + Math.random()*rectU.h; } // U
+
+            const el = { id: nextElementId++, val: num, x: rx, y: ry };
+            elements.push(el);
+
+            // Tạo DOM SVG Node
+            const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            group.setAttribute('id', `el-group-${el.id}`);
+            group.setAttribute('class', 'element-group');
+            group.setAttribute('data-id', el.id);
+            group.setAttribute('transform', `translate(${el.x}, ${el.y})`);
+
+            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circle.setAttribute('id', `el-circle-${el.id}`);
+            circle.setAttribute('class', 'element-circle');
+            circle.setAttribute('cx', 0);
+            circle.setAttribute('cy', 0);
+            circle.setAttribute('r', 18);
+
+            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            text.setAttribute('class', 'element-text');
+            text.textContent = num;
+
+            group.appendChild(circle);
+            group.appendChild(text);
+            elementsContainer.appendChild(group);
+
+            updateLogic();
+        };
+
+        window.resetElements = function() {
+            elements = [];
+            elementsContainer.innerHTML = '';
+            // Setup ban đầu
+            [1, 2, 3, 4, 5, 6].forEach(v => window.addRandomElement(v));
+        };
+
+        // --- Nút Toàn màn hình ---
+        const btnFullscreen = document.getElementById('btnFullscreen');
+        btnFullscreen.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                btnFullscreen.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg> Thu nhỏ`;
+            } else {
+                btnFullscreen.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg> Toàn màn hình`;
+            }
+        });
+
+        // Khởi động
+        window.onload = () => {
+            renderMenuIcons();
+            syncSVG();
+            resetElements();
+            updateHighlights();
+        };
+
+    </script>
+</body>
+</html>

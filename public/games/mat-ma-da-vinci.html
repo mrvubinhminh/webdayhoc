@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mật Mã Da Vinci - Cryptex</title>
+    
+    <!-- Cấu hình Tailwind cho Dark Mode -->
+    <script>
+
+    function parseExcelToJSON(file, callback) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = e.target.result;
+                const wb = XLSX.read(data, { type: 'binary' });
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+                
+                let questions = [];
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row || row.length < 6) continue;
+                    if (String(row[0]).toLowerCase().includes('câu hỏi') || String(row[1]).toLowerCase().includes('đáp án')) continue;
+                    
+                    
+                        const ansMap = {1: 'A', 2: 'B', 3: 'C', 4: 'D'};
+                        questions.push({
+                            q: String(row[0]),
+                            a: String(row[1]), b: String(row[2]), c: String(row[3]), d: String(row[4]),
+                            correct: ansMap[parseInt(row[5], 10)]
+                        });
+                        
+                }
+                callback(null, questions);
+            } catch (error) {
+                callback(error, null);
+            }
+        };
+        reader.readAsBinaryString(file);
+    }
+    
+
+        tailwind = { config: { darkMode: 'class', } }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- MathJax -->
+    <script>
+        MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Nunito:wght@400;700;900&display=swap');
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0, #cbd5e1);
+            color: #0f172a;
+            min-height: 100vh;
+            transition: background 0.5s ease;
+        }
+
+        html.dark body {
+            background: linear-gradient(135deg, #0f172a, #1e1b4b, #020617);
+            color: #f8fafc;
+        }
+
+        /* Font đặc biệt cho tiêu đề phong cách Cổ điển */
+        .font-cinzel { font-family: 'Cinzel', serif; }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d97706; border-radius: 4px; }
+
+        /* Hiệu ứng kính */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        }
+        html.dark .glass-panel {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        /* Cryptex Slot Style */
+        .cryptex-slot {
+            width: 60px; height: 80px;
+            background: linear-gradient(to bottom, #fcd34d, #b45309, #fcd34d);
+            border: 2px solid #78350f;
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Cinzel', serif;
+            font-weight: 900; font-size: 2.5rem; color: #451a03;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.5), 0 5px 15px rgba(0,0,0,0.3);
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.3);
+            transition: all 0.5s ease;
+        }
+        html.dark .cryptex-slot {
+            background: linear-gradient(to bottom, #d97706, #78350f, #d97706);
+            border: 2px solid #451a03;
+            color: #fef3c7;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+        .cryptex-slot.unlocked {
+            background: linear-gradient(to bottom, #34d399, #059669, #34d399);
+            color: white; border-color: #064e3b;
+        }
+
+        /* Clue paper style */
+        .parchment {
+            background: #fef3c7;
+            color: #78350f;
+            border: 1px solid #d97706;
+            box-shadow: inset 0 0 20px rgba(180, 83, 9, 0.2);
+            font-weight: bold;
+        }
+        html.dark .parchment {
+            background: #451a03;
+            color: #fde68a;
+            border: 1px solid #92400e;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .bg-pattern {
+            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fill-opacity='0.03' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E");
+        }
+        html.dark .bg-pattern {
+            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.02' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        @keyframes unlock-shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+        .animate-shake { animation: unlock-shake 0.4s ease-in-out; }
+        @keyframes pop-in { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .animate-pop { animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+</head>
+<body class="flex items-center justify-center p-4 bg-pattern transition-colors duration-500">
+
+    <div id="app-container" class="w-full max-w-7xl h-[95vh] flex flex-col relative">
+        
+        <!-- Nút Theme (Global) -->
+        <button onclick="toggleTheme()" class="absolute -top-2 right-0 lg:-right-4 glass-panel p-3 rounded-full hover:scale-110 transition-transform z-50 text-amber-600 dark:text-amber-400 border-2 border-amber-500" title="Đổi giao diện">
+            <i id="theme-icon-global" class="ph-fill ph-sun text-2xl"></i>
+        </button>
+
+        <!-- ================= MÀN HÌNH LOBBY ================= -->
+        <div id="screen-lobby" class="flex flex-col lg:flex-row gap-6 items-start h-full transition-all duration-500">
+            
+            <div class="w-full lg:w-5/12 flex flex-col gap-6">
+                <div class="glass-panel p-8 rounded-3xl text-center relative overflow-hidden border-t-4 border-t-amber-600">
+                    <div class="absolute -right-10 -top-10 text-amber-900/5 dark:text-amber-500/10"><i class="ph-fill ph-lock-key text-[15rem]"></i></div>
+                    <h1 class="text-4xl md:text-5xl font-black text-slate-800 dark:text-white mb-2 relative z-10 drop-shadow-md font-cinzel">MẬT MÃ<br><span class="text-amber-600 dark:text-amber-500">DA VINCI</span></h1>
+                    <p class="text-slate-600 dark:text-slate-300 font-bold relative z-10 uppercase tracking-widest text-sm">Giải Mã Két Sắt Bí Ẩn</p>
+                </div>
+
+                <div class="glass-panel p-6 rounded-3xl">
+                    <h2 class="text-xl font-extrabold text-amber-600 dark:text-amber-500 mb-4 flex items-center gap-2"><i class="ph-fill ph-vault"></i> Thiết Lập Két Sắt</h2>
+                    
+                    <div class="flex flex-col gap-4">
+                        <div class="grid grid-cols-2 gap-3 mb-2">
+                            <input type="text" id="input-team1" placeholder="Đội 1" class="w-full px-4 py-2 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-600 focus:border-amber-500 focus:outline-none font-bold text-slate-800 dark:text-white" value="Đội 1">
+                            <input type="text" id="input-team2" placeholder="Đội 2" class="w-full px-4 py-2 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-600 focus:border-amber-500 focus:outline-none font-bold text-slate-800 dark:text-white" value="Đội 2">
+                            <input type="text" id="input-team3" placeholder="Đội 3" class="w-full px-4 py-2 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-600 focus:border-amber-500 focus:outline-none font-bold text-slate-800 dark:text-white" value="Đội 3">
+                            <input type="text" id="input-team4" placeholder="Đội 4" class="w-full px-4 py-2 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-600 focus:border-amber-500 focus:outline-none font-bold text-slate-800 dark:text-white" value="Đội 4">
+                        </div>
+
+                        <div>
+                            <label class="block text-slate-700 dark:text-slate-300 font-bold mb-1 text-sm">Mật mã bí mật (3 - 8 ký tự)</label>
+                            <input type="text" id="input-secret" placeholder="VD: NEWTON hoặc 31415" class="w-full px-4 py-3 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-600 focus:border-amber-500 focus:outline-none font-bold text-slate-800 dark:text-white uppercase" value="1945">
+                        </div>
+
+                        <div>
+                            <label class="block text-slate-700 dark:text-slate-300 font-bold mb-1 text-sm flex justify-between">
+                                <span>Danh sách manh mối</span>
+                                <span class="text-xs font-normal opacity-70">(Mỗi dòng 1 manh mối)</span>
+                            </label>
+                            <textarea id="input-clues" rows="4" class="w-full px-4 py-3 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-600 focus:border-amber-500 focus:outline-none font-bold text-slate-800 dark:text-white text-sm" placeholder="VD:&#10;Ký tự đầu tiên là một số lẻ.&#10;Tổng 2 ký tự cuối bằng 9.">Ký tự đầu tiên là số lẻ nhỏ nhất.
+Tổng các chữ số bằng 19.
+Ký tự cuối cùng là số 5.
+Đây là năm Bác Hồ đọc Tuyên ngôn Độc lập.</textarea>
+                            <p class="text-xs text-amber-600 dark:text-amber-400 mt-2 font-semibold italic">*Các manh mối sẽ được mở dần sau mỗi câu hỏi.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-6 rounded-3xl grid grid-cols-2 gap-3">
+                    <button onclick="downloadSampleJSON()" class="flex flex-col items-center justify-center gap-2 p-3 bg-blue-100 dark:bg-blue-900/50 hover:bg-blue-200 dark:hover:bg-blue-800/50 text-blue-800 dark:text-blue-200 rounded-xl transition-colors font-bold border border-blue-300 dark:border-blue-700">
+                        <i class="ph-bold ph-download-simple text-2xl"></i> Tải File Mẫu
+                    </button>
+                    <button onclick="document.getElementById('file-upload').click()" class="flex flex-col items-center justify-center gap-2 p-3 bg-purple-100 dark:bg-purple-900/50 hover:bg-purple-200 dark:hover:bg-purple-800/50 text-purple-800 dark:text-purple-200 rounded-xl transition-colors font-bold border border-purple-300 dark:border-purple-700">
+                        <i class="ph-bold ph-upload-simple text-2xl"></i> Tải Lên JSON
+                        <input type="file" id="file-upload" accept=".json, .xlsx, .xls" class="hidden" onchange="handleFileUpload(event)">
+                    </button>
+                    <!-- Nút mở Trợ lý AI Sinh Câu Hỏi -->
+                    <button onclick="openPromptModal()" class="col-span-2 flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl shadow-md transition-all font-bold mt-2">
+                        <i class="ph-fill ph-magic-wand text-2xl"></i> Trợ Lý AI Sinh Câu Hỏi
+                    </button>
+                </div>
+            </div>
+
+            <!-- Ngân hàng câu hỏi -->
+            <div class="w-full lg:w-7/12 glass-panel p-6 rounded-3xl flex flex-col h-full border-t-4 border-t-amber-600 dark:border-t-amber-500">
+                <h2 class="text-2xl font-extrabold text-slate-800 dark:text-white mb-4 flex items-center gap-2 pb-4 border-b border-slate-200 dark:border-slate-700"><i class="ph-fill ph-books text-amber-600 dark:text-amber-500"></i> Ngân Hàng Câu Hỏi Khó</h2>
+                <div class="flex-grow overflow-y-auto custom-scrollbar pr-2" id="lesson-tree-container"></div>
+                <div class="pt-4 border-t border-slate-200 dark:border-slate-700 mt-4">
+                    <p id="selected-lesson-info" class="text-center text-amber-600 dark:text-amber-500 font-bold mb-3 h-6">Chưa chọn bộ đề.</p>
+                    <button id="btn-start-game" onclick="startGame()" disabled class="w-full bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-bold text-xl py-4 rounded-xl transition-all cursor-not-allowed font-cinzel tracking-widest">CHỌN ĐỀ ĐỂ BẮT ĐẦU</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= HƯỚNG DẪN ================= -->
+        <div id="screen-tutorial" class="hidden flex-col items-center justify-center glass-panel p-10 rounded-3xl text-center max-w-4xl mx-auto transform transition-all scale-95 opacity-0 relative overflow-hidden">
+            <div class="absolute -left-16 -top-16 text-amber-500 opacity-10 dark:opacity-20"><i class="ph-fill ph-vault text-[20rem]"></i></div>
+            <h2 class="text-4xl md:text-5xl font-black text-slate-800 dark:text-white mb-8 relative z-10 uppercase tracking-wide font-cinzel">Luật Giải Mã <span class="text-amber-600 dark:text-amber-500">Cryptex</span></h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 relative z-10">
+                <div class="bg-white/80 dark:bg-slate-800/80 p-6 rounded-2xl border border-slate-200 dark:border-slate-600 flex flex-col items-center">
+                    <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-white text-3xl mb-4 shadow-lg"><i class="ph-bold ph-users-three"></i></div>
+                    <h3 class="font-bold text-slate-800 dark:text-white text-xl mb-2">1. Suy Luận</h3>
+                    <p class="text-slate-600 dark:text-slate-300 text-sm font-semibold">Tất cả cùng nhau giải quyết một câu hỏi khó hiển thị trên màn hình.</p>
+                </div>
+                <div class="bg-white/80 dark:bg-slate-800/80 p-6 rounded-2xl border border-slate-200 dark:border-slate-600 flex flex-col items-center">
+                    <div class="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center text-white text-3xl mb-4 shadow-lg"><i class="ph-bold ph-magnifying-glass"></i></div>
+                    <h3 class="font-bold text-slate-800 dark:text-white text-xl mb-2">2. Manh Mối</h3>
+                    <p class="text-slate-600 dark:text-slate-300 text-sm font-semibold">Trả lời đúng giúp mở khóa một Manh mối Logic về mật khẩu Két sắt.</p>
+                </div>
+                <div class="bg-white/80 dark:bg-slate-800/80 p-6 rounded-2xl border border-slate-200 dark:border-slate-600 flex flex-col items-center">
+                    <div class="w-16 h-16 bg-amber-600 rounded-full flex items-center justify-center text-white text-3xl mb-4 shadow-lg"><i class="ph-bold ph-key"></i></div>
+                    <h3 class="font-bold text-slate-800 dark:text-white text-xl mb-2">3. Giải Mã</h3>
+                    <p class="text-slate-600 dark:text-slate-300 text-sm font-semibold">Đội nào tự tin có thể xin Nhập Mã. Nếu đúng: CHIẾN THẮNG. Sai: KHÓA VĨNH VIỄN!</p>
+                </div>
+            </div>
+            <button onclick="enterGame()" class="relative z-10 bg-gradient-to-r from-amber-600 to-orange-700 hover:from-amber-500 hover:to-orange-600 text-white font-black text-2xl py-4 px-12 rounded-full shadow-xl active:translate-y-[6px] transition-all flex items-center gap-3 font-cinzel">
+                TIẾN VÀO MẬT THẤT <i class="ph-bold ph-door-open text-3xl"></i>
+            </button>
+        </div>
+
+        <!-- ================= CHƠI GAME ================= -->
+        <div id="screen-game" class="hidden flex-col gap-6 w-full h-full relative">
+            
+            <!-- HEADER (Cryptex) -->
+            <div class="w-full glass-panel rounded-3xl p-6 shadow-xl flex flex-col items-center justify-center border-b-8 border-b-amber-700 dark:border-b-amber-900 relative">
+                <button onclick="goHome()" class="absolute left-6 top-1/2 transform -translate-y-1/2 w-14 h-14 flex items-center justify-center bg-red-600 hover:bg-red-500 text-white rounded-2xl font-bold shadow-lg" title="Rút lui"><i class="ph-fill ph-house text-3xl"></i></button>
+                
+                <h2 class="text-amber-800 dark:text-amber-500 font-black tracking-widest uppercase mb-4 text-lg font-cinzel"><i class="ph-fill ph-lock-key"></i> Két Sắt Trung Tâm <i class="ph-fill ph-lock-key"></i></h2>
+                
+                <!-- Slots -->
+                <div id="cryptex-container" class="flex gap-2 md:gap-4">
+                    <!-- Render by JS -->
+                </div>
+
+                <!-- Nút Đội xin mở két -->
+                <button onclick="openUnlockModal()" class="absolute right-6 top-1/2 transform -translate-y-1/2 bg-gradient-to-b from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-black py-3 px-6 rounded-xl shadow-lg border border-amber-300 dark:border-amber-700 transition-all flex items-center gap-2">
+                    <i class="ph-bold ph-key text-2xl"></i> MỞ KÉT SẮT
+                </button>
+            </div>
+
+            <!-- CHIA 2 CỘT -->
+            <div class="flex-grow flex flex-col lg:flex-row gap-6 h-full pb-4">
+                
+                <!-- BẢNG MANH MỐI (Cột Trái) -->
+                <div class="w-full lg:w-4/12 parchment rounded-3xl p-6 flex flex-col shadow-2xl relative overflow-hidden">
+                    <div class="text-center mb-6 border-b-2 border-amber-800/30 dark:border-amber-200/30 pb-4">
+                        <h3 class="font-black text-2xl tracking-widest uppercase font-cinzel">Bảng Manh Mối</h3>
+                        <p class="text-sm font-semibold opacity-80 mt-1">Đã thu thập: <span id="clue-count">0</span>/<span id="clue-total">0</span></p>
+                    </div>
+                    
+                    <ul id="clues-list-ui" class="flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2 flex-grow list-disc list-inside px-4 text-lg">
+                        <!-- Clues will be injected here -->
+                    </ul>
+                </div>
+
+                <!-- KHU VỰC CÂU HỎI (Cột Phải) -->
+                <div class="w-full lg:w-8/12 glass-panel text-slate-800 dark:text-white rounded-3xl p-8 flex flex-col relative shadow-2xl overflow-y-auto">
+                    
+                    <div class="flex justify-between items-center mb-6 border-b border-slate-200 dark:border-slate-700 pb-4">
+                        <div class="flex items-center gap-4">
+                            <span class="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold px-4 py-2 rounded-lg">Thử thách <span id="ui-q-counter">1</span> / <span id="ui-total-q">10</span></span>
+                            <!-- Đồng hồ tính giờ -->
+                            <div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-lg font-bold border border-slate-300 dark:border-slate-600">
+                                <i class="ph-fill ph-timer text-amber-500"></i>
+                                <span id="timer-text" class="text-slate-800 dark:text-white min-w-[3rem] text-center">00:00</span>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="toggleTimer()" id="btn-timer-toggle" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-bold transition-colors shadow flex items-center gap-2"><i class="ph-fill ph-play"></i> Chạy Giờ</button>
+                            <button onclick="adjustFontSize(2)" class="w-10 h-10 flex items-center justify-center bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded font-black text-slate-700 dark:text-white transition-colors">A+</button>
+                            <button onclick="adjustFontSize(-2)" class="w-10 h-10 flex items-center justify-center bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded font-black text-slate-700 dark:text-white transition-colors">A-</button>
+                        </div>
+                    </div>
+
+                    <h2 id="ui-question-text" class="font-black text-slate-900 dark:text-white leading-tight mb-8" style="font-size: 28px; min-height: 100px;">
+                        Loading...
+                    </h2>
+
+                    <!-- Giao diện đáp án -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 mt-auto" id="options-container">
+                        <!-- Đáp án render bằng JS -->
+                    </div>
+
+                    <!-- Bảng điều khiển của Giáo viên -->
+                    <div class="bg-slate-100 dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-2xl p-4 flex justify-between items-center mt-4">
+                        <span class="font-bold text-slate-500 dark:text-slate-400"><i class="ph-fill ph-chalkboard-teacher"></i> Quyền Giáo Viên:</span>
+                        <div class="flex gap-3">
+                            <button onclick="revealAnswer()" id="btn-reveal" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-6 rounded-xl shadow transition-colors flex items-center gap-2">
+                                <i class="ph-bold ph-eye"></i> Hiện Đáp Án & Manh Mối
+                            </button>
+                            <button onclick="nextQuestion()" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-3 px-6 rounded-xl shadow transition-colors flex items-center gap-2">
+                                Chuyển Câu <i class="ph-bold ph-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= MODAL AI PROMPT GENERATOR ================= -->
+        <div id="modal-ai" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+            <div class="glass-panel rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
+                <div class="bg-gradient-to-r from-amber-600 to-orange-700 p-4 flex justify-between items-center text-white">
+                    <h3 class="text-xl font-bold flex items-center gap-2"><i class="ph-bold ph-magic-wand text-2xl"></i> Trợ Lý Tạo Câu Lệnh AI</h3>
+                    <button onclick="closePromptModal()" class="hover:bg-white/20 p-2 rounded-lg transition-colors"><i class="ph-bold ph-x text-xl"></i></button>
+                </div>
+
+                <div class="p-6 overflow-y-auto custom-scrollbar flex flex-col gap-4 text-slate-800 dark:text-white">
+                    <p class="text-slate-600 dark:text-slate-300 text-sm font-semibold mb-2">Điền thông số để tạo câu lệnh chuẩn. Copy câu lệnh này dán vào ChatGPT/Gemini để nhận bộ câu hỏi định dạng JSON.</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block font-bold mb-1 text-sm">Chủ đề bài học</label>
+                            <input type="text" id="ai-topic" value="Vật lý Lượng Tử" class="w-full p-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg focus:outline-none focus:border-amber-500">
+                        </div>
+                        <div>
+                            <label class="block font-bold mb-1 text-sm">Cấp học</label>
+                            <input type="number" id="ai-grade" value="12" class="w-full p-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg focus:outline-none focus:border-amber-500">
+                        </div>
+                        <div>
+                            <label class="block font-bold mb-1 text-sm">Mức độ khó</label>
+                            <input type="text" id="ai-diff" value="Nâng cao, Cần suy luận logic" class="w-full p-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg focus:outline-none focus:border-amber-500">
+                        </div>
+                        <div>
+                            <label class="block font-bold mb-1 text-sm">Số lượng câu</label>
+                            <input type="number" id="ai-num" value="8" min="5" max="30" class="w-full p-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg focus:outline-none focus:border-amber-500">
+                        </div>
+                    </div>
+
+                    <div class="mt-2 flex justify-center">
+                        <button onclick="generatePrompt()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-6 rounded-lg shadow transition-colors">
+                            Tạo Lệnh Prompt 👇
+                        </button>
+                    </div>
+
+                    <div>
+                        <label class="block font-bold mb-1 text-sm flex justify-between">
+                            Kết quả (Copy và dán vào AI):
+                            <button onclick="copyPrompt()" class="text-blue-500 hover:text-blue-600 flex items-center gap-1"><i class="ph-bold ph-copy"></i> Copy</button>
+                        </label>
+                        <textarea id="ai-result" rows="8" readonly class="w-full p-3 bg-slate-900 text-green-400 font-mono text-sm rounded-lg outline-none resize-none shadow-inner"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= MODAL NHẬP MÃ ================= -->
+        <div id="modal-unlock" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+            <div class="glass-panel p-8 rounded-3xl max-w-lg w-full text-center relative border-4 border-amber-500 animate-pop">
+                <button onclick="closeUnlockModal()" class="absolute top-4 right-4 text-slate-500 hover:text-red-500 dark:text-white/50 dark:hover:text-red-400"><i class="ph-bold ph-x text-3xl"></i></button>
+                <i class="ph-fill ph-vault text-7xl text-amber-500 mb-4 drop-shadow"></i>
+                <h2 class="text-3xl font-black text-slate-800 dark:text-white mb-2 font-cinzel">GIẢI MÃ KÉT SẮT</h2>
+                <p class="text-slate-600 dark:text-slate-300 mb-6 font-semibold">Chọn đội và nhập mật mã (Đội sai sẽ bị loại).</p>
+                
+                <div class="flex flex-col gap-4 text-left">
+                    <select id="modal-team-select" class="w-full bg-white dark:bg-slate-800 text-slate-800 dark:text-white p-4 rounded-xl font-bold border border-slate-300 dark:border-slate-600 outline-none text-lg">
+                        <option value="1">Đội 1</option>
+                        <option value="2">Đội 2</option>
+                        <option value="3">Đội 3</option>
+                        <option value="4">Đội 4</option>
+                    </select>
+                    
+                    <input type="text" id="modal-pass-input" placeholder="NHẬP MÃ..." class="w-full bg-white dark:bg-slate-800 text-amber-600 dark:text-amber-400 p-4 rounded-xl font-black border-2 border-amber-500 outline-none text-center text-3xl tracking-[0.2em] uppercase font-cinzel">
+                    
+                    <button onclick="submitUnlock()" class="w-full bg-gradient-to-b from-green-500 to-emerald-700 hover:from-green-400 hover:to-emerald-600 text-white font-black text-2xl py-4 rounded-xl shadow-lg mt-2 uppercase transition-all">
+                        XÁC NHẬN MỞ KHÓA
+                    </button>
+                </div>
+                
+                <p id="modal-error" class="text-red-500 font-bold mt-4 hidden animate-shake">Mật mã không chính xác!</p>
+            </div>
+        </div>
+
+        <!-- ================= KẾT QUẢ ================= -->
+        <div id="screen-result" class="hidden flex-col items-center justify-center glass-panel p-10 rounded-3xl shadow-2xl border-4 border-amber-500 text-center max-w-2xl mx-auto transform transition-all scale-95 opacity-0">
+            <h1 class="text-5xl font-black text-amber-600 dark:text-amber-400 mb-2 drop-shadow-md font-cinzel">GIẢI MÃ THÀNH CÔNG! 🔓</h1>
+            <p id="res-winner-text" class="text-3xl text-slate-800 dark:text-white font-black mb-8 mt-4 uppercase"></p>
+            
+            <div class="bg-white/50 dark:bg-black/30 w-full rounded-2xl p-8 mb-8 border border-slate-200 dark:border-slate-700 flex flex-col items-center">
+                <p class="text-slate-600 dark:text-slate-400 font-bold mb-2 text-xl">Mật mã bí mật là:</p>
+                <div id="res-secret-word" class="text-6xl font-black text-green-600 dark:text-green-400 tracking-[0.2em] font-cinzel bg-white dark:bg-slate-800 px-8 py-4 rounded-xl border-4 border-green-500 shadow-inner">WORD</div>
+            </div>
+
+            <button onclick="goHome()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-2xl py-4 px-12 rounded-full shadow-xl active:translate-y-[6px] transition-all">
+                🏠 QUAY LẠI MENU
+            </button>
+        </div>
+    </div>
+
+    <!-- ================= JAVASCRIPT ================= -->
+    <script>
+        // --- 0. THEME MANAGEMENT ---
+        function toggleTheme() {
+            const html = document.documentElement;
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark'); localStorage.setItem('olympia_theme', 'light');
+                document.getElementById('theme-icon-global').className = 'ph-fill ph-moon text-2xl text-amber-600';
+            } else {
+                html.classList.add('dark'); localStorage.setItem('olympia_theme', 'dark');
+                document.getElementById('theme-icon-global').className = 'ph-fill ph-sun text-2xl text-amber-400';
+            }
+        }
+        if (localStorage.getItem('olympia_theme') === 'light') {
+            document.documentElement.classList.remove('dark'); document.getElementById('theme-icon-global').className = 'ph-fill ph-moon text-2xl text-amber-600';
+        } else { document.documentElement.classList.add('dark'); }
+
+        // --- 1. LOCAL STORAGE & DATA ---
+        const STORAGE_KEY = 'puzzle_game_banks';
+        let lessonBanks = {}; 
+        function initStorage() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            if (data) lessonBanks = JSON.parse(data);
+            else {
+                for (let i = 1; i <= 12; i++) lessonBanks[i] = [];
+                lessonBanks[12].push({
+                    id: 'default', name: "Vật Lý Lượng Tử K12",
+                    questions: [
+                        { q: "Hạt ánh sáng được gọi là gì?", a: "Proton", b: "Electron", c: "Photon", d: "Neutron", correct: "C" },
+                        { q: "Công thức liên hệ năng lượng và khối lượng của Einstein?", a: "$E=mc^2$", b: "$F=ma$", c: "$E=hf$", d: "$P=UI$", correct: "A" },
+                        { q: "Hằng số Planck $h$ xấp xỉ bằng?", a: "$6.625 \\times 10^{-34}$", b: "$9.11 \\times 10^{-31}$", c: "$3 \\times 10^8$", d: "$1.6 \\times 10^{-19}$", correct: "A" },
+                        { q: "Thí nghiệm khe Young chứng minh ánh sáng có tính chất gì?", a: "Hạt", b: "Sóng", c: "Điện từ", d: "Đàn hồi", correct: "B" }
+                    ]
+                });
+                saveStorage();
+            }
+            renderTree();
+        }
+        function saveStorage() { localStorage.setItem(STORAGE_KEY, JSON.stringify(lessonBanks)); }
+
+        let activeLesson = null;
+        function renderTree() {
+            const container = document.getElementById('lesson-tree-container'); container.innerHTML = '';
+            for (let grade = 1; grade <= 12; grade++) {
+                const lessons = lessonBanks[grade] || [];
+                const gradeDiv = document.createElement('div'); gradeDiv.className = 'mb-2';
+                const header = document.createElement('div');
+                header.className = `flex justify-between items-center p-3 rounded-xl cursor-pointer font-bold ${lessons.length > 0 ? 'bg-amber-100 dark:bg-amber-600/40 text-amber-800 dark:text-amber-100' : 'bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-white/40'}`;
+                header.innerHTML = `<span><i class="ph-bold ph-folder-open mr-2"></i> Lớp ${grade}</span> <span class="text-sm bg-white/50 dark:bg-black/30 px-2 py-1 rounded-md">${lessons.length} bộ</span>`;
+                const list = document.createElement('div');
+                list.className = 'pl-6 pr-2 py-2 flex flex-col gap-2 ' + (lessons.length > 0 ? '' : 'hidden');
+                lessons.forEach(lesson => {
+                    const item = document.createElement('div');
+                    item.className = 'flex justify-between items-center bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-3 rounded-lg hover:border-amber-500 dark:hover:border-amber-400 transition-all cursor-pointer group text-slate-700 dark:text-white';
+                    item.onclick = () => selectLesson(lesson, grade, item);
+                    item.innerHTML = `<div class="flex items-center gap-2 overflow-hidden"><i class="ph-fill ph-book-open text-amber-500 dark:text-amber-400"></i><span class="font-bold truncate">${lesson.name}</span><span class="text-xs opacity-60">(${lesson.questions.length} câu)</span></div>`;
+                    list.appendChild(item);
+                });
+                header.onclick = () => { list.classList.toggle('hidden'); };
+                gradeDiv.appendChild(header); gradeDiv.appendChild(list); container.appendChild(gradeDiv);
+            }
+        }
+
+        function selectLesson(lesson, grade, element) {
+            document.querySelectorAll('.lesson-active').forEach(el => { el.classList.remove('lesson-active', 'border-amber-500', 'dark:border-amber-400', 'bg-amber-50', 'dark:bg-amber-900/20'); el.classList.add('border-slate-200', 'dark:border-white/10', 'bg-white/50', 'dark:bg-white/5'); });
+            element.classList.add('lesson-active', 'border-amber-500', 'dark:border-amber-400', 'bg-amber-50', 'dark:bg-amber-900/20'); element.classList.remove('border-slate-200', 'dark:border-white/10', 'bg-white/50', 'dark:bg-white/5');
+            activeLesson = lesson;
+            document.getElementById('selected-lesson-info').innerHTML = `Đã chọn: <span class="text-amber-600 dark:text-amber-400">Lớp ${grade} - ${lesson.name}</span>`;
+            const btn = document.getElementById('btn-start-game');
+            btn.disabled = false; btn.className = 'w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-black text-2xl py-4 rounded-xl shadow-lg hover:scale-[1.02] transition-all uppercase tracking-wider font-cinzel'; btn.innerText = 'BẮT ĐẦU CHƠI 🗝️';
+        }
+
+        // Tải File Mẫu
+        function downloadSampleJSON() {
+            const sample = { 
+                "lessonName": "Bài Tập Mẫu Da Vinci", 
+                "grade": 12, 
+                "questions": [ 
+                    { "q": "Đạo hàm của $f(x) = x^2$ là?", "a": "$x$", "b": "$2x$", "c": "$3x$", "d": "$2$", "correct": "B" },
+                    { "q": "Phương trình $x^2 - 4 = 0$ có nghiệm dương là?", "a": "$1$", "b": "$2$", "c": "$3$", "d": "$4$", "correct": "B" }
+                ] 
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(sample, null, 4));
+            const dlAnchorElem = document.createElement('a'); 
+            dlAnchorElem.setAttribute("href", dataStr); 
+            dlAnchorElem.setAttribute("download", "DaVinci_Sample.json"); 
+            dlAnchorElem.click();
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!data.lessonName || !data.grade || !data.questions) { alert("File không đúng cấu trúc (thiếu lessonName, grade hoặc questions)."); return; }
+                    lessonBanks[parseInt(data.grade)].push({ id: Date.now().toString(), name: data.lessonName, questions: data.questions });
+                    saveStorage(); renderTree(); alert(`Thêm bộ câu hỏi "${data.lessonName}" thành công!`);
+                } catch (err) { alert("Lỗi đọc file JSON. Vui lòng kiểm tra lại cấu trúc file."); }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        // --- AI PROMPT GENERATOR ---
+        function openPromptModal() {
+            document.getElementById('modal-ai').classList.remove('hidden');
+            generatePrompt();
+        }
+        function closePromptModal() {
+            document.getElementById('modal-ai').classList.add('hidden');
+        }
+        function generatePrompt() {
+            const topic = document.getElementById('ai-topic')?.value || "Chủ đề bài học";
+            const grade = document.getElementById('ai-grade')?.value || "12";
+            const diff = document.getElementById('ai-diff')?.value || "Khó";
+            const num = document.getElementById('ai-num')?.value || "10";
+
+            const prompt = `Đóng vai là một giáo viên chuyên môn, hãy tạo một bộ gồm đúng ${num} câu hỏi trắc nghiệm khách quan về chủ đề "${topic}" thuộc chương trình Lớp ${grade}.
+Mức độ yêu cầu: ${diff}.
+
+QUAN TRỌNG: Bạn CHỈ ĐƯỢC PHÉP trả về kết quả dưới dạng chuỗi JSON thô, không được có thẻ markdown \`\`\`json, không có lời chào hay giải thích nào khác. 
+Nếu câu hỏi có chứa công thức toán học, vật lý, hóa học hãy BẮT BUỘC sử dụng cú pháp LaTeX được bọc trong cặp dấu $ (Ví dụ: $\\frac{1}{2}$ hoặc $E=mc^2$).
+
+Phải tuân thủ tuyệt đối cấu trúc JSON sau:
+{
+  "lessonName": "${topic}",
+  "grade": ${grade},
+  "questions": [
+    {
+      "q": "Nội dung câu hỏi (sử dụng $...$ nếu có công thức)",
+      "a": "Đáp án A",
+      "b": "Đáp án B",
+      "c": "Đáp án C",
+      "d": "Đáp án D",
+      "correct": "A"
+    }
+  ]
+}`;
+            document.getElementById('ai-result').value = prompt;
+        }
+
+        function copyPrompt() {
+            const copyText = document.getElementById('ai-result');
+            copyText.select();
+            document.execCommand("copy");
+            alert("Đã copy câu lệnh! Dán vào ChatGPT hoặc Gemini để tạo ngân hàng câu hỏi nhé.");
+        }
+
+        // --- 2. GAME LOGIC ---
+        let gameQuestions = [];
+        let qIndex = 0;
+        let secretCode = "";
+        let cluesArray = [];
+        let revealedCluesCount = 0;
+        let eliminatedTeams = []; // Mảng chứa ID các đội bị khóa (nhập sai pass)
+
+        let isAnswerRevealed = false;
+        
+        // Timer
+        let secondsElapsed = 0;
+        let timerInterval = null;
+        let isTimerRunning = false;
+
+        let qFontSize = 28; let aFontSize = 18;
+        function adjustFontSize(delta) {
+            qFontSize = Math.max(20, Math.min(60, qFontSize + delta)); aFontSize = Math.max(14, Math.min(40, aFontSize + delta));
+            document.getElementById('ui-question-text').style.fontSize = `${qFontSize}px`;
+            document.querySelectorAll('[id^="ui-opt-"]').forEach(el => el.style.fontSize = `${aFontSize}px`);
+        }
+
+        function goHome() {
+            if(!document.getElementById('screen-game').classList.contains('hidden') && !confirm("Trận đấu đang diễn ra. Thoát về sảnh?")) return;
+            clearInterval(timerInterval);
+            document.getElementById('screen-game').classList.add('hidden'); document.getElementById('screen-game').classList.remove('flex');
+            document.getElementById('screen-result').classList.add('hidden');
+            document.getElementById('screen-tutorial').classList.add('hidden');
+            document.getElementById('screen-lobby').classList.remove('hidden'); document.getElementById('screen-lobby').classList.add('flex');
+        }
+
+        function startGame() {
+            if (!activeLesson) return;
+            
+            // Xử lý Lỗi an toàn (Optional Chaining)
+            secretCode = (document.getElementById('input-secret')?.value || "1945").trim().toUpperCase();
+            let rawClues = document.getElementById('input-clues')?.value || "";
+            rawClues = rawClues.trim();
+            
+            if(rawClues) {
+                cluesArray = rawClues.split('\n').filter(c => c.trim() !== '');
+            } else {
+                cluesArray = Array.from({length: secretCode.length}, (_, i) => `Manh mối ${i+1}: Ký tự tại vị trí ${i+1} là '${secretCode[i]}'`);
+            }
+            
+            gameQuestions = activeLesson.questions;
+            qIndex = 0;
+            revealedCluesCount = 0;
+            eliminatedTeams = [];
+            
+            initCryptex();
+            updateCluesUI();
+            
+            document.getElementById('screen-lobby').classList.add('hidden'); document.getElementById('screen-lobby').classList.remove('flex');
+            const tutorial = document.getElementById('screen-tutorial');
+            tutorial.classList.remove('hidden'); tutorial.classList.add('flex');
+            setTimeout(() => { tutorial.classList.remove('scale-95', 'opacity-0'); tutorial.classList.add('scale-100', 'opacity-100'); }, 50);
+        }
+
+        function enterGame() {
+            const tutorial = document.getElementById('screen-tutorial');
+            tutorial.classList.remove('scale-100', 'opacity-100'); tutorial.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                tutorial.classList.add('hidden'); tutorial.classList.remove('flex');
+                document.getElementById('screen-game').classList.remove('hidden'); document.getElementById('screen-game').classList.add('flex'); 
+                loadQData();
+            }, 300);
+        }
+
+        function initCryptex() {
+            const container = document.getElementById('cryptex-container');
+            container.innerHTML = '';
+            for(let i = 0; i < secretCode.length; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'cryptex-slot';
+                slot.id = `crypt-${i}`;
+                slot.innerText = '?';
+                container.appendChild(slot);
+            }
+            document.getElementById('clue-total').innerText = cluesArray.length;
+            document.getElementById('clue-count').innerText = 0;
+            
+            // Xử lý Lỗi an toàn (Optional Chaining) khi ghi danh các đội
+            const select = document.getElementById('modal-team-select');
+            if (select && select.options.length >= 4) {
+                select.options[0].text = document.getElementById('input-team1')?.value || "Đội 1";
+                select.options[1].text = document.getElementById('input-team2')?.value || "Đội 2";
+                select.options[2].text = document.getElementById('input-team3')?.value || "Đội 3";
+                select.options[3].text = document.getElementById('input-team4')?.value || "Đội 4";
+            }
+        }
+
+        // --- TIMER LOGIC ---
+        function toggleTimer() {
+            const btn = document.getElementById('btn-timer-toggle');
+            if(isTimerRunning) {
+                clearInterval(timerInterval);
+                isTimerRunning = false;
+                btn.innerHTML = `<i class="ph-fill ph-play"></i> Chạy Giờ`;
+                btn.classList.replace('bg-slate-500', 'bg-amber-500');
+                btn.classList.replace('hover:bg-slate-600', 'hover:bg-amber-600');
+            } else {
+                isTimerRunning = true;
+                btn.innerHTML = `<i class="ph-fill ph-pause"></i> Dừng Lại`;
+                btn.classList.replace('bg-amber-500', 'bg-slate-500');
+                btn.classList.replace('hover:bg-amber-600', 'hover:bg-slate-600');
+                timerInterval = setInterval(() => {
+                    secondsElapsed++;
+                    let m = Math.floor(secondsElapsed / 60).toString().padStart(2, '0');
+                    let s = (secondsElapsed % 60).toString().padStart(2, '0');
+                    document.getElementById('timer-text').innerText = `${m}:${s}`;
+                }, 1000);
+            }
+        }
+        function resetTimer() {
+            clearInterval(timerInterval);
+            secondsElapsed = 0; isTimerRunning = false;
+            document.getElementById('timer-text').innerText = "00:00";
+            const btn = document.getElementById('btn-timer-toggle');
+            btn.innerHTML = `<i class="ph-fill ph-play"></i> Chạy Giờ`;
+            btn.classList.replace('bg-slate-500', 'bg-amber-500');
+            btn.classList.replace('hover:bg-slate-600', 'hover:bg-amber-600');
+        }
+
+        // --- QUESTION LOGIC ---
+        function renderOptions() {
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            const opts = ['A', 'B', 'C', 'D'];
+            opts.forEach(opt => {
+                const btn = document.createElement('div');
+                btn.id = `btn-opt-${opt}`;
+                // Non-clickable, just for display
+                btn.className = `relative bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-left flex items-center transition-all duration-300`;
+                
+                const spanLetter = document.createElement('span');
+                spanLetter.className = `inline-block w-12 h-12 bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-black rounded-xl text-center leading-[2.8rem] mr-4 shrink-0 text-xl border border-slate-200 dark:border-slate-600 transition-all`;
+                spanLetter.innerText = opt;
+
+                const spanText = document.createElement('span');
+                spanText.id = `ui-opt-${opt}`;
+                spanText.className = `font-bold text-slate-700 dark:text-white`;
+                spanText.style.fontSize = `${aFontSize}px`;
+
+                btn.appendChild(spanLetter);
+                btn.appendChild(spanText);
+                container.appendChild(btn);
+            });
+        }
+
+        function loadQData() {
+            // Lặp lại câu hỏi nếu cần
+            const rIdx = qIndex % gameQuestions.length;
+            const qData = gameQuestions[rIdx];
+            
+            document.getElementById('ui-q-counter').innerText = qIndex+1;
+            document.getElementById('ui-total-q').innerText = gameQuestions.length;
+            document.getElementById('ui-question-text').innerText = qData.q;
+            
+            renderOptions();
+            document.getElementById('ui-opt-A').innerText = qData.a; document.getElementById('ui-opt-B').innerText = qData.b;
+            document.getElementById('ui-opt-C').innerText = qData.c; document.getElementById('ui-opt-D').innerText = qData.d;
+
+            if (window.MathJax) MathJax.typesetPromise();
+            
+            isAnswerRevealed = false;
+            document.getElementById('btn-reveal').disabled = false;
+            document.getElementById('btn-reveal').classList.remove('opacity-50', 'cursor-not-allowed');
+
+            resetTimer();
+            // Tự động chạy giờ cho câu mới
+            toggleTimer();
+        }
+
+        function revealAnswer() {
+            if (isAnswerRevealed) return;
+            isAnswerRevealed = true;
+            if(isTimerRunning) toggleTimer(); // Dừng đồng hồ
+
+            const rIdx = qIndex % gameQuestions.length;
+            const correctOpt = gameQuestions[rIdx].correct.trim().toUpperCase();
+            
+            const btnElement = document.getElementById(`btn-opt-${correctOpt}`);
+            
+            // Highlight đáp án đúng
+            btnElement.classList.replace('border-slate-200', 'border-green-500');
+            btnElement.classList.replace('dark:border-slate-700', 'dark:border-green-500');
+            btnElement.classList.replace('bg-white', 'bg-green-100');
+            btnElement.classList.replace('dark:bg-slate-800', 'dark:bg-green-900/50');
+            
+            let spanL = btnElement.querySelector('span:first-child');
+            spanL.classList.replace('bg-slate-100', 'bg-green-500');
+            spanL.classList.replace('dark:bg-slate-700', 'bg-green-500');
+            spanL.classList.replace('text-slate-500', 'text-white');
+            spanL.classList.replace('dark:text-slate-400', 'text-white');
+            
+            // Làm mờ các đáp án sai
+            ['A','B','C','D'].forEach(opt => {
+                if(opt !== correctOpt) document.getElementById(`btn-opt-${opt}`).classList.add('opacity-40');
+            });
+
+            document.getElementById('btn-reveal').disabled = true;
+            document.getElementById('btn-reveal').classList.add('opacity-50', 'cursor-not-allowed');
+
+            // Mở 1 manh mối nếu còn
+            if(revealedCluesCount < cluesArray.length) {
+                revealedCluesCount++;
+                updateCluesUI();
+            }
+        }
+
+        function updateCluesUI() {
+            document.getElementById('clue-count').innerText = revealedCluesCount;
+            const ul = document.getElementById('clues-list-ui');
+            ul.innerHTML = '';
+            for(let i=0; i<revealedCluesCount; i++) {
+                const li = document.createElement('li');
+                li.className = "border-b border-amber-800/20 dark:border-amber-200/20 pb-2 animate-pop";
+                li.innerText = cluesArray[i];
+                ul.appendChild(li);
+            }
+        }
+
+        function nextQuestion() {
+            qIndex++;
+            loadQData();
+        }
+
+        // --- CRYPTEX UNLOCK LOGIC ---
+        function openUnlockModal() {
+            document.getElementById('modal-pass-input').value = "";
+            document.getElementById('modal-error').classList.add('hidden');
+            
+            // Disable dropdown options for eliminated teams
+            const select = document.getElementById('modal-team-select');
+            for(let i=0; i<select.options.length; i++) {
+                if(eliminatedTeams.includes(parseInt(select.options[i].value))) {
+                    select.options[i].disabled = true;
+                    if (!select.options[i].text.includes("(Đã bị khóa)")) {
+                        select.options[i].text += " (Đã bị khóa)";
+                    }
+                }
+            }
+            
+            document.getElementById('modal-unlock').classList.remove('hidden');
+        }
+        function closeUnlockModal() {
+            document.getElementById('modal-unlock').classList.add('hidden');
+        }
+
+        function submitUnlock() {
+            const teamId = parseInt(document.getElementById('modal-team-select').value);
+            const selectEl = document.getElementById('modal-team-select');
+            const teamName = selectEl.options[selectEl.selectedIndex].text.replace(" (Đã bị khóa)", "");
+            
+            const guess = document.getElementById('modal-pass-input').value.trim().toUpperCase();
+            const errEl = document.getElementById('modal-error');
+
+            if(eliminatedTeams.includes(teamId)) {
+                errEl.innerText = "Đội này đã bị khóa quyền trả lời!";
+                errEl.classList.remove('hidden'); return;
+            }
+
+            if (guess === secretCode) {
+                // WIN!
+                closeUnlockModal();
+                
+                // Hiệu ứng mở két sắt
+                for(let i=0; i<secretCode.length; i++) {
+                    setTimeout(() => {
+                        let slot = document.getElementById(`crypt-${i}`);
+                        if (slot) {
+                            slot.innerText = secretCode[i];
+                            slot.classList.add('unlocked', 'animate-pop');
+                        }
+                    }, i * 300);
+                }
+                
+                setTimeout(() => { endGame(teamName); }, secretCode.length * 300 + 1000);
+
+            } else {
+                // LOSE
+                eliminatedTeams.push(teamId);
+                errEl.innerText = "Mật mã SAI! Đội " + teamName + " đã bị KHÓA quyền giải mã vĩnh viễn.";
+                errEl.classList.remove('hidden', 'animate-shake');
+                void errEl.offsetWidth; // trigger reflow
+                errEl.classList.add('animate-shake');
+                
+                // Cập nhật text option ngay lập tức
+                selectEl.options[selectEl.selectedIndex].disabled = true;
+                if (!selectEl.options[selectEl.selectedIndex].text.includes("(Đã bị khóa)")) {
+                    selectEl.options[selectEl.selectedIndex].text += " (Đã bị khóa)";
+                }
+                
+                if (eliminatedTeams.length >= 4) {
+                    setTimeout(() => {
+                        closeUnlockModal();
+                        endGame(null); // Tất cả đều thua
+                    }, 3000);
+                }
+            }
+        }
+
+        function endGame(winnerName) {
+            clearInterval(timerInterval);
+            
+            document.getElementById('res-secret-word').innerText = secretCode;
+
+            if(winnerName) {
+                document.getElementById('res-winner-text').innerText = `🥇 CHÚC MỪNG: ${winnerName}`;
+            } else {
+                document.getElementById('res-winner-text').innerText = "💥 KHÔNG CÓ ĐỘI NÀO GIẢI MÃ THÀNH CÔNG";
+            }
+
+            document.getElementById('screen-game').classList.add('hidden'); document.getElementById('screen-game').classList.remove('flex');
+            const targetScreen = document.getElementById('screen-result');
+            targetScreen.classList.remove('hidden'); targetScreen.classList.add('flex');
+            setTimeout(() => { targetScreen.classList.remove('scale-95', 'opacity-0'); targetScreen.classList.add('scale-100', 'opacity-100'); }, 50);
+        }
+
+        
+    function downloadSampleExcel() {
+        const ws = XLSX.utils.aoa_to_sheet([
+            ["Câu hỏi", "Đáp án A", "Đáp án B", "Đáp án C", "Đáp án D", "Cột đúng (1-4)"],
+            ["Câu hỏi mẫu: 1 + 1 bằng mấy?", "1", "2", "3", "4", 2]
+        ]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Câu Hỏi");
+        XLSX.writeFile(wb, "Mau_Cau_Hoi.xlsx");
+    }
+    
+    window.onload = () => { initStorage(); };
+    </script>
+</body>
+</html>

@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô Phỏng 3D - Phép Chiếu Song Song (Toán 11 KNTT)</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0f172a',
+                        sidebarBg: '#1e293b',
+                        panelBg: '#1e293b',
+                        accentRose: '#f43f5e', /* Rose 500 */
+                        accentRoseHover: '#e11d48', /* Rose 600 */
+                        textMuted: '#94a3b8'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+
+    <style>
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        body { margin: 0; overflow: hidden; background-color: #0f172a; }
+        
+        .label-3d {
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            font-weight: bold;
+            font-size: 18px;
+            text-shadow: 0px 0px 5px rgba(0,0,0,1), 0px 0px 2px rgba(0,0,0,0.8);
+            pointer-events: none;
+        }
+        
+        .label-math {
+            color: #facc15; 
+            font-family: 'Times New Roman', Times, serif; 
+            font-style: italic;
+            font-size: 22px;
+        }
+    </style>
+</head>
+<body class="text-white h-screen flex flex-col font-sans select-none">
+
+    <header class="h-14 bg-darkBg border-b border-slate-800 flex items-center justify-between px-4 shrink-0 z-10 relative shadow-md">
+        <div class="flex items-center gap-4">
+            <button class="flex items-center gap-2 bg-red-900/30 text-red-400 hover:bg-red-900/50 px-3 py-1.5 rounded text-sm transition-colors border border-red-900/50">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                Đóng
+            </button>
+            <h1 class="text-lg font-semibold tracking-wide text-rose-50">Phép Chiếu Song Song - Hình Học 11</h1>
+        </div>
+        
+        <button id="fullscreen-btn" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded text-sm text-textMuted transition-colors border border-slate-700 group">
+            <svg id="fullscreen-icon" class="group-hover:text-white transition-colors" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+            </svg>
+            <span id="fullscreen-text" class="group-hover:text-white transition-colors">Toàn màn hình (F)</span>
+        </button>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden relative">
+        <aside class="w-[340px] bg-sidebarBg border-r border-slate-800 flex flex-col z-10 shadow-xl shrink-0">
+            <div class="p-4 border-b border-slate-800 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full border-2 border-rose-500 flex items-center justify-center font-bold text-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.4)]">
+                    KNTT
+                </div>
+                <div>
+                    <div class="font-bold tracking-wider text-sm text-rose-100">TOÁN 11 - BÀI 14</div>
+                    <div class="text-[10px] text-rose-400/80 uppercase tracking-widest">Phép chiếu song song</div>
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto p-3 space-y-2" id="menu-list"></div>
+        </aside>
+
+        <main class="flex-1 relative flex flex-col">
+            <div id="canvas-container" class="flex-1 bg-[#090b14] relative cursor-grab active:cursor-grabbing"></div>
+
+            <div class="h-36 bg-sidebarBg/95 backdrop-blur-md border-t border-slate-700 p-6 flex items-center justify-between z-10 shrink-0 relative">
+                <div class="flex-1 pr-6">
+                    <h2 class="text-xl font-bold flex items-center gap-2 mb-2 text-rose-400" id="info-title">
+                        <svg class="text-rose-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                        <!-- Title -->
+                    </h2>
+                    <p class="text-slate-300 text-sm leading-relaxed" id="info-desc"></p>
+                </div>
+                <div class="bg-[#0f172a] border border-slate-700 rounded-xl px-8 py-4 flex items-center justify-center min-w-[320px] shadow-inner h-full">
+                    <div id="math-formula" class="text-rose-300 text-xl font-serif"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.js"></script>
+
+    <script>
+        const menuData = [
+            { 
+                id: 1, 
+                label: "Khái niệm", 
+                title: "Phép chiếu song song", 
+                desc: "Điểm M' là giao điểm của mặt phẳng chiếu (P) và đường thẳng đi qua M song song với phương chiếu Δ.", 
+                formula: "M' = pr_{\\Delta, (P)}(M)" 
+            },
+            { 
+                id: 2, 
+                label: "Tính chất 1", 
+                title: "Hình chiếu của đường thẳng", 
+                desc: "Hình chiếu song song của một đường thẳng (không song song với phương chiếu) là một đường thẳng.", 
+                formula: "a \\xrightarrow{\\text{chiếu}} a'" 
+            },
+            { 
+                id: 3, 
+                label: "Tính chất 2a", 
+                title: "Hình chiếu của hai đt song song", 
+                desc: "Hình chiếu song song của hai đường thẳng song song là hai đường thẳng song song (hoặc trùng nhau).", 
+                formula: "a \\parallel b \\Rightarrow a' \\parallel b'" 
+            },
+            { 
+                id: 4, 
+                label: "Tính chất 2b", 
+                title: "Hai đường thẳng chiếu trùng nhau", 
+                desc: "Nếu mặt phẳng chứa hai đường thẳng song song cùng phương với phương chiếu thì hình chiếu của chúng trùng nhau.", 
+                formula: "a \\parallel b, (a,b) \\parallel \\Delta \\Rightarrow a' \\equiv b'" 
+            },
+            { 
+                id: 5, 
+                label: "Tính chất 3", 
+                title: "Bảo toàn tỉ số", 
+                desc: "Phép chiếu song song bảo toàn thứ tự ba điểm thẳng hàng và tỉ số độ dài của các đoạn thẳng trên cùng một đường thẳng.", 
+                formula: "\\frac{AB}{BC} = \\frac{A'B'}{B'C'}" 
+            },
+            { 
+                id: 6, 
+                label: "Hình biểu diễn", 
+                title: "Hình biểu diễn của khối 3D", 
+                desc: "Hình chiếu song song của một hình khối lên một mặt phẳng gọi là hình biểu diễn (bóng 2D) của hình khối đó.", 
+                formula: "\\text{Hình } (H) \\xrightarrow{\\text{chiếu}} (H')" 
+            }
+        ];
+
+        let currentStateId = 1;
+        let currentStateGroup = null;
+
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x090b14, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+        camera.position.set(40, 35, 55);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(renderer.domElement);
+
+        const labelRenderer = new THREE.CSS2DRenderer();
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0px';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        container.appendChild(labelRenderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxPolarAngle = Math.PI / 2 + 0.1;
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.95));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+        dirLight.position.set(20, 30, 20);
+        scene.add(dirLight);
+
+        const gridHelper = new THREE.GridHelper(80, 80, 0x1e293b, 0x1e293b);
+        gridHelper.position.y = -15;
+        scene.add(gridHelper);
+
+        function createLabel(text, extraClass = '') {
+            const div = document.createElement('div');
+            div.className = `label-3d ${extraClass}`;
+            div.innerHTML = text;
+            return new THREE.CSS2DObject(div);
+        }
+
+        function createPoint(pos, color = 0xfacc15, size = 0.35, labelTxt = '', lblColor = 'text-yellow-300') {
+            const geo = new THREE.SphereGeometry(size, 32, 32);
+            const mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.2, metalness: 0.5 });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.copy(pos);
+            if (labelTxt) {
+                const label = createLabel(labelTxt, `label-math ${lblColor}`);
+                label.position.set(0.6, 0.8, 0);
+                mesh.add(label);
+            }
+            return mesh;
+        }
+
+        function createThickLine(pt1, pt2, color = 0xffffff, thickness = 0.12) {
+            const distance = pt1.distanceTo(pt2);
+            const geo = new THREE.CylinderGeometry(thickness, thickness, distance, 16);
+            const mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.3 });
+            const cylinder = new THREE.Mesh(geo, mat);
+            const position = new THREE.Vector3().addVectors(pt1, pt2).multiplyScalar(0.5);
+            cylinder.position.copy(position);
+            cylinder.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3().subVectors(pt2, pt1).normalize());
+            return cylinder;
+        }
+
+        function createDashedLine(pt1, pt2, color = 0x94a3b8) {
+            const mat = new THREE.LineDashedMaterial({ color: color, dashSize: 0.8, gapSize: 0.5 });
+            const geo = new THREE.BufferGeometry().setFromPoints([pt1, pt2]);
+            const line = new THREE.Line(geo, mat);
+            line.computeLineDistances();
+            return line;
+        }
+
+        function createHorizontalPlane(y, size, color, labelTxt) {
+            const group = new THREE.Group();
+            const half = size / 2;
+            const geo = new THREE.PlaneGeometry(size, size);
+            const mat = new THREE.MeshPhysicalMaterial({ color: color, transparent: true, opacity: 0.3, side: THREE.DoubleSide, clearcoat: 0.5, depthWrite: false });
+            const plane = new THREE.Mesh(geo, mat);
+            plane.rotation.x = -Math.PI / 2;
+            plane.position.y = y;
+
+            const edges = new THREE.EdgesGeometry(geo);
+            const edgeMat = new THREE.LineBasicMaterial({ color: color, linewidth: 2 });
+            const outline = new THREE.LineSegments(edges, edgeMat);
+            outline.rotation.x = -Math.PI / 2;
+            outline.position.y = y;
+
+            group.add(plane, outline);
+            if (labelTxt) {
+                const lbl = createLabel(labelTxt, 'label-math text-white');
+                lbl.position.set(half - 5, y + 0.5, half - 5);
+                group.add(lbl);
+            }
+            return group;
+        }
+
+        function createDirectionArrow(start, end, color = 0xffffff, thickness = 0.15) {
+            const group = new THREE.Group();
+            const dir = new THREE.Vector3().subVectors(end, start);
+            const length = dir.length();
+            
+            const shaftLen = length - thickness * 6;
+            const shaftGeo = new THREE.CylinderGeometry(thickness, thickness, shaftLen, 16);
+            const mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.2 });
+            const shaft = new THREE.Mesh(shaftGeo, mat);
+            shaft.position.copy(start).add(dir.clone().normalize().multiplyScalar(shaftLen / 2));
+            shaft.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+            
+            const headLen = thickness * 6;
+            const headGeo = new THREE.ConeGeometry(thickness * 3, headLen, 16);
+            const head = new THREE.Mesh(headGeo, mat);
+            head.position.copy(start).add(dir.clone().normalize().multiplyScalar(shaftLen + headLen / 2));
+            head.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+            
+            group.add(shaft, head);
+            return group;
+        }
+
+        // Logic Phép chiếu: Tìm giao điểm của tia với mặt phẳng y = planeY
+        function projectPoint(point, dir, planeY) {
+            const t = (planeY - point.y) / dir.y;
+            return new THREE.Vector3(point.x + t * dir.x, planeY, point.z + t * dir.z);
+        }
+
+        function buildState(id) {
+            const group = new THREE.Group();
+            const planeY = -12;
+            const planeSize = 55;
+            const planeColor = 0x0ea5e9; // Sky blue
+            const plane = createHorizontalPlane(planeY, planeSize, planeColor, '(P)');
+            group.add(plane);
+
+            // Phương chiếu mặc định chung cho toàn bài
+            const projDir = new THREE.Vector3(1, -2, 0.8).normalize();
+            
+            // Mũi tên chỉ phương chiếu Delta (Cố định ở một góc)
+            const dStart = new THREE.Vector3(-20, 15, -15);
+            const dEnd = new THREE.Vector3().copy(dStart).addScaledVector(projDir, 18);
+            const deltaArrow = createDirectionArrow(dStart, dEnd, 0xffffff, 0.12);
+            const lblDelta = createLabel('\\Delta', 'label-math text-white');
+            lblDelta.position.copy(dStart).add(new THREE.Vector3(0, 1.5, 0));
+            group.add(deltaArrow, lblDelta);
+
+            // Bảng màu quy ước:
+            const color3D = 0xf43f5e; // Đỏ hồng (Rose) cho vật thể gốc
+            const colorProj = 0x2dd4bf; // Xanh lơ (Teal) cho hình chiếu 2D
+
+            switch (id) {
+                case 1: { // Khái niệm: Chiếu 1 điểm
+                    const pM = new THREE.Vector3(5, 12, 5);
+                    const pM_proj = projectPoint(pM, projDir, planeY);
+                    
+                    const ray = createDashedLine(pM, pM_proj, 0xffffff);
+                    const ptM = createPoint(pM, color3D, 0.45, 'M', 'text-rose-300');
+                    const ptM_proj = createPoint(pM_proj, colorProj, 0.45, "M'", 'text-teal-300');
+                    
+                    group.add(ray, ptM, ptM_proj);
+                    break;
+                }
+                case 2: { // Chiếu đường thẳng
+                    const pA = new THREE.Vector3(-10, 15, 0);
+                    const pB = new THREE.Vector3(10, 5, 10);
+                    const pA_p = projectPoint(pA, projDir, planeY);
+                    const pB_p = projectPoint(pB, projDir, planeY);
+
+                    const line3D = createThickLine(new THREE.Vector3().copy(pA).addScaledVector(new THREE.Vector3().subVectors(pB, pA), -0.2), 
+                                                   new THREE.Vector3().copy(pB).addScaledVector(new THREE.Vector3().subVectors(pB, pA), 1.2), color3D, 0.15);
+                    
+                    const line2D = createThickLine(new THREE.Vector3().copy(pA_p).addScaledVector(new THREE.Vector3().subVectors(pB_p, pA_p), -0.2), 
+                                                   new THREE.Vector3().copy(pB_p).addScaledVector(new THREE.Vector3().subVectors(pB_p, pA_p), 1.2), colorProj, 0.15);
+
+                    const rayA = createDashedLine(pA, pA_p, 0xffffff);
+                    const rayB = createDashedLine(pB, pB_p, 0xffffff);
+
+                    const ptA = createPoint(pA, color3D, 0.4, 'A', 'text-rose-300');
+                    const ptB = createPoint(pB, color3D, 0.4, 'B', 'text-rose-300');
+                    const ptA_p = createPoint(pA_p, colorProj, 0.4, "A'", 'text-teal-300');
+                    const ptB_p = createPoint(pB_p, colorProj, 0.4, "B'", 'text-teal-300');
+                    
+                    const lblA = createLabel('a', 'label-math text-rose-400'); lblA.position.set(12, 3, 12);
+                    const lblA_p = createLabel("a'", 'label-math text-teal-400'); lblA_p.position.set(22, planeY + 1, 20);
+
+                    group.add(line3D, line2D, rayA, rayB, ptA, ptB, ptA_p, ptB_p, lblA, lblA_p);
+                    break;
+                }
+                case 3: { // Song song chiếu ra song song
+                    const offset = new THREE.Vector3(0, 5, -15);
+                    const pA = new THREE.Vector3(-10, 15, 5);
+                    const pB = new THREE.Vector3(10, 8, 12);
+                    const pC = new THREE.Vector3().addVectors(pA, offset);
+                    const pD = new THREE.Vector3().addVectors(pB, offset);
+
+                    const pA_p = projectPoint(pA, projDir, planeY);
+                    const pB_p = projectPoint(pB, projDir, planeY);
+                    const pC_p = projectPoint(pC, projDir, planeY);
+                    const pD_p = projectPoint(pD, projDir, planeY);
+
+                    const lineA = createThickLine(pA, pB, color3D, 0.12);
+                    const lineB = createThickLine(pC, pD, 0xf59e0b, 0.12); // Amber for line b
+                    const lineA_p = createThickLine(pA_p, pB_p, colorProj, 0.12);
+                    const lineB_p = createThickLine(pC_p, pD_p, 0x10b981, 0.12); // Emerald for b'
+
+                    group.add(lineA, lineB, lineA_p, lineB_p);
+                    [pA, pB, pC, pD].forEach(p => group.add(createPoint(p, 0xfacc15, 0.3)));
+                    [pA, pB, pC, pD].forEach(p => group.add(createDashedLine(p, projectPoint(p, projDir, planeY), 0xffffff)));
+
+                    const lblA = createLabel('a', 'label-math text-rose-400'); lblA.position.copy(pB).add(new THREE.Vector3(1,1,0));
+                    const lblB = createLabel('b', 'label-math text-amber-400'); lblB.position.copy(pD).add(new THREE.Vector3(1,1,0));
+                    const lblA_p = createLabel("a'", 'label-math text-teal-400'); lblA_p.position.copy(pB_p).add(new THREE.Vector3(1,1,0));
+                    const lblB_p = createLabel("b'", 'label-math text-emerald-400'); lblB_p.position.copy(pD_p).add(new THREE.Vector3(1,1,0));
+                    group.add(lblA, lblB, lblA_p, lblB_p);
+                    break;
+                }
+                case 4: { // Song song chiếu ra trùng nhau (a,b cùng nằm trên mp song song Delta)
+                    const pA = new THREE.Vector3(-10, 15, 5);
+                    const pB = new THREE.Vector3(10, 8, 12);
+                    
+                    // Di chuyển đoạn AB dọc theo phương chiếu Delta để tạo đoạn CD song song.
+                    // Như vậy (AB) và (CD) nằm trên cùng mặt phẳng tạo bởi Delta, chiếu xuống sẽ dính vào nhau
+                    const offset = projDir.clone().multiplyScalar(12);
+                    const pC = new THREE.Vector3().subVectors(pA, offset);
+                    const pD = new THREE.Vector3().subVectors(pB, offset);
+
+                    const pA_p = projectPoint(pA, projDir, planeY);
+                    const pB_p = projectPoint(pB, projDir, planeY);
+
+                    const lineA = createThickLine(pA, pB, color3D, 0.15);
+                    const lineB = createThickLine(pC, pD, 0xf59e0b, 0.15); 
+                    
+                    // Hình chiếu duy nhất
+                    const lineProj = createThickLine(new THREE.Vector3().copy(pA_p).addScaledVector(new THREE.Vector3().subVectors(pB_p, pA_p), -0.2), 
+                                                     new THREE.Vector3().copy(pB_p).addScaledVector(new THREE.Vector3().subVectors(pB_p, pA_p), 1.2), colorProj, 0.2);
+
+                    const rayA = createDashedLine(pA, pA_p, 0xffffff);
+                    const rayB = createDashedLine(pB, pB_p, 0xffffff);
+
+                    group.add(lineA, lineB, lineProj, rayA, rayB);
+                    
+                    const lblAB = createLabel("a' ≡ b'", 'label-math text-teal-400'); lblAB.position.copy(pB_p).add(new THREE.Vector3(2,1,0));
+                    group.add(lblAB, createPoint(pA, 0xfacc15, 0.3), createPoint(pB, 0xfacc15, 0.3), createPoint(pC, 0xfacc15, 0.3), createPoint(pD, 0xfacc15, 0.3));
+                    break;
+                }
+                case 5: { // Bảo toàn tỉ số (A,B,C thẳng hàng)
+                    const pA = new THREE.Vector3(-15, 18, -5);
+                    const pC = new THREE.Vector3(15, 2, 10);
+                    // B chia AC theo tỉ lệ 1:2
+                    const pB = new THREE.Vector3().lerpVectors(pA, pC, 1/3);
+
+                    const pA_p = projectPoint(pA, projDir, planeY);
+                    const pB_p = projectPoint(pB, projDir, planeY);
+                    const pC_p = projectPoint(pC, projDir, planeY);
+
+                    // Vẽ đường nối
+                    const line3D = createThickLine(pA, pC, color3D, 0.12);
+                    const line2D = createThickLine(pA_p, pC_p, colorProj, 0.12);
+                    
+                    // Làm nổi bật đoạn AB và A'B'
+                    const segAB = createThickLine(pA, pB, 0xfacc15, 0.2); // Vàng
+                    const segA_pB_p = createThickLine(pA_p, pB_p, 0xfacc15, 0.2);
+
+                    group.add(line3D, line2D, segAB, segA_pB_p);
+                    [pA, pB, pC].forEach(p => group.add(createDashedLine(p, projectPoint(p, projDir, planeY), 0xffffff)));
+                    
+                    group.add(createPoint(pA, 0xffffff, 0.4, 'A'), createPoint(pB, 0xffffff, 0.4, 'B'), createPoint(pC, 0xffffff, 0.4, 'C'));
+                    group.add(createPoint(pA_p, 0xffffff, 0.4, "A'"), createPoint(pB_p, 0xffffff, 0.4, "B'"), createPoint(pC_p, 0xffffff, 0.4, "C'"));
+                    break;
+                }
+                case 6: { // Hình biểu diễn của khối lập phương
+                    const center = new THREE.Vector3(0, 10, 0);
+                    const size = 10;
+                    const half = size / 2;
+                    const vertices = [
+                        new THREE.Vector3(-half, -half, -half), new THREE.Vector3(half, -half, -half),
+                        new THREE.Vector3(half, half, -half), new THREE.Vector3(-half, half, -half),
+                        new THREE.Vector3(-half, -half, half), new THREE.Vector3(half, -half, half),
+                        new THREE.Vector3(half, half, half), new THREE.Vector3(-half, half, half)
+                    ].map(v => v.add(center));
+
+                    const edges = [
+                        [0,1], [1,2], [2,3], [3,0], // back
+                        [4,5], [5,6], [6,7], [7,4], // front
+                        [0,4], [1,5], [2,6], [3,7]  // connect
+                    ];
+
+                    const projVertices = vertices.map(v => projectPoint(v, projDir, planeY));
+
+                    // Dựng viền khối lập phương nổi
+                    edges.forEach(edge => {
+                        group.add(createThickLine(vertices[edge[0]], vertices[edge[1]], color3D, 0.15));
+                        group.add(createThickLine(projVertices[edge[0]], projVertices[edge[1]], colorProj, 0.15));
+                    });
+
+                    // Tia chiếu mờ đục từ các đỉnh
+                    vertices.forEach((v, i) => {
+                        group.add(createDashedLine(v, projVertices[i], 0x475569));
+                        group.add(createPoint(v, 0xfacc15, 0.3));
+                        group.add(createPoint(projVertices[i], 0x34d399, 0.3));
+                    });
+                    
+                    const lblCube = createLabel('Hình khối (H)', 'label-math text-rose-300'); lblCube.position.set(0, 20, 0);
+                    const lblProj = createLabel("Hình biểu diễn (H')", 'label-math text-teal-300'); lblProj.position.set(10, planeY + 1, -10);
+                    group.add(lblCube, lblProj);
+                    break;
+                }
+            }
+            return group;
+        }
+
+        function destroyCSS2DObjects(group) {
+            if (!group) return;
+            group.traverse(child => {
+                if (child.isCSS2DObject && child.element && child.element.parentNode) {
+                    child.element.parentNode.removeChild(child.element);
+                }
+            });
+        }
+
+        function update3DScene(id) {
+            if (currentStateGroup) {
+                destroyCSS2DObjects(currentStateGroup);
+                scene.remove(currentStateGroup);
+                currentStateGroup = null;
+            }
+            currentStateGroup = buildState(id);
+            scene.add(currentStateGroup);
+        }
+
+        function onWindowResize() {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            labelRenderer.setSize(container.clientWidth, container.clientHeight);
+        }
+        window.addEventListener('resize', onWindowResize);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (controls) controls.update();
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+        
+        window.onload = function() {
+            onWindowResize();
+            animate();
+        };
+
+        const menuListEl = document.getElementById('menu-list');
+        const infoTitleEl = document.getElementById('info-title');
+        const infoDescEl = document.getElementById('info-desc');
+        const mathFormulaEl = document.getElementById('math-formula');
+
+        function renderMenu() {
+            menuListEl.innerHTML = '';
+            menuData.forEach(item => {
+                const btn = document.createElement('button');
+                const isActive = item.id === currentStateId;
+                
+                btn.className = `w-full text-left px-4 py-3 rounded-lg text-sm transition-all duration-200 flex items-center gap-3 border ${
+                    isActive 
+                    ? 'bg-rose-900/40 border-rose-500/50 text-white shadow-[0_0_15px_rgba(244,63,94,0.15)]' 
+                    : 'bg-transparent border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
+                }`;
+                
+                btn.innerHTML = `
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                        isActive ? 'bg-rose-600 text-white' : 'bg-slate-700 text-slate-300'
+                    }">
+                        ${item.id}
+                    </div>
+                    <div class="flex flex-col overflow-hidden">
+                        <span class="font-semibold text-[13px] truncate whitespace-nowrap" title="${item.title}">${item.title}</span>
+                        <span class="text-[11px] opacity-70 truncate whitespace-nowrap">${item.label}</span>
+                    </div>
+                `;
+                
+                btn.onclick = () => changeState(item.id);
+                menuListEl.appendChild(btn);
+            });
+        }
+
+        function updateFooter(id) {
+            const data = menuData.find(item => item.id === id);
+            if (!data) return;
+
+            const iconHtml = `<svg class="text-rose-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>`;
+            infoTitleEl.innerHTML = iconHtml + ' ' + data.title;
+            infoDescEl.textContent = data.desc;
+
+            katex.render(data.formula, mathFormulaEl, {
+                throwOnError: false,
+                displayMode: true
+            });
+        }
+
+        function changeState(id) {
+            currentStateId = id;
+            renderMenu();
+            updateFooter(id);
+            update3DScene(id);
+        }
+
+        renderMenu();
+        updateFooter(currentStateId);
+        update3DScene(currentStateId);
+
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        const fullscreenIcon = document.getElementById('fullscreen-icon');
+        const fullscreenText = document.getElementById('fullscreen-text');
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {  
+                const docElm = document.documentElement;
+                if (docElm.requestFullscreen) docElm.requestFullscreen();
+                else if (docElm.mozRequestFullScreen) docElm.mozRequestFullScreen();
+                else if (docElm.webkitRequestFullScreen) docElm.webkitRequestFullScreen();
+                else if (docElm.msRequestFullscreen) docElm.msRequestFullscreen();
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+                else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                else if (document.msExitFullscreen) document.msExitFullscreen();
+            }
+        }
+
+        fullscreenBtn.addEventListener('click', toggleFullScreen);
+
+        const fullscreenEvents = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
+        fullscreenEvents.forEach(event => {
+            document.addEventListener(event, () => {
+                const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+                if (isFullscreen) {
+                    fullscreenText.textContent = 'Thu nhỏ (F)';
+                    fullscreenIcon.innerHTML = `<path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>`;
+                } else {
+                    fullscreenText.textContent = 'Toàn màn hình (F)';
+                    fullscreenIcon.innerHTML = `<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>`;
+                }
+                setTimeout(onWindowResize, 150);
+            });
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') return;
+            if (event.key === 'f' || event.key === 'F') {
+                toggleFullScreen();
+            }
+        });
+
+    </script>
+</body>
+</html>

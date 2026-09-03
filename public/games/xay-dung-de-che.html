@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xây Dựng Đế Chế - Civilization Builder</title>
+    
+    <script>
+
+    function parseExcelToJSON(file, callback) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = e.target.result;
+                const wb = XLSX.read(data, { type: 'binary' });
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+                
+                let questions = [];
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row || row.length < 6) continue;
+                    if (String(row[0]).toLowerCase().includes('câu hỏi') || String(row[1]).toLowerCase().includes('đáp án')) continue;
+                    
+                    
+                        const ansMap = {1: 'A', 2: 'B', 3: 'C', 4: 'D'};
+                        questions.push({
+                            q: String(row[0]),
+                            a: String(row[1]), b: String(row[2]), c: String(row[3]), d: String(row[4]),
+                            correct: ansMap[parseInt(row[5], 10)]
+                        });
+                        
+                }
+                callback(null, questions);
+            } catch (error) {
+                callback(error, null);
+            }
+        };
+        reader.readAsBinaryString(file);
+    }
+    
+
+        tailwind = { config: { darkMode: 'class', } }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- MathJax -->
+    <script>
+        MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=MedievalSharp&family=Nunito:wght@400;700;900&display=swap');
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #fdfcf0, #e2e8f0);
+            color: #1e293b;
+            min-height: 100vh;
+            transition: all 0.5s ease;
+        }
+
+        html.dark body {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: #f8fafc;
+        }
+
+        .font-ancient { font-family: 'MedievalSharp', cursive; }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        }
+        html.dark .glass-panel {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Tài nguyên nhấp nháy khi nhận được */
+        @keyframes res-gain { 0% { transform: scale(1); } 50% { transform: scale(1.3); color: #fbbf24; } 100% { transform: scale(1); } }
+        .animate-gain { animation: res-gain 0.5s ease-in-out; }
+
+        @keyframes pop-in { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .animate-pop { animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        .btn-answer { transition: all 0.2s; }
+        .btn-answer:active { transform: scale(0.98); }
+
+        /* Map Tile Styles */
+        .map-tile {
+            position: relative;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px dashed rgba(255,255,255,0.1);
+            transition: all 0.3s;
+        }
+        .civ-base {
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%);
+            border: 2px solid #3b82f6;
+        }
+
+        .active-turn {
+            ring: 4px solid #fbbf24;
+            animation: pulse-turn 2s infinite;
+        }
+        @keyframes pulse-turn { 0%, 100% { box-shadow: 0 0 0 0px #fbbf24; } 50% { box-shadow: 0 0 20px 5px #fbbf24; } }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+</head>
+<body class="flex items-center justify-center p-4 transition-colors duration-500 overflow-hidden">
+
+    <div id="app-container" class="w-full max-w-7xl h-[95vh] flex flex-col relative">
+        
+        <!-- Theme Toggle -->
+        <button onclick="toggleTheme()" class="absolute -top-2 right-0 glass-panel p-3 rounded-full hover:scale-110 transition-transform z-[100] text-amber-600 border border-amber-500/50">
+            <i id="theme-icon" class="ph-fill ph-sun text-2xl"></i>
+        </button>
+
+        <!-- ================= MÀN HÌNH LOBBY ================= -->
+        <div id="screen-lobby" class="flex flex-col lg:flex-row gap-6 items-start h-full transition-all duration-500">
+            
+            <div class="w-full lg:w-5/12 flex flex-col gap-6">
+                <div class="glass-panel p-8 rounded-3xl text-center relative overflow-hidden border-t-4 border-t-blue-500">
+                    <div class="absolute -right-10 -top-10 text-blue-900/5 dark:text-blue-400/10"><i class="ph-fill ph-castle-turret text-[15rem]"></i></div>
+                    <h1 class="text-4xl md:text-5xl font-black text-slate-800 dark:text-white mb-2 relative z-10 drop-shadow-md font-ancient">XÂY DỰNG<br><span class="text-blue-600 dark:text-blue-400">ĐẾ CHẾ</span></h1>
+                    <p class="text-slate-600 dark:text-slate-300 font-bold relative z-10 uppercase tracking-widest text-xs">Chiến Thuật & Tri Thức</p>
+                </div>
+
+                <div class="glass-panel p-6 rounded-3xl">
+                    <h2 class="text-xl font-extrabold text-blue-600 dark:text-blue-400 mb-4 flex items-center gap-2"><i class="ph-fill ph-users-three"></i> Thiết Lập Các Bộ Tộc</h2>
+                    <div class="grid grid-cols-2 gap-3" id="team-inputs-container">
+                        <input type="text" id="input-team-1" placeholder="Nhóm 1" class="w-full px-4 py-2 rounded-xl bg-white/50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 outline-none font-bold" value="Đại Việt">
+                        <input type="text" id="input-team-2" placeholder="Nhóm 2" class="w-full px-4 py-2 rounded-xl bg-white/50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 outline-none font-bold" value="La Mã">
+                        <input type="text" id="input-team-3" placeholder="Nhóm 3" class="w-full px-4 py-2 rounded-xl bg-white/50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 outline-none font-bold" value="Ai Cập">
+                        <input type="text" id="input-team-4" placeholder="Nhóm 4" class="w-full px-4 py-2 rounded-xl bg-white/50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 outline-none font-bold" value="Hy Lạp">
+                    </div>
+                    <div class="mt-4 flex justify-between items-center text-xs font-bold uppercase opacity-60">
+                        <span>Tài nguyên khởi đầu: $100 gỗ, $100 đá</span>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-6 rounded-3xl grid grid-cols-2 gap-3">
+                    <button onclick="downloadSampleJSON()" class="flex flex-col items-center gap-1 p-3 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded-xl border border-blue-500/30 font-bold transition-all">
+                        <i class="ph-bold ph-download-simple text-xl"></i> JSON Mẫu
+                    </button>
+                    <button onclick="document.getElementById('file-upload').click()" class="flex flex-col items-center gap-1 p-3 bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 rounded-xl border border-purple-500/30 font-bold transition-all">
+                        <i class="ph-bold ph-upload-simple text-xl"></i> Tải Đề Lên
+                        <input type="file" id="file-upload" accept=".json, .xlsx, .xls" class="hidden" onchange="handleFileUpload(event)">
+                    </button>
+                    <button onclick="openPromptModal()" class="col-span-2 p-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg hover:bg-blue-700 transition-all flex items-center justify-center gap-2">
+                        <i class="ph-fill ph-magic-wand text-xl"></i> Trợ Lý AI Tạo Đề
+                    </button>
+                </div>
+            </div>
+
+            <!-- Question Bank -->
+            <div class="w-full lg:w-7/12 glass-panel p-6 rounded-3xl flex flex-col h-full border-t-4 border-t-amber-500">
+                <h2 class="text-2xl font-extrabold mb-4 flex items-center gap-2 pb-4 border-b border-slate-200 dark:border-slate-700">
+                    <i class="ph-fill ph-books text-amber-500"></i> Thư Viện Cuộn Giấy
+                </h2>
+                <div class="flex-grow overflow-y-auto custom-scrollbar pr-2" id="lesson-tree-container"></div>
+                <div class="pt-4 border-t border-slate-200 dark:border-slate-700 mt-4 text-center">
+                    <p id="selected-lesson-info" class="text-blue-600 dark:text-blue-400 font-bold mb-3 h-6">Chưa chọn bộ đề.</p>
+                    <button id="btn-start-game" onclick="startGame()" disabled class="w-full bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-black text-xl py-4 rounded-xl transition-all cursor-not-allowed uppercase tracking-widest font-ancient shadow-lg">KHAI PHÁ VÙNG ĐẤT MỚI 🏹</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= MÀN HÌNH HƯỚNG DẪN ================= -->
+        <div id="screen-tutorial" class="hidden flex-col items-center justify-center glass-panel p-10 rounded-3xl text-center max-w-4xl mx-auto transform transition-all scale-95 opacity-0 relative overflow-hidden">
+            <div class="absolute -left-16 -top-16 text-blue-500 opacity-10 dark:opacity-20"><i class="ph-fill ph-strategy text-[20rem]"></i></div>
+            
+            <h2 class="text-4xl font-black text-blue-600 dark:text-blue-400 mb-8 relative z-10 uppercase tracking-wide font-ancient">Khai Thác & Xây Dựng</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 relative z-10">
+                <div class="bg-white/50 dark:bg-slate-800/80 p-6 rounded-2xl border border-slate-200 dark:border-slate-600 flex flex-col items-center">
+                    <div class="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center text-white text-3xl mb-4 shadow-lg"><i class="ph-bold ph-pickaxe"></i></div>
+                    <h3 class="font-bold text-slate-800 dark:text-white text-xl mb-2 text-center">Trả Lời & Khai Thác</h3>
+                    <p class="text-slate-600 dark:text-slate-300 text-sm font-semibold">Trả lời đúng để nhận ngẫu nhiên: 🪵 <b>Gỗ</b>, 🪨 <b>Đá</b> hoặc 🪙 <b>Vàng</b>.</p>
+                </div>
+                <div class="bg-white/50 dark:bg-slate-800/80 p-6 rounded-2xl border border-slate-200 dark:border-slate-600 flex flex-col items-center">
+                    <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-white text-3xl mb-4 shadow-lg"><i class="ph-bold ph-hammer"></i></div>
+                    <h3 class="font-bold text-slate-800 dark:text-white text-xl mb-2 text-center">Phát Triển Đế Chế</h3>
+                    <p class="text-slate-600 dark:text-slate-300 text-sm font-semibold">Dùng tài nguyên xây <b>Nhà</b> (tăng sản lượng), <b>Tháp</b> (phòng thủ) hoặc <b>Quân đội</b>.</p>
+                </div>
+                <div class="bg-white/50 dark:bg-slate-800/80 p-6 rounded-2xl border border-slate-200 dark:border-slate-600 flex flex-col items-center">
+                    <div class="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center text-white text-3xl mb-4 shadow-lg"><i class="ph-bold ph-swords"></i></div>
+                    <h3 class="font-bold text-slate-800 dark:text-white text-xl mb-2 text-center">Công Thành Chiến</h3>
+                    <p class="text-slate-600 dark:text-slate-300 text-sm font-semibold">Dùng <b>Quân đội</b> để "Thách đấu" đội khác. Nếu họ trả lời sai, bạn sẽ chiếm đoạt tài nguyên!</p>
+                </div>
+            </div>
+
+            <button onclick="enterWorld()" class="relative z-10 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white font-black text-2xl py-4 px-16 rounded-full shadow-2xl active:translate-y-[6px] transition-all flex items-center gap-3 font-ancient uppercase">
+                BẮT ĐẦU DỰNG CƠ ĐỒ <i class="ph-bold ph-map-trifold text-3xl"></i>
+            </button>
+        </div>
+
+        <!-- ================= MÀN HÌNH CHƠI GAME ================= -->
+        <div id="screen-game" class="hidden flex-col gap-4 w-full h-full relative">
+            
+            <!-- TOP BAR (STATUS) -->
+            <div class="grid grid-cols-4 gap-3 w-full">
+                <!-- Nhóm 1 -->
+                <div id="team-card-0" class="glass-panel p-3 rounded-2xl border-l-4 border-blue-500 relative transition-all duration-300 overflow-hidden">
+                    <div class="flex justify-between items-center mb-1">
+                        <span id="label-team-0" class="font-black text-[10px] uppercase truncate opacity-70">Nhóm 1</span>
+                        <div class="flex gap-1" id="icons-team-0">
+                            <!-- Buildings icons -->
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-end">
+                        <div class="flex flex-col">
+                            <span class="text-[10px] opacity-50 font-bold uppercase">Gỗ - Đá - Vàng</span>
+                            <div class="font-black font-ancient text-sm flex gap-2">
+                                <span id="w-0">0</span> <span id="s-0">0</span> <span id="g-0">0</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                             <span class="text-[10px] opacity-50 font-bold uppercase">Sức mạnh</span>
+                             <div class="font-black text-blue-500 text-xl" id="power-0">0</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Nhóm 2 -->
+                <div id="team-card-1" class="glass-panel p-3 rounded-2xl border-l-4 border-red-500 relative transition-all duration-300">
+                    <div class="flex justify-between items-center mb-1">
+                        <span id="label-team-1" class="font-black text-[10px] uppercase truncate opacity-70">Nhóm 2</span>
+                        <div class="flex gap-1" id="icons-team-1"></div>
+                    </div>
+                    <div class="flex justify-between items-end">
+                        <div class="flex flex-col">
+                            <span class="text-[10px] opacity-50 font-bold uppercase">Gỗ - Đá - Vàng</span>
+                            <div class="font-black font-ancient text-sm flex gap-2">
+                                <span id="w-1">0</span> <span id="s-1">0</span> <span id="g-1">0</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                             <span class="text-[10px] opacity-50 font-bold uppercase">Sức mạnh</span>
+                             <div class="font-black text-red-500 text-xl" id="power-1">0</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Nhóm 3 -->
+                <div id="team-card-2" class="glass-panel p-3 rounded-2xl border-l-4 border-green-500 relative transition-all duration-300">
+                    <div class="flex justify-between items-center mb-1">
+                        <span id="label-team-2" class="font-black text-[10px] uppercase truncate opacity-70">Nhóm 3</span>
+                        <div class="flex gap-1" id="icons-team-2"></div>
+                    </div>
+                    <div class="flex justify-between items-end">
+                        <div class="flex flex-col">
+                            <span class="text-[10px] opacity-50 font-bold uppercase">Gỗ - Đá - Vàng</span>
+                            <div class="font-black font-ancient text-sm flex gap-2">
+                                <span id="w-2">0</span> <span id="s-2">0</span> <span id="g-2">0</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                             <span class="text-[10px] opacity-50 font-bold uppercase">Sức mạnh</span>
+                             <div class="font-black text-green-500 text-xl" id="power-2">0</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Nhóm 4 -->
+                <div id="team-card-3" class="glass-panel p-3 rounded-2xl border-l-4 border-yellow-500 relative transition-all duration-300">
+                    <div class="flex justify-between items-center mb-1">
+                        <span id="label-team-3" class="font-black text-[10px] uppercase truncate opacity-70">Nhóm 4</span>
+                        <div class="flex gap-1" id="icons-team-3"></div>
+                    </div>
+                    <div class="flex justify-between items-end">
+                        <div class="flex flex-col">
+                            <span class="text-[10px] opacity-50 font-bold uppercase">Gỗ - Đá - Vàng</span>
+                            <div class="font-black font-ancient text-sm flex gap-2">
+                                <span id="w-3">0</span> <span id="s-3">0</span> <span id="g-3">0</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                             <span class="text-[10px] opacity-50 font-bold uppercase">Sức mạnh</span>
+                             <div class="font-black text-yellow-500 text-xl" id="power-3">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MAIN WORK AREA -->
+            <div class="flex-grow flex gap-4 overflow-hidden">
+                
+                <!-- BẢN ĐỒ CHIẾN THUẬT (Trái) -->
+                <div class="w-2/5 flex flex-col gap-4">
+                    <div class="glass-panel rounded-3xl p-6 flex flex-col flex-grow border border-blue-500/20 relative">
+                        <h3 class="font-black uppercase tracking-widest text-blue-500 mb-4 flex items-center gap-2">
+                            <i class="ph-bold ph-map-trifold"></i> Địa Đồ Chinh Phạt
+                        </h3>
+                        
+                        <div id="world-map" class="grid grid-cols-4 grid-rows-4 gap-2 flex-grow">
+                            <!-- Render tiles JS -->
+                        </div>
+
+                        <!-- Panel Xây Dựng -->
+                        <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="text-xs font-black uppercase opacity-50 tracking-tighter">Công trình khả dụng</h4>
+                                <span id="current-player-label" class="text-[10px] font-black bg-yellow-500 text-white px-2 py-0.5 rounded-full uppercase">Lượt: Nhóm 1</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <button onclick="build('house')" class="flex flex-col items-center p-2 bg-slate-100 dark:bg-slate-800 rounded-xl hover:scale-105 transition-all border border-transparent hover:border-blue-500 group">
+                                    <i class="ph-fill ph-house-line text-2xl text-blue-500"></i>
+                                    <span class="text-[9px] font-bold mt-1">NHÀ (+$20)</span>
+                                    <span class="text-[8px] opacity-60">50🪵 50🪨</span>
+                                </button>
+                                <button onclick="build('tower')" class="flex flex-col items-center p-2 bg-slate-100 dark:bg-slate-800 rounded-xl hover:scale-105 transition-all border border-transparent hover:border-amber-500 group">
+                                    <i class="ph-fill ph-castle-turret text-2xl text-amber-500"></i>
+                                    <span class="text-[9px] font-bold mt-1">THÁP (🛡️)</span>
+                                    <span class="text-[8px] opacity-60">100🪨 20🪙</span>
+                                </button>
+                                <button onclick="build('army')" class="flex flex-col items-center p-2 bg-slate-100 dark:bg-slate-800 rounded-xl hover:scale-105 transition-all border border-transparent hover:border-red-500 group">
+                                    <i class="ph-fill ph-sword text-2xl text-red-500"></i>
+                                    <span class="text-[9px] font-bold mt-1">QUÂN (⚔️)</span>
+                                    <span class="text-[8px] opacity-60">80🪵 50🪙</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KHU VỰC CÂU HỎI (Phải) -->
+                <div class="w-3/5 flex flex-col gap-4">
+                    <div class="glass-panel flex-grow rounded-3xl p-8 flex flex-col relative overflow-y-auto border-t-4 border-t-blue-500">
+                        <div class="flex justify-between items-center mb-6">
+                            <div class="flex items-center gap-3">
+                                <span class="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold px-4 py-1 rounded-lg text-sm">Câu <span id="ui-q-counter">1</span></span>
+                                <span class="text-slate-400 text-xs font-bold italic" id="reward-hint">Đúng: +30 tài nguyên ngẫu nhiên</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="goHome()" class="w-8 h-8 flex items-center justify-center bg-red-500/20 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all"><i class="ph-bold ph-house"></i></button>
+                                <button onclick="adjustFontSize(2)" class="w-8 h-8 flex items-center justify-center bg-slate-200 dark:bg-slate-700 rounded-lg font-black transition-all">A+</button>
+                            </div>
+                        </div>
+
+                        <h2 id="ui-question-text" class="font-black text-slate-900 dark:text-white leading-tight mb-8" style="font-size: 28px; min-height: 80px;"></h2>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" id="options-container">
+                            <!-- Answer buttons -->
+                        </div>
+
+                        <div id="ui-feedback" class="h-16 flex items-center justify-center rounded-2xl text-xl font-black opacity-0 transition-opacity mb-4 text-center"></div>
+
+                        <!-- Actions for Teacher -->
+                        <div class="mt-auto pt-4 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                            <button id="btn-attack" onclick="openAttackModal()" class="px-6 py-3 bg-red-600 text-white font-black rounded-xl shadow-lg hover:bg-red-700 transition-all uppercase flex items-center gap-2 text-xs">
+                                <i class="ph-fill ph-fire text-xl"></i> CÔNG THÀNH CHIẾN (Tốn 1⚔️)
+                            </button>
+                            <button id="btn-next-turn" onclick="nextTurn()" class="px-8 py-3 bg-emerald-500 text-white font-black rounded-xl shadow-lg hover:bg-emerald-600 transition-all uppercase text-xs">KẾT THÚC LƯỢT & CHUYỂN 👉</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= MODALS ================= -->
+        <!-- Attack Modal -->
+        <div id="modal-attack" class="fixed inset-0 bg-black/80 z-[120] hidden flex items-center justify-center p-4 backdrop-blur-md">
+            <div class="glass-panel p-8 rounded-3xl max-w-md w-full border-4 border-red-600 animate-pop text-center">
+                <i class="ph-fill ph-skull text-7xl text-red-600 mb-4 animate-bounce"></i>
+                <h3 class="text-3xl font-black font-ancient text-red-600 uppercase mb-2">TUYÊN CHIẾN!</h3>
+                <p class="text-slate-600 dark:text-slate-300 font-bold mb-6 italic">Hãy chọn Đế chế để tấn công...</p>
+                
+                <div class="flex flex-col gap-3" id="attack-targets-container">
+                    <!-- Target buttons render here -->
+                </div>
+                
+                <button onclick="closeAttackModal()" class="mt-6 text-slate-500 font-bold hover:text-white transition-colors underline">Bãi quân, không đánh nữa</button>
+            </div>
+        </div>
+
+        <!-- AI Prompt Modal -->
+        <div id="modal-ai" class="fixed inset-0 bg-black/80 z-[150] hidden flex items-center justify-center p-4 backdrop-blur-md">
+            <div class="glass-panel rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh] animate-pop">
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-700 p-4 flex justify-between items-center text-white font-ancient">
+                    <h3 class="text-xl font-bold flex items-center gap-2"><i class="ph-bold ph-magic-wand text-2xl"></i> Trợ Lý AI Đế Chế</h3>
+                    <button onclick="closePromptModal()" class="hover:bg-white/20 p-2 rounded-lg transition-colors"><i class="ph-bold ph-x text-xl"></i></button>
+                </div>
+                <div class="p-6 overflow-y-auto custom-scrollbar flex flex-col gap-4">
+                    <input type="text" id="ai-topic" value="Lịch sử Thế giới Cổ đại" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-xl outline-none font-bold">
+                    <textarea id="ai-result" rows="8" readonly class="w-full p-3 bg-slate-900 text-green-400 font-mono text-xs rounded-xl resize-none"></textarea>
+                    <button onclick="generatePrompt()" class="bg-blue-600 text-white font-black py-3 rounded-xl shadow-lg">TẠO PROMPT</button>
+                    <button onclick="copyPrompt()" class="bg-slate-700 text-white font-black py-3 rounded-xl shadow-lg">COPY LỆNH</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Modal -->
+        <div id="screen-result" class="hidden flex-col items-center justify-center glass-panel p-10 rounded-3xl shadow-2xl border-4 border-blue-500 text-center max-w-2xl mx-auto transform transition-all scale-95 opacity-0">
+            <h1 class="text-5xl font-black text-blue-600 mb-2 font-ancient uppercase">ĐẾ CHẾ VĨNH CỬU 👑</h1>
+            <p id="res-winner-text" class="text-2xl font-bold mb-8 mt-4"></p>
+            <div id="res-leaderboard" class="w-full flex flex-col gap-3 mb-8"></div>
+            <button onclick="goHome()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xl py-4 px-12 rounded-full shadow-xl transition-all">🏠 QUAY LẠI SẢNH</button>
+        </div>
+    </div>
+
+    <!-- ================= JAVASCRIPT ================= -->
+    <script>
+        // --- DATA & INITIALIZATION ---
+        const STORAGE_KEY = 'puzzle_game_banks';
+        let lessonBanks = {}; 
+
+        function initStorage() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            if (data) lessonBanks = JSON.parse(data);
+            else {
+                for (let i = 1; i <= 12; i++) lessonBanks[i] = [];
+                lessonBanks[10].push({
+                    id: 'def', name: "Lịch sử Cổ đại",
+                    questions: [
+                        { q: "Nền văn minh Ai Cập cổ đại hình thành bên dòng sông nào?", a: "Sông Hằng", b: "Sông Nin", c: "Sông Dương Tử", d: "Sông Ấn", correct: "B" },
+                        { q: "Kì quan nào là lăng mộ của Pharaon?", a: "Vườn treo Babylon", b: "Tượng thần Zeus", c: "Kim tự tháp Giza", d: "Đền Artemis", correct: "C" }
+                    ]
+                });
+                saveStorage();
+            }
+            renderTree();
+        }
+        function saveStorage() { localStorage.setItem(STORAGE_KEY, JSON.stringify(lessonBanks)); }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            html.classList.toggle('dark');
+            const isDark = html.classList.contains('dark');
+            document.getElementById('theme-icon').className = isDark ? 'ph-fill ph-sun text-2xl' : 'ph-fill ph-moon text-2xl';
+        }
+
+        // --- LOBBY LOGIC ---
+        let activeLesson = null;
+        function renderTree() {
+            const container = document.getElementById('lesson-tree-container'); container.innerHTML = '';
+            for (let grade = 1; grade <= 12; grade++) {
+                const lessons = lessonBanks[grade] || [];
+                const gradeDiv = document.createElement('div'); gradeDiv.className = 'mb-2';
+                const header = document.createElement('div');
+                header.className = `flex justify-between items-center p-3 rounded-xl cursor-pointer font-bold ${lessons.length > 0 ? 'bg-blue-100 dark:bg-blue-600/20 text-blue-800 dark:text-blue-400' : 'bg-slate-100 dark:bg-white/5 text-slate-400'}`;
+                header.innerHTML = `<span><i class="ph-bold ph-scroll"></i> Lớp ${grade}</span> <span class="text-xs bg-white/50 dark:bg-black/30 px-2 py-1 rounded">${lessons.length} cuộn</span>`;
+                const list = document.createElement('div'); list.className = 'pl-6 pr-2 py-2 flex flex-col gap-2 hidden';
+                lessons.forEach(l => {
+                    const item = document.createElement('div');
+                    item.className = 'flex justify-between items-center bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-slate-700 p-3 rounded-lg hover:border-blue-500 transition-all cursor-pointer';
+                    item.onclick = () => {
+                        document.querySelectorAll('.lesson-active').forEach(el => el.classList.remove('lesson-active', 'border-blue-500'));
+                        item.classList.add('lesson-active', 'border-blue-500');
+                        activeLesson = l;
+                        document.getElementById('selected-lesson-info').innerText = `Đã chọn: ${l.name}`;
+                        document.getElementById('btn-start-game').disabled = false;
+                        document.getElementById('btn-start-game').classList.remove('bg-slate-300', 'cursor-not-allowed');
+                        document.getElementById('btn-start-game').classList.add('bg-amber-500', 'text-white');
+                    };
+                    item.innerHTML = `<span class="font-bold truncate text-sm">${l.name}</span>`;
+                    list.appendChild(item);
+                });
+                header.onclick = () => list.classList.toggle('hidden');
+                gradeDiv.appendChild(header); gradeDiv.appendChild(list); container.appendChild(gradeDiv);
+            }
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0]; if (!file) return;
+            if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+                parseExcelToJSON(file, function(err, parsedData) {
+                    if (err) { alert('Lỗi đọc Excel!'); return; }
+                    try {
+                        const name = file.name.replace(/\.[^/.]+$/, "");
+                        lessonBanks[10].push({ id: Date.now().toString(), name: name, questions: parsedData });
+                        saveStorage(); renderTree();
+                    } catch(err) { alert("Lỗi nạp file Excel!"); }
+                });
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = e => { try {
+                const data = JSON.parse(e.target.result);
+                lessonBanks[parseInt(data.grade)].push({ id: Date.now().toString(), name: data.lessonName, questions: data.questions });
+                saveStorage(); renderTree();
+            } catch(err) { alert("Lỗi JSON!"); } };
+            reader.readAsText(file);
+        }
+
+        // --- GAME STATE ---
+        let teams = [];
+        let currentTeamIdx = 0;
+        let gameQuestions = [];
+        let qIndex = 0;
+        let isAnswered = false;
+        let isAttackMode = false;
+        let attackTargetIdx = null;
+
+        const COSTS = {
+            house: { wood: 50, stone: 50, gold: 0 },
+            tower: { wood: 0, stone: 100, gold: 20 },
+            army: { wood: 80, stone: 0, gold: 50 }
+        };
+
+        // --- GAME ENGINE ---
+        function startGame() {
+            teams = [0, 1, 2, 3].map(i => ({
+                id: i,
+                name: document.getElementById(`input-team-${i+1}`)?.value || `Nhóm ${i+1}`,
+                wood: 100, stone: 100, gold: 0,
+                houses: 0, towers: 0, army: 0,
+                isEliminated: false
+            }));
+
+            gameQuestions = [...activeLesson.questions].sort(() => Math.random() - 0.5);
+            qIndex = 0;
+            currentTeamIdx = 0;
+
+            document.getElementById('screen-lobby').classList.add('hidden');
+            const tut = document.getElementById('screen-tutorial');
+            tut.classList.remove('hidden'); tut.classList.add('flex');
+            setTimeout(() => { tut.classList.remove('scale-95', 'opacity-0'); tut.classList.add('scale-100', 'opacity-100'); }, 50);
+        }
+
+        function enterWorld() {
+            document.getElementById('screen-tutorial').classList.add('hidden');
+            document.getElementById('screen-game').classList.remove('hidden');
+            document.getElementById('screen-game').classList.add('flex');
+            initMap();
+            updateUI();
+            loadQuestion();
+        }
+
+        function initMap() {
+            const map = document.getElementById('world-map');
+            map.innerHTML = '';
+            for(let i=0; i<16; i++) {
+                const tile = document.createElement('div');
+                tile.className = "map-tile rounded-lg flex items-center justify-center";
+                tile.id = `map-tile-${i}`;
+                map.appendChild(tile);
+            }
+            // Assign base tiles
+            [0, 3, 12, 15].forEach((tileIdx, teamIdx) => {
+                const tile = document.getElementById(`map-tile-${tileIdx}`);
+                tile.classList.add('civ-base');
+                tile.innerHTML = `<i class="ph-fill ph-castle-turret text-3xl opacity-30"></i>`;
+            });
+        }
+
+        function updateUI() {
+            teams.forEach((t, i) => {
+                document.getElementById(`label-team-${i}`).innerText = t.name;
+                document.getElementById(`w-${i}`).innerText = t.wood;
+                document.getElementById(`s-${i}`).innerText = t.stone;
+                document.getElementById(`g-${i}`).innerText = t.gold;
+                
+                // Power = Sum of army + buildings
+                let power = (t.houses * 5) + (t.towers * 20) + (t.army * 50);
+                document.getElementById(`power-${i}`).innerText = power;
+
+                // Icons
+                const icons = document.getElementById(`icons-team-${i}`);
+                icons.innerHTML = '';
+                for(let h=0; h<t.houses; h++) icons.innerHTML += '<i class="ph-fill ph-house-line text-blue-400"></i>';
+                for(let tw=0; tw<t.towers; tw++) icons.innerHTML += '<i class="ph-fill ph-castle-turret text-amber-400"></i>';
+                for(let a=0; a<t.army; a++) icons.innerHTML += '<i class="ph-fill ph-sword text-red-500"></i>';
+
+                // Map visualization
+                const baseTiles = [0, 3, 12, 15];
+                const tile = document.getElementById(`map-tile-${baseTiles[i]}`);
+                if(t.army > 0) tile.innerHTML = `<i class="ph-fill ph-sword text-3xl animate-bounce"></i>`;
+                else if(t.towers > 0) tile.innerHTML = `<i class="ph-fill ph-castle-turret text-3xl"></i>`;
+                else tile.innerHTML = `<i class="ph-fill ph-house-line text-3xl opacity-50"></i>`;
+
+                // Highlight turn
+                const card = document.getElementById(`team-card-${i}`);
+                if(i === currentTeamIdx) card.classList.add('ring-4', 'ring-yellow-500', 'bg-yellow-500/10');
+                else card.classList.remove('ring-4', 'ring-yellow-500', 'bg-yellow-500/10');
+            });
+
+            document.getElementById('current-player-label').innerText = `Lượt: ${teams[currentTeamIdx].name}`;
+            
+            // Disable attack button if no army
+            const btnAtk = document.getElementById('btn-attack');
+            if(teams[currentTeamIdx].army <= 0) {
+                btnAtk.disabled = true; btnAtk.classList.add('opacity-30', 'grayscale');
+            } else {
+                btnAtk.disabled = false; btnAtk.classList.remove('opacity-30', 'grayscale');
+            }
+        }
+
+        function loadQuestion() {
+            const qData = gameQuestions[qIndex % gameQuestions.length];
+            document.getElementById('ui-q-counter').innerText = qIndex + 1;
+            document.getElementById('ui-question-text').innerText = qData.q;
+            
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            ['A', 'B', 'C', 'D'].forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "btn-answer glass-panel p-4 rounded-xl text-left border-2 border-slate-200 dark:border-slate-700 hover:border-blue-500 font-bold flex items-center gap-3";
+                btn.innerHTML = `<span class="w-8 h-8 bg-slate-200 dark:bg-slate-700 rounded flex items-center justify-center shrink-0">${opt}</span> <span>${qData[opt.toLowerCase()]}</span>`;
+                btn.onclick = () => checkAnswer(opt, btn);
+                container.appendChild(btn);
+            });
+            
+            if(window.MathJax) MathJax.typesetPromise();
+            document.getElementById('ui-feedback').style.opacity = '0';
+            document.getElementById('reward-hint').innerText = isAttackMode ? `Đang TẤN CÔNG ${teams[attackTargetIdx].name}!` : `Đúng: Nhận tài nguyên xây dựng`;
+            isAnswered = false;
+        }
+
+        function checkAnswer(selected, btn) {
+            if (isAnswered) return;
+            isAnswered = true;
+            
+            const correct = gameQuestions[qIndex % gameQuestions.length].correct;
+            const fb = document.getElementById('ui-feedback');
+            const team = teams[currentTeamIdx];
+
+            if (selected === correct) {
+                btn.classList.add('border-green-500', 'bg-green-500/20');
+                if(!isAttackMode) {
+                    // Normal Gain
+                    let bonus = 30 + (team.houses * 20); // Mỗi nhà tăng thêm 20 tài nguyên
+                    let resTypes = ['wood', 'stone', 'gold'];
+                    let picked = resTypes[Math.floor(Math.random() * 3)];
+                    team[picked] += bonus;
+                    fb.innerHTML = `🎉 CHÍNH XÁC! Nhóm nhận được <b class="text-green-500">+${bonus} ${picked === 'wood' ? '🪵' : picked === 'stone' ? '🪨' : '🪙'}</b>`;
+                } else {
+                    // Attack Success (Target answered wrong implicitly by attacker answering right)
+                    const target = teams[attackTargetIdx];
+                    let stealW = Math.floor(target.wood * 0.3);
+                    let stealS = Math.floor(target.stone * 0.3);
+                    target.wood -= stealW; target.stone -= stealS;
+                    team.wood += stealW; team.stone += stealS;
+                    fb.innerHTML = `⚔️ CÔNG THÀNH THÀNH CÔNG! Chiếm đoạt tài nguyên từ ${target.name}!`;
+                    team.army--; // Tốn quân
+                }
+                fb.className = "h-16 flex items-center justify-center rounded-2xl text-xl font-black bg-green-500/10 text-green-500 opacity-100 animate-pop";
+            } else {
+                btn.classList.add('border-red-500', 'bg-red-500/20');
+                fb.innerHTML = `❌ SAI RỒI! Đáp án đúng là ${correct}. Đế chế trì trệ lượt này.`;
+                fb.className = "h-16 flex items-center justify-center rounded-2xl text-xl font-black bg-red-500/10 text-red-500 opacity-100 animate-pop";
+            }
+            updateUI();
+        }
+
+        function build(type) {
+            const team = teams[currentTeamIdx];
+            const cost = COSTS[type];
+            if(team.wood >= cost.wood && team.stone >= cost.stone && team.gold >= cost.gold) {
+                team.wood -= cost.wood; team.stone -= cost.stone; team.gold -= cost.gold;
+                team[type + (type==='army'?'':'s')]++; // houses, towers, army
+                alert(`Đã xây dựng thành công ${type}!`);
+                updateUI();
+            } else {
+                alert("Không đủ tài nguyên!");
+            }
+        }
+
+        function nextTurn() {
+            isAttackMode = false;
+            currentTeamIdx = (currentTeamIdx + 1) % teams.length;
+            qIndex++;
+            loadQuestion();
+            updateUI();
+        }
+
+        // Attack Logic
+        function openAttackModal() {
+            if(teams[currentTeamIdx].army <= 0) return;
+            const container = document.getElementById('attack-targets-container');
+            container.innerHTML = '';
+            teams.forEach((t, i) => {
+                if(i !== currentTeamIdx) {
+                    const btn = document.createElement('button');
+                    btn.className = "w-full p-4 bg-slate-800 text-white rounded-xl font-bold hover:bg-red-600 transition-all";
+                    btn.innerText = `Tấn công ${t.name} (Phòng thủ: ${t.towers}🏰)`;
+                    btn.onclick = () => launchAttack(i);
+                    container.appendChild(btn);
+                }
+            });
+            document.getElementById('modal-attack').classList.remove('hidden');
+        }
+
+        function closeAttackModal() { document.getElementById('modal-attack').classList.add('hidden'); }
+
+        function launchAttack(targetIdx) {
+            isAttackMode = true;
+            attackTargetIdx = targetIdx;
+            closeAttackModal();
+            qIndex++; // Câu hỏi mới cho trận đánh
+            loadQuestion();
+        }
+
+        function generatePrompt() {
+            const topic = document.getElementById('ai-topic').value;
+            const prompt = `Tạo bộ 10 câu hỏi trắc nghiệm chủ đề "${topic}" cấp độ THPT. Trả về JSON thô: { "lessonName": "${topic}", "grade": 10, "questions": [{ "q": "...", "a": "...", "b": "...", "c": "...", "d": "...", "correct": "A" }] }. Dùng $...$ cho công thức.`;
+            document.getElementById('ai-result').value = prompt;
+        }
+
+        function copyPrompt() {
+            document.getElementById('ai-result').select();
+            document.execCommand('copy'); alert("Đã copy!");
+        }
+
+        function goHome() {
+            if(confirm("Kết thúc sớm chiến dịch?")) {
+                document.getElementById('screen-game').classList.add('hidden');
+                document.getElementById('screen-result').classList.remove('hidden');
+                document.getElementById('screen-result').classList.add('flex');
+                
+                const sorted = [...teams].sort((a,b) => {
+                    const powerA = (a.houses*5) + (a.towers*20) + (a.army*50) + a.gold;
+                    const powerB = (b.houses*5) + (b.towers*20) + (b.army*50) + b.gold;
+                    return powerB - powerA;
+                });
+
+                document.getElementById('res-winner-text').innerText = `Hoàng đế vĩ đại: ${sorted[0].name}`;
+                document.getElementById('res-leaderboard').innerHTML = sorted.map((t, idx) => `
+                    <div class="flex justify-between p-4 glass-panel rounded-xl">
+                        <span class="font-black">#${idx+1} ${t.name}</span>
+                        <span class="font-ancient text-blue-500 font-bold">Điểm lực lượng: ${(t.houses*5)+(t.towers*20)+(t.army*50)}</span>
+                    </div>`).join('');
+                setTimeout(() => document.getElementById('screen-result').classList.add('scale-100', 'opacity-100'), 50);
+            }
+        }
+
+        function adjustFontSize(delta) {
+            const q = document.getElementById('ui-question-text');
+            q.style.fontSize = (parseInt(q.style.fontSize) || 28) + delta + 'px';
+        }
+
+        function downloadSampleJSON() {
+            const sample = { "lessonName": "Đế Chế Lịch Sử", "grade": 10, "questions": [{ "q": "$1+1=$", "a": "$1$", "b": "$2$", "c": "$3$", "d": "$4$", "correct": "B" }] };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(sample, null, 4));
+            const dl = document.createElement('a'); dl.setAttribute("href", dataStr); dl.setAttribute("download", "DeChe_Sample.json"); dl.click();
+        }
+
+        
+    function downloadSampleExcel() {
+        const ws = XLSX.utils.aoa_to_sheet([
+            ["Câu hỏi", "Đáp án A", "Đáp án B", "Đáp án C", "Đáp án D", "Cột đúng (1-4)"],
+            ["Câu hỏi mẫu: 1 + 1 bằng mấy?", "1", "2", "3", "4", 2]
+        ]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Câu Hỏi");
+        XLSX.writeFile(wb, "Mau_Cau_Hoi.xlsx");
+    }
+    
+    window.onload = initStorage;
+    </script>
+</body>
+</html>

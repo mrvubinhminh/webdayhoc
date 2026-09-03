@@ -1,0 +1,171 @@
+import fs from 'fs';
+import path from 'path';
+
+const dir = 'public/games';
+const files = fs.readdirSync(dir).filter(f => f.endsWith('.html'));
+
+const htmlScriptTag = `<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>`;
+
+for (const file of files) {
+    const filePath = path.join(dir, file);
+    let text = fs.readFileSync(filePath, 'utf8');
+
+    // Skip if already processed fully (just a guard, though we might want to re-run safely)
+    if (!text.includes('xlsx.full.min.js')) {
+        text = text.replace('</head>', `    ${htmlScriptTag}\n</head>`);
+    }
+
+    text = text.replace(/accept="\.json"/g, 'accept=".json, .xlsx, .xls"');
+    text = text.replace(/Tải lên File JSON/g, 'Tải File (JSON, Excel)');
+    text = text.replace(/Tải lên JSON/g, 'Tải File (JSON, Excel)');
+
+    // Add downloadExcelBtn HTML
+    if (!text.includes('Tải Excel Mẫu')) {
+        text = text.replace(
+            /(<button[^>]*onclick="downloadSampleJSON.*?>.*?<\/button>|<button[^>]*onclick="downloadTemplate.*?>.*?<\/button>)/i,
+            `$1
+            <button class="btn-action" style="background:#27ae60; color:white; padding: 10px; border-radius: 8px; font-weight: bold; border:none; cursor:pointer; margin-left: 5px;" onclick="downloadSampleExcel()">⬇️ Tải Excel Mẫu</button>`
+        );
+    }
+
+    let gameType = 0;
+    if (text.includes('options": { "A":') || text.includes('options": { "A"')) {
+        gameType = 1;
+    } else if (text.includes('"opts":') || text.includes('opts":[')) {
+        gameType = 2;
+    } else {
+        gameType = 3;
+    }
+
+    const downloadExcelFn = `
+    function downloadSampleExcel() {
+        const ws = XLSX.utils.aoa_to_sheet([
+            ["Câu hỏi", "Đáp án A", "Đáp án B", "Đáp án C", "Đáp án D", "Cột đúng (1-4)"],
+            ["Câu hỏi mẫu: 1 + 1 bằng mấy?", "1", "2", "3", "4", 2]
+        ]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Câu Hỏi");
+        XLSX.writeFile(wb, "Mau_Cau_Hoi.xlsx");
+    }
+    `;
+
+    if (!text.includes('downloadSampleExcel')) {
+        text = text.replace(/function downloadSampleJSON.*?\}\s*(?=function)/s, `$&${downloadExcelFn}\n        `);
+        if (!text.includes('downloadSampleExcel')) {
+            text = text.replace(/function downloadTemplate.*?\}\s*(?=function|let|const|var)/s, `$&${downloadExcelFn}\n        `);
+        }
+    }
+
+    const excelHelper = `
+    function parseExcelToJSON(file, callback) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = e.target.result;
+                const wb = XLSX.read(data, { type: 'binary' });
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+                
+                let questions = [];
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row || row.length < 6) continue;
+                    if (String(row[0]).toLowerCase().includes('câu hỏi') || String(row[1]).toLowerCase().includes('đáp án')) continue;
+                    
+                    ${
+                        gameType === 1 ? `
+                        const ansMap = {1: 'A', 2: 'B', 3: 'C', 4: 'D'};
+                        questions.push({
+                            id: i,
+                            question: String(row[0]),
+                            options: { A: String(row[1]), B: String(row[2]), C: String(row[3]), D: String(row[4]) },
+                            answer: ansMap[parseInt(row[5], 10)],
+                            explain: ""
+                        });
+                        ` : gameType === 2 ? `
+                        questions.push({
+                            q: String(row[0]),
+                            opts: [String(row[1]), String(row[2]), String(row[3]), String(row[4])],
+                            a: String(row[parseInt(row[5], 10)])
+                        });
+                        ` : `
+                        const ansMap = {1: 'A', 2: 'B', 3: 'C', 4: 'D'};
+                        questions.push({
+                            q: String(row[0]),
+                            a: String(row[1]), b: String(row[2]), c: String(row[3]), d: String(row[4]),
+                            correct: ansMap[parseInt(row[5], 10)]
+                        });
+                        `
+                    }
+                }
+                callback(null, questions);
+            } catch (error) {
+                callback(error, null);
+            }
+        };
+        reader.readAsBinaryString(file);
+    }
+    `;
+
+    if (!text.includes('parseExcelToJSON')) {
+        text = text.replace(/<script>/, `<script>\n${excelHelper}\n`);
+    }
+
+    // Now, let's carefully replace the file reading mechanism.
+    // The typical structure is:
+    // const reader = new FileReader();
+    // reader.onload = function(e) {
+    //    ... JSON.parse(e.target.result)
+    // };
+    // reader.readAsText(file);
+
+    // We can replace the inner logic of `handleFileUpload` or `prepareStart` where files are read.
+    // But since the variable names vary (e.g. `const r = new FileReader()`, `r.readAsText(f)`),
+    // let's do a targeted string replacement.
+    
+    // We will look for:
+    // const parsedData = JSON.parse(e.target.result);
+    // OR const data = JSON.parse(e.target.result);
+    // OR const parsed = JSON.parse(raw);
+    
+    if (!text.includes('if (file.name.endsWith(\'.xlsx\')') && !text.includes("if (f.name.endsWith('.xlsx')")) {
+        // Let's find the function containing FileReader
+        if (text.includes('function handleFileUpload')) {
+            text = text.replace(/const reader = new FileReader\(\);\s*reader\.onload = function\(e\) \{([\s\S]*?)\};\s*reader\.readAsText\(file\);/, 
+            `if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+                parseExcelToJSON(file, function(err, parsedData) {
+                    if (err) { alert('Lỗi đọc Excel: ' + err.message); return; }
+                    const e = { target: { result: JSON.stringify(parsedData) } };
+                    $1
+                });
+            } else {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    $1
+                };
+                reader.readAsText(file);
+            }`);
+        } else if (text.includes('function prepareStart')) {
+            text = text.replace(/const r = new FileReader\(\);\s*r\.onload = \(e\) => \{([\s\S]*?)\};\s*r\.readAsText\(f\);/, 
+            `if (f.name.endsWith('.xlsx') || f.name.endsWith('.xls')) {
+                parseExcelToJSON(f, function(err, parsedData) {
+                    if (err) { alert('Lỗi đọc Excel: ' + err.message); return; }
+                    const e = { target: { result: JSON.stringify(parsedData) } };
+                    $1
+                });
+            } else {
+                const r = new FileReader();
+                r.onload = (e) => {
+                    $1
+                };
+                r.readAsText(f);
+            }`);
+        }
+    }
+
+    fs.writeFileSync(filePath, text);
+    console.log("Updated", filePath, "- GameType:", gameType);
+}
+
+updateHTMLGames();

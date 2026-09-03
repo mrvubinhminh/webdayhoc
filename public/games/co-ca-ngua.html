@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game cờ cá ngựa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      }
+    };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #0b0f19; color: white; font-family: 'Montserrat', sans-serif; overflow: hidden; margin: 0; padding: 0; }
+        
+        .title-gradient { background: linear-gradient(to right, #0ea5e9, #d946ef); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        /* Glass Panels */
+        .glass-panel { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
+        
+        /* Buttons */
+        .btn-action { background: linear-gradient(135deg, #8b5cf6, #d946ef); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.3s; width: 100%; text-transform: uppercase; letter-spacing: 1px;}
+        .btn-action:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(217, 70, 239, 0.4); }
+        .btn-dice { background: linear-gradient(135deg, #06b6d4, #0ea5e9); color: white; border: none; padding: 15px 30px; border-radius: 12px; font-size: 1.2rem; font-weight: 900; cursor: pointer; box-shadow: 0 0 20px rgba(6, 182, 212, 0.6); width: 100%; transition: all 0.2s; text-shadow: 0 2px 4px rgba(0,0,0,0.3);}
+        .btn-dice:active { transform: scale(0.95); }
+        
+        /* Ludo Board matching screenshot */
+        .board-container { width: 65vh; height: 65vh; background: #0f172a; border-radius: 30px; position: relative; padding: 2vh; border: 2px solid rgba(255,255,255,0.1); box-shadow: inset 0 0 50px rgba(0,0,0,0.5), 0 10px 40px rgba(0,0,0,0.5); }
+        
+        /* 4 Bases */
+        .base { position: absolute; width: 38%; height: 38%; border-radius: 20px; border: 3px solid; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; place-items: center; padding: 10%; background: #0b0f19; }
+        .base-0 { top: 2vh; left: 2vh; border-color: #f43f5e; box-shadow: 0 0 20px rgba(244,63,94,0.3), inset 0 0 20px rgba(244,63,94,0.2); }
+        .base-1 { top: 2vh; right: 2vh; border-color: #06b6d4; box-shadow: 0 0 20px rgba(6,182,212,0.3), inset 0 0 20px rgba(6,182,212,0.2); }
+        .base-2 { bottom: 2vh; right: 2vh; border-color: #eab308; box-shadow: 0 0 20px rgba(234,179,8,0.3), inset 0 0 20px rgba(234,179,8,0.2); }
+        .base-3 { bottom: 2vh; left: 2vh; border-color: #22c55e; box-shadow: 0 0 20px rgba(34,197,94,0.3), inset 0 0 20px rgba(34,197,94,0.2); }
+        
+        /* Path grid */
+        .path-grid { position: absolute; inset: 2vh; display: grid; grid-template-columns: repeat(15, 1fr); grid-template-rows: repeat(15, 1fr); pointer-events: none; }
+        .path-cell { border: 1px solid rgba(255,255,255,0.1); background: rgba(30,41,59,0.5); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 1vh; font-weight: bold; color: rgba(255,255,255,0.3); }
+        
+        /* Center Crown */
+        .center-home { grid-column: 7 / 10; grid-row: 7 / 10; display: flex; align-items: center; justify-content: center; font-size: 5vh; color: #fbbf24; text-shadow: 0 0 20px #f59e0b; }
+        
+        /* Horses */
+        .horse { width: 3.5vh; height: 3.5vh; font-size: 3.5vh; line-height: 1; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 10; filter: drop-shadow(0 0 8px currentColor); }
+        .horse-0 { color: #f43f5e; }
+        .horse-1 { color: #06b6d4; }
+        .horse-2 { color: #eab308; }
+        .horse-3 { color: #22c55e; }
+        
+        /* Left/Right Team Panels matching screenshot */
+        .side-panel { width: 260px; padding: 15px 20px; border-radius: 20px; margin-bottom: 20px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 15px; position: relative; overflow: hidden; }
+        .side-panel::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
+        .side-panel-0::before { background: #f43f5e; box-shadow: 0 0 15px #f43f5e; }
+        .side-panel-1::before { background: #06b6d4; box-shadow: 0 0 15px #06b6d4; }
+        .side-panel-2::before { background: #eab308; box-shadow: 0 0 15px #eab308; }
+        .side-panel-3::before { background: #22c55e; box-shadow: 0 0 15px #22c55e; }
+        
+        /* Top Ranks */
+        .top-rank { background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 12px; display: flex; gap: 10px; align-items: center; font-size: 0.9rem; }
+        
+        /* Dice Area */
+        .dice-panel { width: 260px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; text-align: center; border-bottom: 4px solid #0ea5e9; }
+        .dice { font-size: 5rem; color: #0ea5e9; margin: 15px 0; text-shadow: 0 0 30px rgba(14, 165, 233, 0.5); }
+        @keyframes roll { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.2); } 100% { transform: rotate(360deg) scale(1); } }
+        .rolling { animation: roll 0.4s infinite; }
+        
+        /* Question Modal - Full Screen layout */
+        #question-modal { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(11, 15, 25, 0.98); flex-direction: column; }
+        #question-modal.active { display: flex; }
+        .q-container { flex: 1.5; padding: 4vh 4vw; display: flex; align-items: center; justify-content: center; width: 100%; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .q-text { font-size: 5vh; font-weight: bold; color: white; text-align: center; width: 100%; }
+        .opt-grid { flex: 1; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 2vh; padding: 4vh 4vw; width: 100%; }
+        .btn-opt { background: #1e293b; color: white; border: 2px solid #334155; border-radius: 20px; font-size: 3.5vh; font-weight: bold; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; text-align: center; padding: 2vh; }
+        .btn-opt:hover { border-color: #3b82f6; background: #233248; }
+        .btn-opt:active { transform: scale(0.98); }
+        .btn-opt.correct { background: #10b981; border-color: #059669; color: white; }
+        .btn-opt.wrong { background: #ef4444; border-color: #b91c1c; color: white; opacity: 0.5; }
+    </style>
+</head>
+<body>
+
+    <!-- Setup Screen -->
+    <div id="setup-screen" class="min-h-screen flex items-center justify-center relative">
+        <div class="glass-panel p-8 w-full max-w-md z-10">
+            <h1 class="text-4xl font-black text-center mb-2 title-gradient">ĐĂNG KÝ THẦN MÃ</h1>
+            <p class="text-center text-slate-400 mb-8 text-sm">Toán 11: Đạo Hàm - Cập Nhật Lỗi Màn Hình Đen</p>
+            
+            <div class="space-y-4 mb-8">
+                <!-- Red -->
+                <div class="flex items-center bg-slate-900 rounded-lg p-3 border border-rose-500/30">
+                    <div class="w-10 flex justify-center text-rose-500 text-2xl"><i class="fas fa-chess-knight"></i></div>
+                    <input type="text" id="team0" value="Huyết Mã" class="bg-transparent border-none outline-none text-white px-2 flex-1 font-bold text-lg">
+                </div>
+                <!-- Cyan -->
+                <div class="flex items-center bg-slate-900 rounded-lg p-3 border border-cyan-500/30">
+                    <div class="w-10 flex justify-center text-cyan-500 text-2xl"><i class="fas fa-chess-knight"></i></div>
+                    <input type="text" id="team1" value="Băng Mã" class="bg-transparent border-none outline-none text-white px-2 flex-1 font-bold text-lg">
+                </div>
+                <!-- Yellow -->
+                <div class="flex items-center bg-slate-900 rounded-lg p-3 border border-yellow-500/30">
+                    <div class="w-10 flex justify-center text-yellow-500 text-2xl"><i class="fas fa-chess-knight"></i></div>
+                    <input type="text" id="team2" value="Kim Mã" class="bg-transparent border-none outline-none text-white px-2 flex-1 font-bold text-lg">
+                </div>
+                <!-- Green -->
+                <div class="flex items-center bg-slate-900 rounded-lg p-3 border border-green-500/30">
+                    <div class="w-10 flex justify-center text-green-500 text-2xl"><i class="fas fa-chess-knight"></i></div>
+                    <input type="text" id="team3" value="Mộc Mã" class="bg-transparent border-none outline-none text-white px-2 flex-1 font-bold text-lg">
+                </div>
+            </div>
+            
+            <button class="btn-action mb-4" onclick="document.getElementById('file-upload').click()">Tải Đề Lên (JSON, Excel)</button>
+            <input type="file" id="file-upload" accept=".json, .xlsx, .xls" style="display: none;" onchange="handleFileUpload(event)">
+            <button class="btn-action mb-6" style="background:rgba(255,255,255,0.1); color:#38bdf8" onclick="downloadSampleExcel()"><i class="fas fa-download mr-2"></i> Tải Excel Mẫu</button>
+            <button class="btn-action" style="background: linear-gradient(135deg, #a855f7, #ec4899);" onclick="startGame()"><i class="fas fa-play mr-2"></i> KHỞI TRANH</button>
+        </div>
+    </div>
+
+    <!-- Main Game -->
+    <div id="game-screen" class="hidden min-h-screen p-6 flex flex-col">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-4xl font-black title-gradient">ĐẤU TRƯỜNG ĐẠO HÀM</h1>
+            <div class="flex gap-3" id="top-ranks">
+                <!-- Ranks -->
+            </div>
+            <div class="flex gap-4">
+                <button class="bg-blue-900/50 text-blue-400 border border-blue-500/50 px-5 py-2 rounded-lg font-bold hover:bg-blue-800 transition" onclick="toggleFullScreen()"><i class="fas fa-expand mr-2"></i> Toàn màn hình</button>
+                <button class="bg-red-900/50 text-red-400 border border-red-500/50 px-5 py-2 rounded-lg font-bold hover:bg-red-800 transition" onclick="location.reload()"><i class="fas fa-power-off mr-2"></i> DỪNG</button>
+            </div>
+        </div>
+        
+        <!-- Game Area -->
+        <div class="flex flex-1 items-center justify-between px-10">
+            <!-- Left Column -->
+            <div class="flex flex-col gap-6">
+                <!-- Team 0 (Red) -->
+                <div class="side-panel side-panel-0" id="tp-0">
+                    <div class="w-14 h-14 rounded-xl bg-slate-900 flex items-center justify-center text-rose-500 font-black text-2xl border border-rose-500/30">H</div>
+                    <div class="flex-1">
+                        <div class="font-bold text-rose-500 name text-lg">Huyết Mã</div>
+                        <div class="text-xs text-slate-400 mb-2">Rank: <span class="rank">#1</span></div>
+                        <div class="bg-slate-900 rounded-full h-6 w-full overflow-hidden relative border border-slate-700">
+                            <div class="absolute inset-y-0 left-0 bg-rose-500/50 progress" style="width: 0%"></div>
+                            <div class="absolute inset-0 flex items-center justify-center text-xs font-bold steps">0 bước</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Team 3 (Green) -->
+                <div class="side-panel side-panel-3" id="tp-3">
+                    <div class="w-14 h-14 rounded-xl bg-slate-900 flex items-center justify-center text-green-500 font-black text-2xl border border-green-500/30">M</div>
+                    <div class="flex-1">
+                        <div class="font-bold text-green-500 name text-lg">Mộc Mã</div>
+                        <div class="text-xs text-slate-400 mb-2">Rank: <span class="rank">#4</span></div>
+                        <div class="bg-slate-900 rounded-full h-6 w-full overflow-hidden relative border border-slate-700">
+                            <div class="absolute inset-y-0 left-0 bg-green-500/50 progress" style="width: 0%"></div>
+                            <div class="absolute inset-0 flex items-center justify-center text-xs font-bold steps">0 bước</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Center Board -->
+            <div class="board-container" id="ludo-board">
+                <!-- 4 Bases -->
+                <div class="base base-0">
+                    <div class="horse horse-0 h0-0"><i class="fas fa-chess-knight"></i></div>
+                    <div class="horse horse-0 h0-1"><i class="fas fa-chess-knight"></i></div>
+                    <div class="horse horse-0 h0-2"><i class="fas fa-chess-knight"></i></div>
+                    <div class="horse horse-0 h0-3"><i class="fas fa-chess-knight"></i></div>
+                </div>
+                <div class="base base-1">
+                    <div class="horse horse-1 h1-0"><i class="fas fa-chess-knight"></i></div>
+                    <div class="horse horse-1 h1-1"><i class="fas fa-chess-knight"></i></div>
+                    <div class="horse horse-1 h1-2"><i class="fas fa-chess-knight"></i></div>
+                    <div class="horse horse-1 h1-3"><i class="fas fa-chess-knight"></i></div>
+                </div>
+                <div class="base base-2">
+                    <div class="horse horse-2 h2-0"><i class="fas fa-chess-knight"></i></div>
+                    <div class="horse horse-2 h2-1"><i class="fas fa-chess-knight"></i></div>
+                    <div class="horse horse-2 h2-2"><i class="fas fa-chess-knight"></i></div>
+                    <div class="horse horse-2 h2-3"><i class="fas fa-chess-knight"></i></div>
+                </div>
+                <div class="base base-3">
+                    <div class="horse horse-3 h3-0"><i class="fas fa-chess-knight"></i></div>
+                    <div class="horse horse-3 h3-1"><i class="fas fa-chess-knight"></i></div>
+                    <div class="horse horse-3 h3-2"><i class="fas fa-chess-knight"></i></div>
+                    <div class="horse horse-3 h3-3"><i class="fas fa-chess-knight"></i></div>
+                </div>
+                
+                <!-- Grid Overlay -->
+                <div class="path-grid" id="path-grid">
+                    <div class="center-home"><i class="fas fa-crown"></i></div>
+                </div>
+            </div>
+            
+            <!-- Right Column -->
+            <div class="flex flex-col gap-6">
+                <!-- Team 1 (Cyan) -->
+                <div class="side-panel side-panel-1" id="tp-1">
+                    <div class="w-14 h-14 rounded-xl bg-slate-900 flex items-center justify-center text-cyan-500 font-black text-2xl border border-cyan-500/30">B</div>
+                    <div class="flex-1">
+                        <div class="font-bold text-cyan-500 name text-lg">Băng Mã</div>
+                        <div class="text-xs text-slate-400 mb-2">Rank: <span class="rank">#2</span></div>
+                        <div class="bg-slate-900 rounded-full h-6 w-full overflow-hidden relative border border-slate-700">
+                            <div class="absolute inset-y-0 left-0 bg-cyan-500/50 progress" style="width: 0%"></div>
+                            <div class="absolute inset-0 flex items-center justify-center text-xs font-bold steps">0 bước</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Team 2 (Yellow) -->
+                <div class="side-panel side-panel-2" id="tp-2">
+                    <div class="w-14 h-14 rounded-xl bg-slate-900 flex items-center justify-center text-yellow-500 font-black text-2xl border border-yellow-500/30">K</div>
+                    <div class="flex-1">
+                        <div class="font-bold text-yellow-500 name text-lg">Kim Mã</div>
+                        <div class="text-xs text-slate-400 mb-2">Rank: <span class="rank">#3</span></div>
+                        <div class="bg-slate-900 rounded-full h-6 w-full overflow-hidden relative border border-slate-700">
+                            <div class="absolute inset-y-0 left-0 bg-yellow-500/50 progress" style="width: 0%"></div>
+                            <div class="absolute inset-0 flex items-center justify-center text-xs font-bold steps">0 bước</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Dice Panel -->
+                <div class="dice-panel" id="dice-panel">
+                    <div class="text-xs text-slate-400 mb-1 font-bold tracking-widest">LƯỢT HIỆN TẠI</div>
+                    <div class="text-2xl font-black mb-2" id="current-turn-name">Băng Mã</div>
+                    <div class="dice" id="dice"><i class="fas fa-dice-one"></i></div>
+                    <button class="btn-dice mt-2" id="btn-roll" onclick="rollDice()">TUNG XÚC XẮC</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Full Screen Question Modal -->
+    <div id="question-modal">
+        <div class="q-container">
+            <div class="q-text" id="q-text">Câu hỏi sẽ hiện ở đây</div>
+        </div>
+        <div class="opt-grid">
+            <button class="btn-opt" id="btn-A" onclick="checkAnswer('A')">A</button>
+            <button class="btn-opt" id="btn-B" onclick="checkAnswer('B')">B</button>
+            <button class="btn-opt" id="btn-C" onclick="checkAnswer('C')">C</button>
+            <button class="btn-opt" id="btn-D" onclick="checkAnswer('D')">D</button>
+        </div>
+    </div>
+
+    <script>
+        // Data
+        let questions = [
+            { q: "Đạo hàm của hàm số $y = x^3 - 3x^2 + 2x$ là:", options: { A: "$y' = 3x^2 - 6x + 2$", B: "$y' = 3x^2 - 3x + 2$", C: "$y' = 3x^2 - 6x$", D: "$y' = x^2 - 6x + 2$" }, answer: "A" },
+            { q: "Đạo hàm của hàm số $y = \\sin(2x)$ là:", options: { A: "$y' = 2\\cos(2x)$", B: "$y' = \\cos(2x)$", C: "$y' = -2\\cos(2x)$", D: "$y' = -\\sin(2x)$" }, answer: "A" },
+            { q: "Đạo hàm của hàm số $y = \\sqrt{x^2 + 1}$ là:", options: { A: "$y' = \\frac{x}{\\sqrt{x^2 + 1}}$", B: "$y' = \\frac{1}{2\\sqrt{x^2 + 1}}$", C: "$y' = \\frac{2x}{\\sqrt{x^2 + 1}}$", D: "$y' = \\frac{1}{\\sqrt{x^2 + 1}}$" }, answer: "A" },
+            { q: "Đạo hàm của hàm số $y = \\frac{2x - 1}{x + 1}$ là:", options: { A: "$y' = \\frac{3}{(x + 1)^2}$", B: "$y' = \\frac{1}{(x + 1)^2}$", C: "$y' = \\frac{-3}{(x + 1)^2}$", D: "$y' = \\frac{2}{(x + 1)^2}$" }, answer: "A" },
+            { q: "Đạo hàm của hàm số $y = x\\ln(x)$ là:", options: { A: "$y' = \\ln(x) + 1$", B: "$y' = \\ln(x)$", C: "$y' = 1$", D: "$y' = \\frac{1}{x}$" }, answer: "A" },
+            { q: "Cho hàm số $y = \\tan(x)$. Đạo hàm của hàm số là:", options: { A: "$y' = \\frac{1}{\\cos^2(x)}$", B: "$y' = \\frac{1}{\\sin^2(x)}$", C: "$y' = \\cot(x)$", D: "$y' = -\\frac{1}{\\cos^2(x)}$" }, answer: "A" },
+            { q: "Đạo hàm của hàm số $y = e^{3x}$ là:", options: { A: "$y' = 3e^{3x}$", B: "$y' = e^{3x}$", C: "$y' = \\frac{1}{3}e^{3x}$", D: "$y' = 3e^x$" }, answer: "A" },
+            { q: "Tìm hệ số góc của tiếp tuyến với đồ thị hàm số $y = x^2 - 4x + 3$ tại điểm có hoành độ $x_0 = 2$.", options: { A: "$0$", B: "$2$", C: "$-2$", D: "$4$" }, answer: "A" },
+            { q: "Đạo hàm cấp hai của hàm số $y = x^4 - 2x^2$ là:", options: { A: "$y'' = 12x^2 - 4$", B: "$y'' = 4x^3 - 4x$", C: "$y'' = 12x^2$", D: "$y'' = 12x^2 - 2$" }, answer: "A" },
+            { q: "Đạo hàm của hàm số $y = \\cot(x)$ là:", options: { A: "$y' = -\\frac{1}{\\sin^2(x)}$", B: "$y' = \\frac{1}{\\sin^2(x)}$", C: "$y' = -\\frac{1}{\\cos^2(x)}$", D: "$y' = \\frac{1}{\\cos^2(x)}$" }, answer: "A" },
+            { q: "Phương trình tiếp tuyến của đồ thị hàm số $y = x^3 - 3x + 1$ tại điểm $M(1, -1)$ là:", options: { A: "$y = -1$", B: "$y = 0$", C: "$y = x - 2$", D: "$y = -3x + 2$" }, answer: "B" },
+            { q: "Đạo hàm của hàm số $y = \\cos^2(x)$ là:", options: { A: "$y' = -\\sin(2x)$", B: "$y' = \\sin(2x)$", C: "$y' = -2\\sin(x)$", D: "$y' = 2\\cos(x)$" }, answer: "A" },
+            { q: "Cho hàm số $y = \\sqrt{2x - 1}$. Giá trị của $y'(1)$ là:", options: { A: "$1$", B: "$\\frac{1}{2}$", C: "$\\frac{1}{\\sqrt{2}}$", D: "$2$" }, answer: "A" },
+            { q: "Đạo hàm của hàm số $y = (2x + 1)^3$ là:", options: { A: "$y' = 6(2x + 1)^2$", B: "$y' = 3(2x + 1)^2$", C: "$y' = 2(2x + 1)^2$", D: "$y' = 6(2x + 1)^3$" }, answer: "A" },
+            { q: "Đạo hàm của hàm số $y = \\frac{x^2 - x + 1}{x - 1}$ là:", options: { A: "$y' = \\frac{x^2 - 2x}{(x - 1)^2}$", B: "$y' = \\frac{x^2 - 2x + 2}{(x - 1)^2}$", C: "$y' = \\frac{x^2 + 2x}{(x - 1)^2}$", D: "$y' = 1$" }, answer: "A" }
+        ];
+        
+        let teams = [
+            { id: 0, name: "Huyết Mã", color: "rose", score: 0 },
+            { id: 1, name: "Băng Mã", color: "cyan", score: 0 },
+            { id: 2, name: "Kim Mã", color: "yellow", score: 0 },
+            { id: 3, name: "Mộc Mã", color: "green", score: 0 }
+        ];
+        
+        let currentTurn = 0;
+        let currentDice = 0;
+        let currentQuestion = null;
+        
+        const pathCoords = [];
+        const WIN_SCORE = 56;
+        
+        function initGrid() {
+            const grid = document.getElementById('path-grid');
+            
+            const pMap = [
+                [7,1],[7,2],[7,3],[7,4],[7,5],[6,6],[5,6],[4,6],[3,6],[2,6],[1,6],[1,7],[1,8],
+                [2,8],[3,8],[4,8],[5,8],[6,8],[7,9],[7,10],[7,11],[7,12],[7,13],[7,14],[7,15],
+                [8,15],[9,15],[9,14],[9,13],[9,12],[9,11],[9,10],[9,9],[10,9],[11,9],[12,9],[13,9],[14,9],[15,9],
+                [15,8],[15,7],[14,7],[13,7],[12,7],[11,7],[10,7],[9,7],[9,6],[9,5],[9,4],[9,3],[9,2],[9,1],[8,1]
+            ];
+            
+            pMap.forEach((p, idx) => {
+                const cell = document.createElement('div');
+                cell.className = 'path-cell';
+                cell.style.gridColumn = p[1];
+                cell.style.gridRow = p[0];
+                
+                // Colors for starting positions
+                if(idx === 0) cell.style.background = 'rgba(244,63,94,0.3)'; // Red start
+                if(idx === 13) cell.style.background = 'rgba(6,182,212,0.3)'; // Cyan start
+                if(idx === 26) cell.style.background = 'rgba(234,179,8,0.3)'; // Yellow start
+                if(idx === 39) cell.style.background = 'rgba(34,197,94,0.3)'; // Green start
+                
+                grid.appendChild(cell);
+                pathCoords.push({ x: p[1], y: p[0] });
+            });
+            
+            // Home stretch
+            for(let i=2; i<=6; i++) {
+                // Red home
+                const r = document.createElement('div'); r.className='path-cell'; r.style.gridColumn='8'; r.style.gridRow=i; r.style.background='rgba(244,63,94,0.2)'; grid.appendChild(r);
+                // Cyan home
+                const c = document.createElement('div'); c.className='path-cell'; c.style.gridColumn=16-i; c.style.gridRow='8'; c.style.background='rgba(6,182,212,0.2)'; grid.appendChild(c);
+                // Yellow home
+                const y = document.createElement('div'); y.className='path-cell'; y.style.gridColumn='8'; y.style.gridRow=16-i; y.style.background='rgba(234,179,8,0.2)'; grid.appendChild(y);
+                // Green home
+                const g = document.createElement('div'); g.className='path-cell'; g.style.gridColumn=i; g.style.gridRow='8'; g.style.background='rgba(34,197,94,0.2)'; grid.appendChild(g);
+            }
+        }
+        
+        function getHorsePos(teamId, score) {
+            if (score === 0) return null; // In base
+            if (score > 56) score = 56;
+            
+            const startOffsets = { 0: 0, 1: 13, 2: 26, 3: 39 };
+            let posIdx = startOffsets[teamId] + (score - 1);
+            
+            if (score > 51) {
+                // In home stretch
+                const stepsIn = score - 51;
+                if(teamId === 0) return { x: 8, y: stepsIn + 1 };
+                if(teamId === 1) return { x: 15 - stepsIn, y: 8 };
+                if(teamId === 2) return { x: 8, y: 15 - stepsIn };
+                if(teamId === 3) return { x: stepsIn + 1, y: 8 };
+            }
+            
+            posIdx = posIdx % 52;
+            return pathCoords[posIdx];
+        }
+        
+        function updateHorses() {
+            teams.forEach(team => {
+                const pos = getHorsePos(team.id, team.score);
+                const h0 = document.querySelector(`.h${team.id}-0`);
+                
+                if (pos) {
+                    h0.style.position = 'absolute';
+                    // Convert grid coords to %
+                    // grid is 15x15, inset 2vh.
+                    const cellSize = 100 / 15;
+                    h0.style.left = ((pos.x - 0.5) * cellSize) + '%';
+                    h0.style.top = ((pos.y - 0.5) * cellSize) + '%';
+                    h0.style.transform = 'translate(-50%, -50%)';
+                    document.getElementById('ludo-board').appendChild(h0);
+                } else {
+                    h0.style.position = 'static';
+                    h0.style.transform = 'none';
+                    document.querySelector(`.base-${team.id}`).appendChild(h0);
+                }
+            });
+            updateUI();
+        }
+        
+        function updateUI() {
+            let sorted = [...teams].sort((a,b) => b.score - a.score);
+            
+            document.getElementById('top-ranks').innerHTML = sorted.map((t, i) => {
+                let badgeColor = i===0 ? 'text-yellow-400' : 'text-slate-400';
+                return `<div class="top-rank">
+                    <span class="${badgeColor} font-black text-lg">#${i+1}</span>
+                    <span style="color:var(--tw-color-${t.color}-500)" class="font-bold">${t.name}</span>
+                    <span class="text-white font-bold bg-slate-700 px-2 rounded">${t.score}</span>
+                </div>`;
+            }).join('');
+            
+            teams.forEach(t => {
+                const p = document.getElementById('tp-' + t.id);
+                p.querySelector('.name').innerText = t.name;
+                p.querySelector('.steps').innerText = t.score + ' bước';
+                p.querySelector('.rank').innerText = '#' + (sorted.findIndex(x => x.id === t.id) + 1);
+                p.querySelector('.progress').style.width = Math.min((t.score / WIN_SCORE) * 100, 100) + '%';
+            });
+            
+            const curr = teams[currentTurn];
+            const nameEl = document.getElementById('current-turn-name');
+            nameEl.innerText = curr.name;
+            nameEl.className = 'text-2xl font-black mb-2 text-' + curr.color + '-500';
+            
+            const dp = document.getElementById('dice-panel');
+            dp.style.borderColor = `var(--tw-color-${curr.color}-500)`;
+            document.getElementById('dice').style.color = `var(--tw-color-${curr.color}-500)`;
+            
+            document.getElementById('btn-roll').style.background = getGradient(curr.color);
+        }
+        
+        function getGradient(color) {
+            if(color==='rose') return 'linear-gradient(135deg, #e11d48, #f43f5e)';
+            if(color==='cyan') return 'linear-gradient(135deg, #0891b2, #06b6d4)';
+            if(color==='yellow') return 'linear-gradient(135deg, #ca8a04, #eab308)';
+            if(color==='green') return 'linear-gradient(135deg, #16a34a, #22c55e)';
+        }
+        
+        const diceClasses = ['fa-dice-one', 'fa-dice-two', 'fa-dice-three', 'fa-dice-four', 'fa-dice-five', 'fa-dice-six'];
+        
+        function rollDice() {
+            if(questions.length === 0) return alert('Hết câu hỏi!');
+            const diceEl = document.getElementById('dice');
+            diceEl.classList.add('rolling');
+            document.getElementById('btn-roll').disabled = true;
+            
+            setTimeout(() => {
+                diceEl.classList.remove('rolling');
+                currentDice = Math.floor(Math.random() * 6) + 1;
+                diceEl.innerHTML = `<i class="fas ${diceClasses[currentDice-1]}"></i>`;
+                
+                setTimeout(showQuestion, 1000);
+            }, 1000);
+        }
+        
+        function showQuestion() {
+            currentQuestion = questions[Math.floor(Math.random() * questions.length)];
+            
+            document.getElementById('q-text').innerHTML = currentQuestion.q;
+            document.getElementById('btn-A').innerHTML = "A. " + currentQuestion.options.A;
+            document.getElementById('btn-B').innerHTML = "B. " + currentQuestion.options.B;
+            document.getElementById('btn-C').innerHTML = "C. " + currentQuestion.options.C;
+            document.getElementById('btn-D').innerHTML = "D. " + currentQuestion.options.D;
+            
+            if (window.MathJax) {
+                MathJax.typesetPromise();
+            }
+            
+            ['A','B','C','D'].forEach(o => document.getElementById('btn-'+o).className = 'btn-opt');
+            
+            document.getElementById('question-modal').classList.add('active');
+        }
+        
+        function checkAnswer(ans) {
+            ['A','B','C','D'].forEach(o => document.getElementById('btn-'+o).disabled = true);
+            if(ans === currentQuestion.answer) {
+                document.getElementById('btn-'+ans).classList.add('correct');
+                teams[currentTurn].score += currentDice;
+            } else {
+                document.getElementById('btn-'+ans).classList.add('wrong');
+                document.getElementById('btn-'+currentQuestion.answer).classList.add('correct');
+            }
+            
+            setTimeout(() => {
+                document.getElementById('question-modal').classList.remove('active');
+                ['A','B','C','D'].forEach(o => document.getElementById('btn-'+o).disabled = false);
+                currentTurn = (currentTurn + 1) % 4;
+                updateHorses();
+                document.getElementById('btn-roll').disabled = false;
+            }, 2500);
+        }
+        
+        function startGame() {
+            teams[0].name = document.getElementById('team0').value || 'Huyết Mã';
+            teams[1].name = document.getElementById('team1').value || 'Băng Mã';
+            teams[2].name = document.getElementById('team2').value || 'Kim Mã';
+            teams[3].name = document.getElementById('team3').value || 'Mộc Mã';
+            
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            
+            initGrid();
+            updateHorses();
+        }
+
+        // --- EXCEL & JSON LOGIC ---
+        function downloadSampleExcel() {
+            const ws = XLSX.utils.aoa_to_sheet([
+                ["Câu hỏi", "Đáp án A", "Đáp án B", "Đáp án C", "Đáp án D", "Cột đúng (1-4)"],
+                ["Đạo hàm của $y = x^2$ là gì?", "$2x$", "$x$", "$2$", "$0$", 1]
+            ]);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Câu Hỏi");
+            XLSX.writeFile(wb, "Mau_Cau_Hoi.xlsx");
+        }
+
+        function parseExcelToJSON(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = e.target.result;
+                    const wb = XLSX.read(data, { type: 'binary' });
+                    const wsname = wb.SheetNames[0];
+                    const ws = wb.Sheets[wsname];
+                    const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+                    
+                    let qs = [];
+                    for (let i = 0; i < rows.length; i++) {
+                        const row = rows[i];
+                        if (!row || row.length < 6) continue;
+                        if (String(row[0]).toLowerCase().includes('câu hỏi') || String(row[1]).toLowerCase().includes('đáp án')) continue;
+                        const ansMap = {1: 'A', 2: 'B', 3: 'C', 4: 'D'};
+                        qs.push({
+                            id: i,
+                            q: String(row[0]),
+                            options: { A: String(row[1]), B: String(row[2]), C: String(row[3]), D: String(row[4]) },
+                            answer: ansMap[parseInt(row[5], 10)],
+                        });
+                    }
+                    callback(null, qs);
+                } catch (error) { callback(error, null); }
+            };
+            reader.readAsBinaryString(file);
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+                parseExcelToJSON(file, function(err, parsedData) {
+                    if (err) { alert('Lỗi đọc Excel: ' + err.message); return; }
+                    questions = parsedData;
+                    alert('Đã tải ' + questions.length + ' câu hỏi từ Excel!');
+                });
+            } else {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        questions = JSON.parse(e.target.result);
+                        alert('Đã tải ' + questions.length + ' câu hỏi từ JSON!');
+                    } catch(err) { alert("Lỗi JSON!"); }
+                };
+                reader.readAsText(file);
+            }
+        }
+        
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+    </script>
+</body>
+</html>

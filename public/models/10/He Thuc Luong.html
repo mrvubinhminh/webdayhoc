@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Khám phá Hệ Thức Lượng Trong Tam Giác - Toán 10</title>
+    <!-- Cài đặt Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Cấu hình MathJax cho công thức Toán học -->
+    <script>
+        window.MathJax = {
+            options: { enableMenu: false },
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f8fafc; 
+            color: #334155; 
+            margin: 0;
+            overflow: hidden; 
+            user-select: none;
+        }
+        
+        .app-container { display: flex; flex-direction: column; height: 100vh; width: 100vw; }
+        .main-content { display: flex; flex: 1; overflow: hidden; }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 400px;
+            background-color: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 10;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.02);
+            padding: 1.25rem;
+        }
+
+        /* Canvas Styling - Nền ô ly sáng */
+        .canvas-area {
+            flex: 1;
+            position: relative;
+            background-color: #f1f5f9;
+            /* Lưới nhỏ */
+            background-image: 
+                linear-gradient(#e2e8f0 1px, transparent 1px),
+                linear-gradient(90deg, #e2e8f0 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+
+        /* Bottom Panel Styling */
+        .bottom-panel {
+            min-height: 120px;
+            background-color: #ffffff;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            padding: 1rem 1.5rem;
+            z-index: 10;
+            gap: 1.5rem;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.02);
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Buttons & Menu Items */
+        .menu-btn {
+            background-color: #f8fafc;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.4rem;
+        }
+        .menu-btn:hover { background-color: #e2e8f0; }
+        .menu-btn.active { 
+            background-color: #eff6ff; 
+            border-color: #bfdbfe; 
+            color: #1d4ed8; 
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1);
+        }
+        .menu-icon {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 28px; height: 28px; background-color: #94a3b8; color: white;
+            border-radius: 6px; font-size: 0.8rem; flex-shrink: 0;
+        }
+        .menu-btn.active .menu-icon { background-color: #3b82f6; }
+
+        /* Discovery Box */
+        .discovery-box {
+            display: none; background-color: #fffbeb; border: 1px solid #fde68a;
+            border-radius: 0.75rem; padding: 1.25rem; margin-top: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .discovery-box.active { display: flex; flex-direction: column; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* SVG Elements */
+        .draggable-point { cursor: grab; }
+        .draggable-point:active { cursor: grabbing; }
+        
+        .status-badge {
+            padding: 0.25rem 0.75rem; border-radius: 9999px;
+            font-weight: bold; font-size: 0.875rem; display: inline-block;
+        }
+
+        .math-text { font-family: 'JetBrains Mono', monospace; }
+        
+        /* Màu sắc chuẩn sư phạm */
+        .color-A { color: #2563eb; } /* Xanh dương */
+        .color-B { color: #dc2626; } /* Đỏ */
+        .color-C { color: #16a34a; } /* Xanh lá */
+        .color-R { color: #9333ea; } /* Tím */
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-20">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm border border-blue-200">
+                    $\Delta$
+                </div>
+                <h1 class="text-base font-bold text-slate-700 uppercase tracking-wide">Khám phá Hệ thức lượng trong tam giác</h1>
+            </div>
+            <button id="btnFullscreen" class="flex items-center gap-2 text-slate-500 hover:text-blue-600 px-3 py-1.5 rounded-md text-sm border border-slate-300 hover:border-blue-300 hover:bg-blue-50 transition font-medium">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                <span id="txtFullscreen">Toàn màn hình</span>
+            </button>
+        </header>
+
+        <div class="main-content">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Hoạt động Khám phá</div>
+                
+                <div class="flex flex-col gap-1" id="menuGroup">
+                    <button class="menu-btn active" data-mode="0"><span class="menu-icon">0</span> Khởi động: Đo hồ nước</button>
+                    <button class="menu-btn" data-mode="1"><span class="menu-icon">1</span> Khám phá Định lí Côsin</button>
+                    <button class="menu-btn" data-mode="2"><span class="menu-icon">2</span> Liên hệ với định lí Pitago</button>
+                    <button class="menu-btn" data-mode="3"><span class="menu-icon">3</span> Khám phá Định lí Sin</button>
+                    <button class="menu-btn" data-mode="4"><span class="menu-icon">4</span> Bán kính đường tròn ngoại tiếp</button>
+                    <button class="menu-btn" data-mode="5"><span class="menu-icon">5</span> Diện tích tam giác</button>
+                    <button class="menu-btn" data-mode="6"><span class="menu-icon">6</span> Sơ đồ tổng kết</button>
+                </div>
+
+                <!-- Các Box Hướng dẫn / Khám phá tương ứng -->
+                <div id="q-mode-0" class="discovery-box active">
+                    <div class="text-sm font-bold text-blue-700 mb-2">Tình huống thực tiễn</div>
+                    <p class="text-sm text-slate-700 mb-2">Không thể đo trực tiếp khoảng cách giữa 2 điểm A và B hai bên bờ hồ. Ta chọn điểm C trên bờ và đo được khoảng cách AC, BC và góc C.</p>
+                    <ul class="text-sm text-slate-700 space-y-1 list-disc pl-4 mb-2">
+                        <li>Kéo C để xem độ dài AC, BC.</li>
+                        <li>Làm thế nào tính AB khi biết 2 cạnh và góc xen giữa?</li>
+                        <li>Pitago có áp dụng được không? Vì sao?</li>
+                    </ul>
+                    <div class="text-xs italic text-slate-500 mt-2">=> Cần một công thức mới liên hệ 3 cạnh và 1 góc.</div>
+                </div>
+
+                <div id="q-mode-1" class="discovery-box">
+                    <div class="text-sm font-bold text-blue-700 mb-2">Hình thành Định lí Côsin</div>
+                    <ul class="text-sm text-slate-700 space-y-2 list-disc pl-4">
+                        <li>Hãy kéo thả các đỉnh A, B, C tự do.</li>
+                        <li>Quan sát bảng tính toán ở bên dưới. Hai biểu thức $a^2$ và $b^2+c^2-2bc\cos A$ có giá trị như thế nào với nhau?</li>
+                        <li><strong>Kết luận:</strong> Bình phương một cạnh bằng tổng bình phương hai cạnh kia trừ đi 2 lần tích của chúng với côsin góc xen giữa.</li>
+                    </ul>
+                </div>
+
+                <div id="q-mode-2" class="discovery-box">
+                    <div class="text-sm font-bold text-blue-700 mb-2">Mở rộng định lí Pitago</div>
+                    <ul class="text-sm text-slate-700 space-y-2 list-disc pl-4">
+                        <li>Hãy kéo đỉnh A sao cho góc $\widehat{A} = 90^\circ$ (góc vuông).</li>
+                        <li>Khi $\widehat{A} = 90^\circ$ thì $\cos A = ?$</li>
+                        <li>Nhìn vào công thức Định lí Côsin lúc này, nó trở thành định lí nào đã học?</li>
+                    </ul>
+                </div>
+
+                <div id="q-mode-3" class="discovery-box">
+                    <div class="text-sm font-bold text-blue-700 mb-2">Hình thành Định lí Sin</div>
+                    <ul class="text-sm text-slate-700 space-y-2 list-disc pl-4">
+                        <li>Kéo các đỉnh và quan sát 3 tỉ số $\frac{a}{\sin A}$, $\frac{b}{\sin B}$, $\frac{c}{\sin C}$ ở bảng dưới.</li>
+                        <li>Có nhận xét gì về 3 tỉ số này?</li>
+                        <li><strong>Kết luận:</strong> Trong một tam giác, tỉ số giữa một cạnh và sin của góc đối diện luôn bằng nhau.</li>
+                    </ul>
+                </div>
+
+                <div id="q-mode-4" class="discovery-box">
+                    <div class="text-sm font-bold text-blue-700 mb-2">Đường tròn ngoại tiếp</div>
+                    <ul class="text-sm text-slate-700 space-y-2 list-disc pl-4">
+                        <li>Mô hình đã tự động vẽ đường tròn đi qua 3 đỉnh (đường tròn ngoại tiếp) bán kính $R$.</li>
+                        <li>Hãy so sánh tỉ số $\frac{a}{\sin A}$ với đường kính $2R$.</li>
+                        <li><strong>Kết luận:</strong> $\frac{a}{\sin A} = \frac{b}{\sin B} = \frac{c}{\sin C} = 2R$.</li>
+                    </ul>
+                </div>
+
+                <div id="q-mode-5" class="discovery-box">
+                    <div class="text-sm font-bold text-blue-700 mb-2">Công thức Diện tích</div>
+                    <ul class="text-sm text-slate-700 space-y-2 list-disc pl-4">
+                        <li>Diện tích học ở cấp 2 là: $S = \frac{1}{2}a \cdot h_a$.</li>
+                        <li>Trong tam giác vuông $AHB$, ta có $h_a = c \cdot \sin B$.</li>
+                        <li>Thay vào ta được: $S = \frac{1}{2}ac \sin B$. Quan sát bảng bên dưới để kiểm chứng!</li>
+                    </ul>
+                </div>
+
+                <div id="q-mode-6" class="discovery-box">
+                    <div class="text-sm font-bold text-blue-700 mb-2">Sơ đồ Giải tam giác</div>
+                    <div class="text-sm text-slate-700 space-y-3">
+                        <div class="p-2 bg-white border rounded shadow-sm">
+                            <div class="font-bold">Biết 3 cạnh (c.c.c)</div>
+                            <div class="text-xs text-blue-600 mt-1">Dùng hệ quả ĐL Côsin tìm góc.</div>
+                        </div>
+                        <div class="p-2 bg-white border rounded shadow-sm">
+                            <div class="font-bold">Biết 2 cạnh + góc xen giữa</div>
+                            <div class="text-xs text-blue-600 mt-1">Dùng ĐL Côsin tìm cạnh thứ 3.</div>
+                        </div>
+                        <div class="p-2 bg-white border rounded shadow-sm">
+                            <div class="font-bold">Biết 1 cạnh + 2 góc</div>
+                            <div class="text-xs text-green-600 mt-1">Dùng ĐL Sin tìm các cạnh còn lại.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-auto pt-4 pb-2 text-center text-xs text-slate-400">
+                    Sử dụng các điểm kéo thả (A, B, C)
+                </div>
+            </aside>
+
+            <!-- Main Canvas Area -->
+            <main class="canvas-area" id="canvas-container">
+                <svg id="math-svg" width="100%" height="100%" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet" style="z-index: 1;">
+                    <defs>
+                        <!-- Định nghĩa đường cắt chéo cho hồ nước -->
+                        <pattern id="water" width="20" height="20" patternUnits="userSpaceOnUse">
+                            <path d="M 0 10 Q 5 0 10 10 T 20 10" fill="none" stroke="#60a5fa" stroke-width="2" opacity="0.5"/>
+                        </pattern>
+                    </defs>
+
+                    <!-- Lớp phông nền (Hồ nước) -->
+                    <g id="layer-background"></g>
+
+                    <!-- Lớp đường phụ (Đường tròn, đường cao) -->
+                    <g id="layer-aux"></g>
+
+                    <!-- Lớp Góc (Arcs) -->
+                    <g id="layer-angles"></g>
+
+                    <!-- Lớp Cạnh Tam Giác -->
+                    <g id="layer-edges"></g>
+
+                    <!-- Lớp Điểm (Vertices) -->
+                    <g id="layer-points"></g>
+                    
+                    <!-- Lớp Nhãn (Labels) -->
+                    <g id="layer-labels"></g>
+                </svg>
+            </main>
+        </div>
+
+        <footer class="bottom-panel">
+            <!-- Box 1: Thông số cạnh -->
+            <div class="flex flex-col gap-2 min-w-[150px]">
+                <div class="text-sm font-bold text-slate-500 uppercase">Độ dài cạnh</div>
+                <div class="text-lg font-bold math-text color-A" id="val-a">$a = 0.0$</div>
+                <div class="text-lg font-bold math-text color-B" id="val-b">$b = 0.0$</div>
+                <div class="text-lg font-bold math-text color-C" id="val-c">$c = 0.0$</div>
+            </div>
+
+            <!-- Box 2: Thông số góc -->
+            <div class="flex flex-col gap-2 min-w-[150px]">
+                <div class="text-sm font-bold text-slate-500 uppercase">Góc (Độ)</div>
+                <div class="text-lg font-bold math-text color-A" id="val-A">$\widehat{A} = 0^\circ$</div>
+                <div class="text-lg font-bold math-text color-B" id="val-B">$\widehat{B} = 0^\circ$</div>
+                <div class="text-lg font-bold math-text color-C" id="val-C">$\widehat{C} = 0^\circ$</div>
+            </div>
+
+            <!-- Box 3: Bảng Công thức / Tính toán động -->
+            <div class="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col justify-center items-center shadow-inner relative overflow-hidden min-h-[100px]">
+                <div class="text-xs font-bold text-slate-400 absolute top-2 left-3 uppercase" id="panel-formula-title">Biểu thức tính toán</div>
+                <button id="btnToggleResult" class="absolute top-2 right-3 px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded shadow-sm hover:bg-blue-700 transition hidden z-20 cursor-pointer">Hiện kết luận</button>
+                <div id="dynamic-formula" class="text-2xl mt-2 w-full text-center overflow-x-auto">
+                    <!-- MathJax sẽ render ở đây -->
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Hằng số và Trạng thái
+        let currentMode = 0;
+        let draggingPoint = null;
+        let isResultVisible = false; // Trạng thái ẩn/hiện kết luận
+        const GRID = 40; 
+        
+        // Toạ độ các đỉnh tam giác (Toạ độ người dùng kéo)
+        // Mặc định tạo một tam giác đẹp
+        let pts = {
+            A: { x: 400, y: 200 },
+            B: { x: 200, y: 500 },
+            C: { x: 700, y: 500 }
+        };
+
+        // Các biến lưu trữ toán học
+        let mathData = {
+            a: 0, b: 0, c: 0,
+            angleA: 0, angleB: 0, angleC: 0, // Radian
+            degA: 0, degB: 0, degC: 0,       // Độ
+            R: 0, S: 0,
+            centerU: {x:0, y:0},
+            pointH: {x:0, y:0} // Chân đường cao từ A
+        };
+
+        // DOM Elements
+        const svg = document.getElementById('math-svg');
+        const layers = {
+            bg: document.getElementById('layer-background'),
+            aux: document.getElementById('layer-aux'),
+            angles: document.getElementById('layer-angles'),
+            edges: document.getElementById('layer-edges'),
+            points: document.getElementById('layer-points'),
+            labels: document.getElementById('layer-labels')
+        };
+        const dynamicFormula = document.getElementById('dynamic-formula');
+
+        // Hàm tính toán khoảng cách 2 điểm
+        function dist(p1, p2) {
+            return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+        }
+
+        // Hàm tính góc tạo bởi 3 điểm (Góc tại pCenter)
+        function calcAngle(p1, pCenter, p2) {
+            let a = dist(pCenter, p1);
+            let b = dist(pCenter, p2);
+            let c = dist(p1, p2);
+            // Định lí Cosin để tìm góc
+            let cos = (a*a + b*b - c*c) / (2 * a * b);
+            cos = Math.max(-1, Math.min(1, cos)); // Xử lý sai số float
+            return Math.acos(cos);
+        }
+
+        // Hàm cập nhật toàn bộ dữ liệu toán học của tam giác
+        function updateMath() {
+            // Cạnh đối diện
+            mathData.a = dist(pts.B, pts.C);
+            mathData.b = dist(pts.A, pts.C);
+            mathData.c = dist(pts.A, pts.B);
+
+            // Góc (Radian)
+            mathData.angleA = calcAngle(pts.B, pts.A, pts.C);
+            mathData.angleB = calcAngle(pts.A, pts.B, pts.C);
+            mathData.angleC = calcAngle(pts.A, pts.C, pts.B);
+
+            // Góc (Độ)
+            mathData.degA = (mathData.angleA * 180 / Math.PI);
+            mathData.degB = (mathData.angleB * 180 / Math.PI);
+            mathData.degC = (mathData.angleC * 180 / Math.PI);
+
+            // Diện tích (Heron hoặc 1/2 bc sinA)
+            mathData.S = 0.5 * mathData.b * mathData.c * Math.sin(mathData.angleA);
+
+            // Bán kính đường tròn ngoại tiếp R = a / (2 sinA)
+            mathData.R = mathData.a / (2 * Math.sin(mathData.angleA));
+
+            // Tâm đường tròn ngoại tiếp (Dùng toạ độ Descartes)
+            let D = 2 * (pts.A.x*(pts.B.y - pts.C.y) + pts.B.x*(pts.C.y - pts.A.y) + pts.C.x*(pts.A.y - pts.B.y));
+            if (Math.abs(D) > 0.001) {
+                let A2 = pts.A.x*pts.A.x + pts.A.y*pts.A.y;
+                let B2 = pts.B.x*pts.B.x + pts.B.y*pts.B.y;
+                let C2 = pts.C.x*pts.C.x + pts.C.y*pts.C.y;
+                mathData.centerU.x = (A2*(pts.B.y - pts.C.y) + B2*(pts.C.y - pts.A.y) + C2*(pts.A.y - pts.B.y)) / D;
+                mathData.centerU.y = (A2*(pts.C.x - pts.B.x) + B2*(pts.A.x - pts.C.x) + C2*(pts.B.x - pts.A.x)) / D;
+            }
+
+            // Chân đường cao từ A xuống BC
+            let dx = pts.C.x - pts.B.x;
+            let dy = pts.C.y - pts.B.y;
+            let len2 = dx*dx + dy*dy;
+            if(len2 > 0) {
+                let t = ((pts.A.x - pts.B.x)*dx + (pts.A.y - pts.B.y)*dy) / len2;
+                mathData.pointH.x = pts.B.x + t * dx;
+                mathData.pointH.y = pts.B.y + t * dy;
+            }
+        }
+
+        // Hàm vẽ cung tròn thể hiện góc bên trong tam giác (Không bị vẽ lật ngược ra ngoài)
+        function drawInteriorAngleArc(center, p1, p2, radius, color, labelText) {
+            // Tính góc tuyệt đối từ tâm đến p1 và p2
+            let a1 = Math.atan2(p1.y - center.y, p1.x - center.x);
+            let a2 = Math.atan2(p2.y - center.y, p2.x - center.x);
+            
+            // Normalize angles to positive
+            if (a1 < 0) a1 += 2*Math.PI;
+            if (a2 < 0) a2 += 2*Math.PI;
+
+            // Xác định cờ sweep-flag (hướng vẽ)
+            // Tính cross product của vector center->p1 và center->p2 để biết chiều
+            let cross = (p1.x - center.x)*(p2.y - center.y) - (p1.y - center.y)*(p2.x - center.x);
+            let sweep = cross > 0 ? 1 : 0;
+
+            // Tính điểm bắt đầu và kết thúc của cung tròn
+            let startX = center.x + radius * Math.cos(a1);
+            let startY = center.y + radius * Math.sin(a1);
+            let endX = center.x + radius * Math.cos(a2);
+            let endY = center.y + radius * Math.sin(a2);
+
+            layers.angles.innerHTML += `
+                <path d="M ${center.x} ${center.y} L ${startX} ${startY} A ${radius} ${radius} 0 0 ${sweep} ${endX} ${endY} Z" 
+                      fill="${color}" fill-opacity="0.2" stroke="${color}" stroke-width="2" />
+            `;
+            
+            // Đặt nhãn vào tia phân giác của góc
+            let bisectAngle = a1 + (a2 - a1) / 2;
+            // Nếu hiệu hai góc lớn hơn PI, tia phân giác nằm ở hướng ngược lại
+            if (Math.abs(a2 - a1) > Math.PI) {
+                bisectAngle += Math.PI;
+            }
+            
+            let labelX = center.x + (radius + 20) * Math.cos(bisectAngle);
+            let labelY = center.y + (radius + 20) * Math.sin(bisectAngle) + 5; // +5 chỉnh baseline text
+
+            layers.labels.innerHTML += `
+                <text x="${labelX}" y="${labelY}" fill="${color}" font-weight="bold" font-size="16" text-anchor="middle">${labelText}</text>
+            `;
+        }
+
+        // Vẽ cạnh tam giác
+        function drawLine(p1, p2, color, width, dash = "") {
+            layers.edges.innerHTML += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="${color}" stroke-width="${width}" stroke-dasharray="${dash}" stroke-linecap="round"/>`;
+        }
+
+        // Vẽ điểm kéo thả
+        function drawPoint(id, point, color, label) {
+            layers.points.innerHTML += `
+                <circle cx="${point.x}" cy="${point.y}" r="25" fill="transparent" class="draggable-point" data-id="${id}"/>
+                <circle cx="${point.x}" cy="${point.y}" r="6" fill="${color}" stroke="#fff" stroke-width="2" pointer-events="none"/>
+            `;
+            // Chỉnh offset nhãn điểm
+            let lx = point.x - 20;
+            let ly = point.y - 20;
+            layers.labels.innerHTML += `<text x="${lx}" y="${ly}" fill="${color}" font-weight="bold" font-size="28" pointer-events="none">${label}</text>`;
+        }
+
+        // Hàm vẽ lại toàn bộ khung cảnh
+        function updateSVG() {
+            // Xoá trắng
+            for(let key in layers) layers[key].innerHTML = '';
+            
+            // Tính toán lại Toán học
+            updateMath();
+
+            // Hiển thị Hồ Nước ở Mode Khởi động
+            if (currentMode === 0) {
+                layers.bg.innerHTML = `
+                    <path d="M 300 250 Q 500 150 700 250 T 800 500 Q 400 600 250 400 Z" fill="url(#water)" />
+                    <text x="500" y="350" fill="#3b82f6" font-style="italic" font-size="30" text-anchor="middle" opacity="0.6">Hồ Nước</text>
+                `;
+            }
+
+            // Vẽ các đường phụ (Đường tròn, đường cao)
+            if (currentMode === 4) {
+                // Đường tròn ngoại tiếp
+                layers.aux.innerHTML += `<circle cx="${mathData.centerU.x}" cy="${mathData.centerU.y}" r="${mathData.R}" fill="none" stroke="#9333ea" stroke-width="2" stroke-dasharray="6,6"/>`;
+                layers.aux.innerHTML += `<circle cx="${mathData.centerU.x}" cy="${mathData.centerU.y}" r="4" fill="#9333ea"/>`;
+                layers.labels.innerHTML += `<text x="${mathData.centerU.x+10}" y="${mathData.centerU.y+5}" fill="#9333ea" font-weight="bold" font-size="18">O</text>`;
+                // Bán kính R từ O đến A
+                drawLine(mathData.centerU, pts.A, "#9333ea", 2, "4,4");
+                let textR = isResultVisible ? `R = ${(mathData.R/40).toFixed(1)}` : `R = ?`;
+                layers.labels.innerHTML += `<text x="${(mathData.centerU.x+pts.A.x)/2}" y="${(mathData.centerU.y+pts.A.y)/2 - 10}" fill="#9333ea" font-weight="bold" font-size="16">${textR}</text>`;
+            }
+            if (currentMode === 5) {
+                // Đường cao AH
+                drawLine(pts.A, mathData.pointH, "#64748b", 3, "6,6");
+                layers.aux.innerHTML += `<circle cx="${mathData.pointH.x}" cy="${mathData.pointH.y}" r="4" fill="#64748b"/>`;
+                layers.labels.innerHTML += `<text x="${mathData.pointH.x+10}" y="${mathData.pointH.y+20}" fill="#64748b" font-weight="bold" font-size="18">H</text>`;
+                // Ký hiệu vuông góc
+                let hx = mathData.pointH.x, hy = mathData.pointH.y;
+                let dx = pts.C.x - pts.B.x, dy = pts.C.y - pts.B.y;
+                let len = Math.sqrt(dx*dx + dy*dy);
+                if(len > 0) {
+                    let ux = dx/len*15, uy = dy/len*15; // Vector đơn vị dọc BC
+                    let vx = -uy, vy = ux; // Vector pháp tuyến dọc AH
+                    if (pts.A.y > hy) { vx=-vx; vy=-vy; } // Hướng về phía A
+                    layers.aux.innerHTML += `<path d="M ${hx+ux} ${hy+uy} L ${hx+ux+vx} ${hy+uy+vy} L ${hx+vx} ${hy+vy}" fill="none" stroke="#64748b" stroke-width="2"/>`;
+                }
+            }
+
+            // --- THIẾT LẬP LOGIC ẨN/HIỆN THEO CHẾ ĐỘ VÀ NÚT KẾT LUẬN ---
+            let showLblA = false, showLblB = false, showLblC = false;
+            let showAngA = false, showAngB = false, showAngC = false;
+
+            switch(currentMode) {
+                case 0: // Hồ nước: Chỉ biết a, b, góc C
+                    showLblA = true; showLblB = true; showAngC = true; 
+                    break;
+                case 1:
+                case 2: // ĐL Cosin: Cần tính a từ b, c, góc A. 
+                    showLblB = true; showLblC = true; showAngA = true;
+                    if (isResultVisible) showLblA = true; // Chỉ hiện a khi chốt
+                    break;
+                case 3: 
+                case 6: // ĐL Sin & Tổng kết: Hiện full để hs tự lập 3 tỉ số
+                    showLblA = true; showLblB = true; showLblC = true;
+                    showAngA = true; showAngB = true; showAngC = true;
+                    break;
+                case 4: // Bán kính: Cần a, góc A
+                    showLblA = true; showAngA = true;
+                    break;
+                case 5: // Diện tích: Cần b, c, góc A
+                    showLblB = true; showLblC = true; showAngA = true;
+                    break;
+            }
+
+            // Vẽ góc (Arcs) - Có điều kiện
+            if (showAngA) drawInteriorAngleArc(pts.A, pts.B, pts.C, 45, "#2563eb", Math.round(mathData.degA) + "°");
+            if (showAngB) drawInteriorAngleArc(pts.B, pts.C, pts.A, 45, "#dc2626", Math.round(mathData.degB) + "°");
+            if (showAngC) drawInteriorAngleArc(pts.C, pts.A, pts.B, 45, "#16a34a", Math.round(mathData.degC) + "°");
+
+            // Vẽ Cạnh (Vẫn vẽ nét để tạo thành tam giác, nhưng ẩn nhãn text)
+            drawLine(pts.B, pts.C, "#2563eb", 5); // Cạnh a
+            drawLine(pts.A, pts.C, "#dc2626", 5); // Cạnh b
+            if (currentMode !== 0) {
+                drawLine(pts.A, pts.B, "#16a34a", 5); // Cạnh c
+            } else {
+                drawLine(pts.A, pts.B, "#94a3b8", 4, "8,8"); 
+                layers.labels.innerHTML += `<text x="${(pts.A.x+pts.B.x)/2}" y="${(pts.A.y+pts.B.y)/2 - 15}" fill="#64748b" font-weight="bold" font-size="24" text-anchor="middle">?</text>`;
+            }
+
+            // Vẽ Nhãn cạnh - Có điều kiện
+            let sc = 40; 
+            let va = (mathData.a/sc).toFixed(1);
+            let vb = (mathData.b/sc).toFixed(1);
+            let vc = (mathData.c/sc).toFixed(1);
+            
+            if (showLblA) layers.labels.innerHTML += `<text x="${(pts.B.x+pts.C.x)/2}" y="${(pts.B.y+pts.C.y)/2 + 25}" fill="#2563eb" font-weight="bold" font-size="18" text-anchor="middle">a = ${va}</text>`;
+            if (showLblB) layers.labels.innerHTML += `<text x="${(pts.A.x+pts.C.x)/2 + 20}" y="${(pts.A.y+pts.C.y)/2 - 10}" fill="#dc2626" font-weight="bold" font-size="18" text-anchor="middle">b = ${vb}</text>`;
+            if (currentMode !== 0 && showLblC) {
+                layers.labels.innerHTML += `<text x="${(pts.A.x+pts.B.x)/2 - 30}" y="${(pts.A.y+pts.B.y)/2 - 10}" fill="#16a34a" font-weight="bold" font-size="18" text-anchor="middle">c = ${vc}</text>`;
+            }
+
+            // Vẽ Điểm
+            drawPoint('A', pts.A, "#2563eb", "A");
+            drawPoint('B', pts.B, "#dc2626", "B");
+            drawPoint('C', pts.C, "#16a34a", "C");
+
+            // Cập nhật Box Dữ liệu bên trái (Ẩn/Hiện tương ứng)
+            document.getElementById('val-a').innerHTML = showLblA ? `$a = ${va}$` : `$a = ?$`;
+            document.getElementById('val-b').innerHTML = showLblB ? `$b = ${vb}$` : `$b = ?$`;
+            document.getElementById('val-c').innerHTML = showLblC ? `$c = ${vc}$` : `$c = ?$`;
+            
+            document.getElementById('val-A').innerHTML = showAngA ? `$\\widehat{A} = ${Math.round(mathData.degA)}^\\circ$` : `$\\widehat{A} = ?$`;
+            document.getElementById('val-B').innerHTML = showAngB ? `$\\widehat{B} = ${Math.round(mathData.degB)}^\\circ$` : `$\\widehat{B} = ?$`;
+            document.getElementById('val-C').innerHTML = showAngC ? `$\\widehat{C} = ${Math.round(mathData.degC)}^\\circ$` : `$\\widehat{C} = ?$`;
+
+            updateFormulas(va, vb, vc);
+            
+            // Gọi MathJax render lại công thức
+            if(window.MathJax && window.mathJaxLoaded) {
+                MathJax.typesetPromise([
+                    document.getElementById('val-a'), document.getElementById('val-b'), document.getElementById('val-c'),
+                    document.getElementById('val-A'), document.getElementById('val-B'), document.getElementById('val-C'),
+                    document.getElementById('dynamic-formula')
+                ]).catch((err) => console.log('MathJax error: ', err));
+            }
+        }
+
+        // Cập nhật công thức trung tâm dựa trên Mode
+        function updateFormulas(a, b, c) {
+            let formulaStr = "";
+            let A = mathData.angleA; 
+            let degA = Math.round(mathData.degA);
+            let valA2 = (a*a).toFixed(2);
+            let valBcCos = (b*b + c*c - 2*b*c*Math.cos(A)).toFixed(2);
+
+            switch(currentMode) {
+                case 0: // Khởi động
+                    document.getElementById('panel-formula-title').textContent = "BÀI TOÁN THỰC TẾ";
+                    formulaStr = `Làm sao tính $c$ khi biết $a, b$ và góc $\\widehat{C}$ ?`;
+                    break;
+                case 1: // Định lí Cos
+                case 2: // Pitago
+                    document.getElementById('panel-formula-title').textContent = currentMode===1 ? "ĐỊNH LÍ CÔSIN" : "LIÊN HỆ ĐỊNH LÍ PITAGO";
+                    // Ẩn giá trị a^2 nếu chưa click Kết luận
+                    let displayA2 = isResultVisible ? valA2 : "?";
+                    formulaStr = `
+                        $$a^2 = b^2 + c^2 - 2bc \\cos A$$
+                        $$\\color{#2563eb}{${displayA2}} \\quad \\text{so sánh với} \\quad ${b}^2 + ${c}^2 - 2(${b})(${c}) \\cos(${degA}^\\circ)$$
+                    `;
+                    if (isResultVisible) {
+                        formulaStr += `$$\\Rightarrow \\color{#2563eb}{${valA2}} = \\color{#dc2626}{${valBcCos}}$$`;
+                    } else {
+                        formulaStr += `$$\\Rightarrow \\text{?}$$`;
+                    }
+                    break;
+                case 3: // Định lí Sin
+                    document.getElementById('panel-formula-title').textContent = "ĐỊNH LÍ SIN";
+                    let ratioA = (a / Math.sin(A)).toFixed(2);
+                    let ratioB = (b / Math.sin(mathData.angleB)).toFixed(2);
+                    let ratioC = (c / Math.sin(mathData.angleC)).toFixed(2);
+                    if(A<0.05) ratioA = "\\infty"; if(mathData.angleB<0.05) ratioB = "\\infty"; if(mathData.angleC<0.05) ratioC = "\\infty";
+                    
+                    formulaStr = `
+                        $$\\frac{a}{\\sin A} = \\frac{b}{\\sin B} = \\frac{c}{\\sin C}$$
+                        $$\\frac{${a}}{\\sin ${degA}^\\circ} \\quad;\\quad \\frac{${b}}{\\sin ${Math.round(mathData.degB)}^\\circ} \\quad;\\quad \\frac{${c}}{\\sin ${Math.round(mathData.degC)}^\\circ}$$
+                    `;
+                    if (isResultVisible) {
+                        formulaStr += `$$\\Rightarrow \\color{#2563eb}{\\mathbf{${ratioA}}} = \\color{#dc2626}{\\mathbf{${ratioB}}} = \\color{#16a34a}{\\mathbf{${ratioC}}}$$`;
+                    } else {
+                        formulaStr += `$$\\Rightarrow \\text{?}$$`;
+                    }
+                    break;
+                case 4: // Bán kính
+                    document.getElementById('panel-formula-title').textContent = "LIÊN HỆ ĐƯỜNG TRÒN NGOẠI TIẾP";
+                    let ratioA2 = (a / Math.sin(A)).toFixed(2);
+                    let R = (mathData.R/40).toFixed(2);
+                    let twoR = (2 * mathData.R/40).toFixed(2);
+                    let display2R = isResultVisible ? twoR : "?";
+                    formulaStr = `
+                        $$\\frac{a}{\\sin A} = 2R$$
+                        $$\\frac{${a}}{\\sin ${degA}^\\circ} \\quad \\text{so sánh với} \\quad 2 \\times \\color{#9333ea}{${isResultVisible ? R : "?"}}$$
+                    `;
+                    if (isResultVisible) {
+                         formulaStr += `$$\\Rightarrow \\color{#2563eb}{${ratioA2}} = \\color{#9333ea}{${twoR}}$$`;
+                    } else {
+                         formulaStr += `$$\\Rightarrow \\text{?}$$`;
+                    }
+                    break;
+                case 5: // Diện tích
+                    document.getElementById('panel-formula-title').textContent = "CÔNG THỨC DIỆN TÍCH";
+                    let S = (mathData.S / (40*40)).toFixed(2);
+                    formulaStr = `
+                        $$S = \\frac{1}{2}bc \\sin A$$
+                        $$S = \\frac{1}{2}(${b})(${c}) \\sin(${degA}^\\circ)$$
+                    `;
+                    if (isResultVisible) {
+                        formulaStr += `$$S = \\color{#ea580c}{\\mathbf{${S}}} \\text{ (đvdt)}$$`;
+                    } else {
+                        formulaStr += `$$S = \\text{?}$$`;
+                    }
+                    break;
+                case 6: // Tổng kết
+                    document.getElementById('panel-formula-title').textContent = "TỔNG KẾT";
+                    formulaStr = `
+                        Hãy sử dụng linh hoạt Định lí Côsin, Định lí Sin và Công thức Diện tích để giải quyết các bài toán thực tế!
+                    `;
+                    break;
+            }
+            dynamicFormula.innerHTML = formulaStr;
+        }
+
+        function setMode(mode) {
+            currentMode = parseInt(mode);
+            
+            // Trạng thái nút Kết luận: Mặc định luôn ẩn kết quả khi chuyển bài
+            isResultVisible = false;
+            let btn = document.getElementById('btnToggleResult');
+            btn.textContent = "Hiện kết luận";
+            btn.classList.replace('bg-slate-500', 'bg-blue-600');
+            btn.classList.replace('hover:bg-slate-600', 'hover:bg-blue-700');
+            
+            // Chỉ hiện nút ở các bài có công thức
+            if (currentMode === 0 || currentMode === 6) {
+                btn.classList.add('hidden');
+            } else {
+                btn.classList.remove('hidden');
+            }
+
+            // Cập nhật UI Buttons
+            document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector(`.menu-btn[data-mode="${mode}"]`).classList.add('active');
+            
+            // Cập nhật Discovery Box
+            document.querySelectorAll('.discovery-box').forEach(b => b.classList.remove('active'));
+            let dbox = document.getElementById(`q-mode-${mode}`);
+            if(dbox) dbox.classList.add('active');
+
+            // Set vị trí tam giác mặc định đẹp mắt tuỳ bài
+            if(mode === 2) {
+                // Pitago: Tạo sẵn tam giác vuông
+                pts.A = {x: 300, y: 500};
+                pts.B = {x: 300, y: 200};
+                pts.C = {x: 700, y: 500};
+            } else if (mode === 0) {
+                // Hồ nước
+                pts.A = {x: 350, y: 300};
+                pts.B = {x: 650, y: 300};
+                pts.C = {x: 500, y: 550};
+            }
+
+            updateSVG();
+        }
+
+        // Sự kiện Menu
+        document.querySelectorAll('.menu-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => setMode(e.currentTarget.dataset.mode));
+        });
+
+        // Sự kiện nút Hiện kết luận
+        document.getElementById('btnToggleResult').addEventListener('click', (e) => {
+            isResultVisible = !isResultVisible;
+            let btn = e.currentTarget;
+            if (isResultVisible) {
+                btn.textContent = "Ẩn kết luận";
+                btn.classList.replace('bg-blue-600', 'bg-slate-500');
+                btn.classList.replace('hover:bg-blue-700', 'hover:bg-slate-600');
+            } else {
+                btn.textContent = "Hiện kết luận";
+                btn.classList.replace('bg-slate-500', 'bg-blue-600');
+                btn.classList.replace('hover:bg-slate-600', 'hover:bg-blue-700');
+            }
+            updateSVG(); // Update lại SVG để trigger MathJax render công thức hiển thị kết quả
+        });
+
+        // Mouse & Touch Drag Logic (Thêm touch-action none để chống cuộn màn hình)
+        function getMousePos(e) {
+            let clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            let clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            const pt = svg.createSVGPoint();
+            pt.x = clientX; pt.y = clientY;
+            return pt.matrixTransform(svg.getScreenCTM().inverse());
+        }
+
+        function startDrag(e) {
+            if (e.target.classList.contains('draggable-point')) {
+                draggingPoint = e.target.dataset.id;
+                e.preventDefault();
+            }
+        }
+
+        function drag(e) {
+            if (!draggingPoint) return;
+            e.preventDefault();
+            let pos = getMousePos(e);
+            
+            // Cập nhật toạ độ và vẽ lại
+            pts[draggingPoint].x = pos.x;
+            pts[draggingPoint].y = pos.y;
+            
+            // Nếu ở Mode 2 (Pitago), có thể thêm snap to 90 degrees nhưng để tự do cho HS khám phá hay hơn
+            updateSVG();
+        }
+
+        function endDrag() { draggingPoint = null; }
+
+        svg.addEventListener('mousedown', startDrag);
+        window.addEventListener('mousemove', drag);
+        window.addEventListener('mouseup', endDrag);
+
+        svg.addEventListener('touchstart', startDrag, {passive: false});
+        window.addEventListener('touchmove', drag, {passive: false});
+        window.addEventListener('touchend', endDrag);
+
+        const btnFullscreen = document.getElementById('btnFullscreen');
+        btnFullscreen.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                document.getElementById('txtFullscreen').textContent = 'Thu nhỏ';
+            } else {
+                document.getElementById('txtFullscreen').textContent = 'Toàn màn hình';
+            }
+        });
+
+        // Khởi động
+        window.onload = () => { 
+            // Đợi MathJax load xong mới update lần đầu để công thức đẹp ngay
+            setTimeout(() => {
+                setMode(1); 
+            }, 500);
+        };
+    </script>
+</body>
+</html>

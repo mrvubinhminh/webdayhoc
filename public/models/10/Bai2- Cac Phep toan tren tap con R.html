@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Khám phá: Các phép toán với tập con của R</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script>
+        window.MathJax = {
+            options: { enableMenu: false },
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            margin: 0; overflow: hidden; 
+            user-select: none; touch-action: none; background-color: #f8fafc; 
+        }
+        .app-container { display: flex; flex-direction: column; height: 100vh; width: 100vw; background: white;}
+        .main-content { display: flex; flex: 1; overflow: hidden; }
+
+        .sidebar {
+            width: 600px; background-color: #ffffff; border-right: 1px solid #e2e8f0;
+            display: flex; flex-direction: column; overflow-y: auto; z-index: 10;
+            box-shadow: 2px 0 15px rgba(0,0,0,0.05); padding: 1.5rem; scroll-behavior: smooth;
+        }
+
+        .canvas-area {
+            flex: 1; position: relative; background-color: #ffffff; display: flex; flex-direction: column;
+            overflow: hidden; background-image: radial-gradient(#cbd5e1 1px, transparent 0); background-size: 30px 30px;
+        }
+
+        .activity-card {
+            background: white; border: 1px solid #e2e8f0; border-radius: 0.75rem;
+            padding: 1.25rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: all 0.4s ease; animation: slideIn 0.4s ease-out; margin-bottom: 1rem;
+        }
+        .activity-card.inactive { opacity: 0.4; pointer-events: none; filter: grayscale(20%); }
+        
+        @keyframes slideIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        .math-display { font-size: 1.1rem; overflow-x: auto; overflow-y: hidden; }
+        .hidden { display: none !important; }
+        
+        /* SVG Styling */
+        .axis { stroke: #64748b; stroke-width: 2; }
+        .tick { stroke: #94a3b8; stroke-width: 1.5; }
+        
+        /* Drag Handles */
+        .drag-handle { cursor: grab; transition: r 0.2s; }
+        .drag-handle:hover { r: 12; }
+        .drag-handle:active { cursor: grabbing; }
+
+        /* Vùng Kết quả */
+        .result-bar { animation: highlightRes 0.5s ease-out; }
+        @keyframes highlightRes {
+            0% { stroke-width: 20; opacity: 0.5; }
+            100% { stroke-width: 14; opacity: 1; }
+        }
+
+        /* Nút Toggle Ngoặc */
+        .bracket-btn {
+            width: 48px; height: 48px; display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 8px; font-weight: bold; font-family: 'JetBrains Mono', monospace; font-size: 24px;
+            cursor: pointer; transition: all 0.2s; border: 2px solid transparent;
+        }
+        .bracket-btn.closed { background-color: #e0f2fe; color: #0369a1; border-color: #7dd3fc; }
+        .bracket-btn.open { background-color: #fef08a; color: #a16207; border-color: #fde047; }
+        .bracket-btn.inf { background-color: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+        
+        /* Operation Tabs */
+        .op-tab { transition: all 0.2s; }
+        .op-active { background-color: #3b82f6; color: white; border-color: #2563eb; }
+        .op-inactive { background-color: white; color: #64748b; border-color: #e2e8f0; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- HEADER -->
+        <header class="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-20">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-2xl border border-indigo-200">
+                    ∪
+                </div>
+                <h1 class="text-2xl font-bold text-slate-700 uppercase tracking-wide">Các phép toán trên tập con của ℝ</h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="toggleTeacherMode()" class="flex items-center gap-2 text-amber-700 bg-amber-50 hover:bg-amber-100 px-4 py-2 rounded-lg text-lg border border-amber-200 transition font-medium">
+                    🎓 Gợi ý sư phạm
+                </button>
+                <button onclick="runScript()" class="flex items-center gap-2 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-4 py-2 rounded-lg text-lg border border-emerald-200 transition font-medium">
+                    ▶ Trình chiếu
+                </button>
+                <button onclick="resetModel()" class="flex items-center gap-2 text-slate-500 hover:text-slate-700 px-4 py-2 rounded-lg text-lg border border-slate-300 hover:bg-slate-50 transition font-medium">
+                    ↺ Đặt lại
+                </button>
+                <button id="btnFullscreen" class="flex items-center gap-2 text-slate-500 hover:text-blue-600 px-4 py-2 rounded-lg text-lg border border-slate-300 hover:bg-slate-50 transition font-medium">
+                    <span id="txtFullscreen">⛶ Toàn màn hình</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- SIDEBAR -->
+            <aside class="sidebar" id="sidebar">
+                <div class="text-lg font-bold text-slate-400 uppercase tracking-wider mb-6">Tiến trình Khám phá</div>
+                
+                <!-- HĐ 1: KHỞI ĐỘNG -->
+                <div class="activity-card" id="card-1">
+                    <h3 class="text-xl font-bold text-indigo-700 mb-3">1. Tình huống: Khu vui chơi</h3>
+                    <p class="text-xl text-slate-700 mb-4">Một công viên có 2 khu trò chơi giới hạn độ tuổi:</p>
+                    <ul class="text-xl text-slate-600 mb-4 space-y-2">
+                        <li>Khu <span class="font-bold text-blue-600">A</span>: Từ <b>12 đến 18</b> tuổi.</li>
+                        <li>Khu <span class="font-bold text-orange-600">B</span>: Từ <b>15 đến 25</b> tuổi.</li>
+                    </ul>
+                    
+                    <div class="bg-amber-50 p-4 rounded-lg border border-amber-200 mb-5 text-xl text-amber-800 font-medium">
+                        <p class="mb-3">🤔 Bằng cách quan sát trực quan trên Trục số (bên phải):</p>
+                        <ol class="list-decimal pl-6 space-y-2 text-xl">
+                            <li>Ai được chơi CẢ 2 khu?</li>
+                            <li>Ai được chơi ÍT NHẤT 1 khu?</li>
+                            <li>Ai CHỈ được chơi khu A?</li>
+                        </ol>
+                    </div>
+                    
+                    <button id="btn-next-2" onclick="activateStep(2)" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg text-xl transition shadow-sm">
+                        Toán học hóa vấn đề (Giao & Hợp)
+                    </button>
+                </div>
+
+                <!-- HĐ 2: KHÁM PHÁ CÁC PHÉP TOÁN -->
+                <div class="activity-card hidden" id="card-2">
+                    <h3 class="text-xl font-bold text-emerald-700 mb-4">2. Khám phá các Phép toán</h3>
+                    <p class="text-xl text-slate-700 mb-4">Kéo các <b>chấm tròn</b> trên đồ thị để thay đổi tập hợp. Click vào các <b>nút ngoặc</b> bên dưới để đổi giữa đoạn, khoảng, tia.</p>
+                    
+                    <!-- Control Panel cho Tập A & B -->
+                    <div class="space-y-4 mb-5 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                        <!-- Tập A -->
+                        <div class="flex items-center justify-between">
+                            <span class="text-xl font-bold text-blue-600 w-16 text-center">Tập A</span>
+                            <div class="flex gap-2">
+                                <button class="bracket-btn" id="btn-a-min" onclick="toggleBracket('A', 'min')">[</button>
+                                <button class="bracket-btn" id="btn-a-max" onclick="toggleBracket('A', 'max')">]</button>
+                            </div>
+                        </div>
+                        <!-- Tập B -->
+                        <div class="flex items-center justify-between">
+                            <span class="text-xl font-bold text-orange-500 w-16 text-center">Tập B</span>
+                            <div class="flex gap-2">
+                                <button class="bracket-btn" id="btn-b-min" onclick="toggleBracket('B', 'min')">[</button>
+                                <button class="bracket-btn" id="btn-b-max" onclick="toggleBracket('B', 'max')">]</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabs Phép toán -->
+                    <div class="grid grid-cols-4 gap-2 mb-5">
+                        <button onclick="setOperation('intersect')" id="tab-intersect" class="op-tab op-active text-lg font-bold py-2 rounded-lg border">A ∩ B</button>
+                        <button onclick="setOperation('union')" id="tab-union" class="op-tab op-inactive text-lg font-bold py-2 rounded-lg border">A ∪ B</button>
+                        <button onclick="setOperation('diff_AB')" id="tab-diff_AB" class="op-tab op-inactive text-lg font-bold py-2 rounded-lg border">A \ B</button>
+                        <button onclick="setOperation('comp_A')" id="tab-comp_A" class="op-tab op-inactive text-lg font-bold py-2 rounded-lg border">C_R(A)</button>
+                    </div>
+
+                    <div id="desc-box" class="text-xl p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 mb-4 font-medium text-center">
+                        Phép GIAO: Lấy phần chung của A và B.
+                    </div>
+
+                    <button id="btn-next-3" onclick="activateStep(3)" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-lg text-xl transition shadow-sm hidden">
+                        Chuyển sang: Luyện tập tự động
+                    </button>
+                </div>
+
+                <!-- HĐ 3: LUYỆN TẬP -->
+                <div class="activity-card hidden" id="card-3">
+                    <h3 class="text-xl font-bold text-purple-700 mb-3">3. Luyện tập & Định lý De Morgan</h3>
+                    <p class="text-xl text-slate-700 mb-4">Hệ thống sẽ sinh một bài tập ngẫu nhiên. Hãy quan sát trục số và ghi kết quả ra giấy trước khi bấm kiểm tra.</p>
+                    
+                    <div class="bg-purple-50 p-5 rounded-xl border border-purple-200 text-center mb-4">
+                        <div class="text-base text-purple-600 font-bold uppercase mb-2" id="quiz-type">Tìm Giao của 2 khoảng</div>
+                        <div class="text-4xl font-bold text-slate-800 my-4" id="quiz-question">
+                            [-2; 5) ∩ (3; 8] = ?
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button onclick="generateQuiz()" class="flex-1 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold py-3 px-4 rounded-lg transition text-xl">Đổi bài</button>
+                        <button onclick="showAnswer()" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition shadow-sm text-xl">Xem đáp án</button>
+                    </div>
+                </div>
+
+            </aside>
+
+            <!-- MAIN CANVAS -->
+            <main class="canvas-area relative" id="main-canvas">
+                
+                <!-- Hiển thị công thức Toán học động ở trên cùng -->
+                <div class="h-32 bg-white border-b border-slate-100 flex flex-col items-center justify-center p-4 shadow-sm z-10 shrink-0">
+                    <div id="math-display-area" class="text-4xl font-bold text-slate-800 text-center min-h-[80px] flex items-center justify-center w-full">
+                        <!-- MathJax render here -->
+                    </div>
+                </div>
+
+                <!-- SVG Không gian Trục số -->
+                <div class="flex-1 relative flex items-center justify-center w-full">
+                    <svg id="math-plane" viewBox="0 0 800 500" class="w-full h-full max-h-[600px]" preserveAspectRatio="xMidYMid meet">
+                        <defs>
+                            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569" />
+                            </marker>
+                            <!-- Vùng Gạch chéo cho Phần bỏ đi (Phần bù) -->
+                            <pattern id="hatch-gray" width="12" height="12" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                                <line x1="0" y1="0" x2="0" y2="12" stroke="#94a3b8" stroke-width="2.5"/>
+                            </pattern>
+                        </defs>
+
+                        <!-- Trục số chính (Ở giữa) -->
+                        <g id="main-axis-group" transform="translate(0, 250)">
+                            <!-- Trục ngang -->
+                            <line x1="40" y1="0" x2="760" y2="0" class="axis" stroke-width="4" marker-end="url(#arrow)" />
+                            <!-- Vạch chia (Render bằng JS) -->
+                            <g id="ticks-group"></g>
+                        </g>
+
+                        <!-- TẬP A (Màu xanh, nằm trên) -->
+                        <g id="set-A-group" transform="translate(0, 100)">
+                            <text x="15" y="10" font-weight="bold" fill="#2563eb" font-size="32">A</text>
+                            <line x1="40" y1="0" x2="740" y2="0" stroke="#e2e8f0" stroke-width="4" stroke-dasharray="6,6"/>
+                            <!-- Đoạn thẳng A -->
+                            <line id="line-A" x1="0" y1="0" x2="0" y2="0" stroke="#3b82f6" stroke-width="12" stroke-linecap="round"/>
+                            <!-- Vùng vô cực A -->
+                            <path id="inf-A-left" d="" fill="none" stroke="#3b82f6" stroke-width="12" marker-start="url(#arrow)" class="hidden"/>
+                            <path id="inf-A-right" d="" fill="none" stroke="#3b82f6" stroke-width="12" marker-end="url(#arrow)" class="hidden"/>
+                            
+                            <!-- Đầu mút A -->
+                            <circle id="drag-A-min" class="drag-handle" cx="0" cy="0" r="14" fill="#3b82f6" stroke="white" stroke-width="3"/>
+                            <circle id="drag-A-max" class="drag-handle" cx="0" cy="0" r="14" fill="#3b82f6" stroke="white" stroke-width="3"/>
+                            <!-- Label ngoặc A -->
+                            <text id="lbl-A-min" x="0" y="-25" font-family="monospace" font-size="40" font-weight="bold" fill="#1d4ed8" text-anchor="middle">[</text>
+                            <text id="lbl-A-max" x="0" y="-25" font-family="monospace" font-size="40" font-weight="bold" fill="#1d4ed8" text-anchor="middle">]</text>
+                        </g>
+
+                        <!-- TẬP B (Màu cam, nằm dưới) -->
+                        <g id="set-B-group" transform="translate(0, 400)">
+                            <text x="15" y="10" font-weight="bold" fill="#ea580c" font-size="32">B</text>
+                            <line x1="40" y1="0" x2="740" y2="0" stroke="#e2e8f0" stroke-width="4" stroke-dasharray="6,6"/>
+                            <!-- Đoạn thẳng B -->
+                            <line id="line-B" x1="0" y1="0" x2="0" y2="0" stroke="#f97316" stroke-width="12" stroke-linecap="round"/>
+                            <!-- Vùng vô cực B -->
+                            <path id="inf-B-left" d="" fill="none" stroke="#f97316" stroke-width="12" marker-start="url(#arrow)" class="hidden"/>
+                            <path id="inf-B-right" d="" fill="none" stroke="#f97316" stroke-width="12" marker-end="url(#arrow)" class="hidden"/>
+
+                            <!-- Đầu mút B -->
+                            <circle id="drag-B-min" class="drag-handle" cx="0" cy="0" r="14" fill="#f97316" stroke="white" stroke-width="3"/>
+                            <circle id="drag-B-max" class="drag-handle" cx="0" cy="0" r="14" fill="#f97316" stroke="white" stroke-width="3"/>
+                            <!-- Label ngoặc B -->
+                            <text id="lbl-B-min" x="0" y="40" font-family="monospace" font-size="40" font-weight="bold" fill="#c2410c" text-anchor="middle">[</text>
+                            <text id="lbl-B-max" x="0" y="40" font-family="monospace" font-size="40" font-weight="bold" fill="#c2410c" text-anchor="middle">]</text>
+                        </g>
+
+                        <!-- KẾT QUẢ (Nằm đè lên trục chính) -->
+                        <g id="result-group" transform="translate(0, 250)">
+                            <!-- Vùng gạch chéo phần bị loại (sẽ render động) -->
+                            <g id="hatch-regions"></g>
+                            <!-- Các đoạn kết quả -->
+                            <g id="result-intervals"></g>
+                        </g>
+                    </svg>
+                </div>
+            </main>
+        </div>
+
+        <!-- MODAL GỢI Ý SƯ PHẠM -->
+        <div id="teacher-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl p-6 w-[650px] max-w-full max-h-[90vh] overflow-y-auto relative">
+                <div class="flex justify-between items-center mb-5 border-b pb-3">
+                    <h3 class="text-xl font-bold text-amber-600 flex items-center gap-2">🎓 Gợi ý sư phạm & Kịch bản</h3>
+                    <button onclick="toggleTeacherMode()" class="text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full w-8 h-8 flex items-center justify-center transition">✕</button>
+                </div>
+                
+                <h4 class="font-bold text-slate-800 mb-2 bg-slate-100 px-3 py-1 rounded">1. Triết lý Thiết kế</h4>
+                <ul class="list-disc pl-6 mb-4 text-sm text-slate-700 space-y-1">
+                    <li><b>Thay vì vẽ trên bảng:</b> Mô hình cung cấp trục số động. Khi học sinh kéo thả điểm biên, phần kết quả (giao, hợp) <i>biến đổi ngay lập tức</i>, tạo ra phản xạ trực quan mạnh mẽ về bản chất phép toán.</li>
+                    <li><b>Xử lý điểm biên (Ngoặc vuông/tròn):</b> Là phần HS sai nhiều nhất. Việc thiết kế nút bấm chuyển ngoặc giúp HS tự kiểm chứng quy tắc "Lấy hay không lấy" tại đầu mút.</li>
+                </ul>
+                
+                <h4 class="font-bold text-slate-800 mb-2 bg-slate-100 px-3 py-1 rounded">2. Kịch bản Dạy học Khám phá</h4>
+                <ul class="list-decimal pl-6 mb-4 text-sm text-slate-700 space-y-1">
+                    <li><b>Bước 1:</b> Chiếu Hoạt động 1 (Khu vui chơi) để HS hiểu Giao (Vừa thỏa mãn A và B), Hợp (Chỉ cần thỏa A hoặc B).</li>
+                    <li><b>Bước 2:</b> Sang Hoạt động 2. Cho HS kéo 2 tập hợp rời xa nhau. Hỏi: "Giao bằng mấy?". Kéo chồng lên nhau. Hỏi: "Vùng nào bị đổi màu đậm?". Từ đó chốt khái niệm.</li>
+                    <li><b>Bước 3:</b> Thử đổi ngoặc tròn $( $ tại giao điểm. Hỏi HS: "Điểm đó có thuộc phần Giao không? Vì sao?".</li>
+                    <li><b>Bước 4:</b> Dùng phần Luyện tập ngẫu nhiên để kiểm tra nhanh cả lớp.</li>
+                </ul>
+                
+                <h4 class="font-bold text-slate-800 mb-2 bg-slate-100 px-3 py-1 rounded">3. Kiến thức trọng tâm cần chốt</h4>
+                <div class="bg-blue-50 p-4 rounded border border-blue-200 text-sm text-slate-800 mb-4 leading-relaxed font-medium">
+                    <p>• <b>A ∩ B (Giao):</b> Phải thuộc CẢ A và B (Phần gạch chung).</p>
+                    <p>• <b>A ∪ B (Hợp):</b> Thuộc A HOẶC B (Lấy tất cả).</p>
+                    <p>• <b>A \ B (Hiệu):</b> Thuộc A nhưng BỎ ĐI phần thuộc B.</p>
+                    <p>• <b>$C_{\mathbb{R}}A$:</b> Phần bù của A (Bỏ A, lấy phần còn lại của trục số).</p>
+                    <p class="text-red-600 mt-2">❗ <i>Lưu ý đầu mút: Giao lấy ngoặc khắt khe hơn, Hợp lấy ngoặc dễ dãi hơn. Bỏ đi ngoặc vuông thì còn ngoặc tròn.</i></p>
+                </div>
+
+                <div class="text-center">
+                    <button onclick="toggleTeacherMode()" class="bg-slate-800 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-slate-700 transition">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CẤU HÌNH HỆ TỌA ĐỘ SVG ---
+        // Range logic: [-2, 28] -> 30 units
+        const valMin = -2;
+        const valMax = 28;
+        const svgW = 800;
+        const marginX = 50;
+        const drawW = svgW - 2 * marginX; // 700px
+        
+        let currentStep = 1;
+        let mathTimeout = null;
+
+        // Trạng thái Tập hợp
+        let state = {
+            op: 'intersect', // 'intersect', 'union', 'diff_AB', 'comp_A'
+            A: { s: 12, e: 18, s_cl: true, e_cl: true, s_inf: false, e_inf: false },
+            B: { s: 15, e: 25, s_cl: true, e_cl: true, s_inf: false, e_inf: false }
+        };
+
+        // Biến kéo thả
+        let dragging = null; // 'A-min', 'A-max', 'B-min', 'B-max'
+
+        // --- HÀM CHUYỂN ĐỔI ---
+        function mapX(val) {
+            if (val === -Infinity) return marginX - 20;
+            if (val === Infinity) return svgW - marginX + 20;
+            return marginX + ((val - valMin) / (valMax - valMin)) * drawW;
+        }
+        function unmapX(px) {
+            let v = valMin + ((px - marginX) / drawW) * (valMax - valMin);
+            return Math.round(v); // Snap to integer
+        }
+
+        // --- VẼ LƯỚI TRỤC SỐ ---
+        function initAxis() {
+            const group = document.getElementById('ticks-group');
+            let html = '';
+            for (let i = 0; i <= 25; i += 5) {
+                let px = mapX(i);
+                html += `<line x1="${px}" y1="-10" x2="${px}" y2="10" class="tick" stroke-width="3" stroke="#475569" />`;
+                html += `<text x="${px}" y="40" font-size="28" font-weight="bold" fill="#000000" text-anchor="middle">${i}</text>`;
+            }
+            // Add custom ticks for start/end if needed, but 5-step is clean.
+            group.innerHTML = html;
+        }
+
+        // --- TOÁN HỌC: XỬ LÝ CÁC PHÉP TOÁN TẬP HỢP ---
+        // Đại diện tập hợp dưới dạng mảng các đoạn [start, end, s_cl, e_cl]
+        function getIntervals(set) {
+            let s = set.s_inf ? -Infinity : set.s;
+            let e = set.e_inf ? Infinity : set.e;
+            if (s > e) return [];
+            if (s === e && (!set.s_cl || !set.e_cl)) return [];
+            return [{ s: s, e: e, s_cl: set.s_cl, e_cl: set.e_cl }];
+        }
+
+        function intersect(I1, I2) {
+            let s = Math.max(I1.s, I2.s);
+            let e = Math.min(I1.e, I2.e);
+            if (s > e) return null;
+            
+            let s_cl = (I1.s === I2.s) ? (I1.s_cl && I2.s_cl) : (I1.s > I2.s ? I1.s_cl : I2.s_cl);
+            let e_cl = (I1.e === I2.e) ? (I1.e_cl && I2.e_cl) : (I1.e < I2.e ? I1.e_cl : I2.e_cl);
+            
+            if (s === e && (!s_cl || !e_cl)) return null;
+            return { s, e, s_cl, e_cl };
+        }
+
+        function subtract(I1, I2) {
+            // I1 \ I2
+            let inter = intersect(I1, I2);
+            if (!inter) return [I1]; // Không giao nhau
+            
+            let res = [];
+            // Phần bên trái
+            if (I1.s < inter.s || (I1.s === inter.s && I1.s_cl && !inter.s_cl)) {
+                res.push({ s: I1.s, e: inter.s, s_cl: I1.s_cl, e_cl: !inter.s_cl });
+            }
+            // Phần bên phải
+            if (I1.e > inter.e || (I1.e === inter.e && I1.e_cl && !inter.e_cl)) {
+                res.push({ s: inter.e, e: I1.e, s_cl: !inter.e_cl, e_cl: I1.e_cl });
+            }
+            return res;
+        }
+
+        function union(I1, I2) {
+            let inter = intersect(I1, I2);
+            if (inter) {
+                // Hợp nhất
+                let s = Math.min(I1.s, I2.s);
+                let e = Math.max(I1.e, I2.e);
+                let s_cl = (I1.s === I2.s) ? (I1.s_cl || I2.s_cl) : (I1.s < I2.s ? I1.s_cl : I2.s_cl);
+                let e_cl = (I1.e === I2.e) ? (I1.e_cl || I2.e_cl) : (I1.e > I2.e ? I1.e_cl : I2.e_cl);
+                return [{ s, e, s_cl, e_cl }];
+            } else {
+                return I1.s < I2.s ? [I1, I2] : [I2, I1];
+            }
+        }
+
+        function complement(I) {
+            return subtract({ s: -Infinity, e: Infinity, s_cl: false, e_cl: false }, I);
+        }
+
+        // Tạo chuỗi TeX cho khoảng
+        function toTeX(I, isSetA = false) {
+            if (!I) return "\\emptyset";
+            let s_str = I.s === -Infinity ? "-\\infty" : I.s;
+            let e_str = I.e === Infinity ? "+\\infty" : I.e;
+            let bra_s = I.s === -Infinity ? "(" : (I.s_cl ? "[" : "(");
+            let bra_e = I.e === Infinity ? ")" : (I.e_cl ? "]" : ")");
+            
+            // Xử lý điểm đơn
+            if (I.s === I.e && I.s_cl && I.e_cl) return `\\{${I.s}\\}`;
+            
+            let color = isSetA ? "\\color{#2563eb}" : "\\color{#16a34a}"; // Blue cho tập A, Green cho Result
+            if (isSetA === 'B') color = "\\color{#ea580c}";
+
+            return `${color}{${bra_s} ${s_str} ; ${e_str} ${bra_e}}`;
+        }
+
+        function formatMath() {
+            let arrA = getIntervals(state.A);
+            let arrB = getIntervals(state.B);
+            
+            let texA = arrA.length ? toTeX(arrA[0], true) : "\\emptyset";
+            let texB = arrB.length ? toTeX(arrB[0], 'B') : "\\emptyset";
+            
+            let res = [];
+            let opSymbol = "";
+            let desc = "";
+
+            if (state.op === 'intersect') {
+                opSymbol = "\\cap";
+                desc = "GIAO: Lấy phần tử CHUNG của A và B.";
+                if (arrA.length && arrB.length) {
+                    let r = intersect(arrA[0], arrB[0]);
+                    if(r) res.push(r);
+                }
+            } 
+            else if (state.op === 'union') {
+                opSymbol = "\\cup";
+                desc = "HỢP: Lấy TẤT CẢ phần tử thuộc A hoặc B.";
+                if (arrA.length && arrB.length) res = union(arrA[0], arrB[0]);
+                else if (arrA.length) res = arrA;
+                else if (arrB.length) res = arrB;
+            }
+            else if (state.op === 'diff_AB') {
+                opSymbol = "\\setminus";
+                desc = "HIỆU (A \\ B): Thuộc A nhưng KHÔNG thuộc B (Bỏ đi phần B).";
+                if (arrA.length && arrB.length) res = subtract(arrA[0], arrB[0]);
+                else if (arrA.length) res = arrA;
+            }
+            else if (state.op === 'comp_A') {
+                opSymbol = "C_{\\mathbb{R}}";
+                desc = "PHẦN BÙ CỦA A: Lấy toàn bộ trục số R, BỎ đi phần của A.";
+                if (arrA.length) res = complement(arrA[0]);
+                else res = [{s: -Infinity, e: Infinity, s_cl: false, e_cl: false}];
+            }
+
+            // Render Math String
+            let texRes = res.length === 0 ? "\\emptyset" : res.map(r => toTeX(r, false)).join(" \\cup ");
+            
+            let finalTex = "";
+            if (state.op === 'comp_A') {
+                finalTex = `$$ C_{\\mathbb{R}}A = \\mathbb{R} \\setminus ${texA} = ${texRes} $$`;
+            } else {
+                finalTex = `$$ A ${opSymbol} B = ${texA} ${opSymbol} ${texB} = ${texRes} $$`;
+            }
+
+            document.getElementById('math-display-area').innerHTML = finalTex;
+            document.getElementById('desc-box').textContent = desc;
+
+            // Trigger MathJax
+            clearTimeout(mathTimeout);
+            mathTimeout = setTimeout(() => {
+                if(window.MathJax && window.mathJaxLoaded) MathJax.typesetPromise([document.getElementById('math-display-area')]);
+            }, 50);
+
+            return res; // Trả về để vẽ SVG
+        }
+
+        // --- CẬP NHẬT GIAO DIỆN SVG ---
+        function renderSVG() {
+            // Cập nhật Buttons
+            updateBtnUI('A'); updateBtnUI('B');
+
+            // 1. Vẽ Tập A
+            let pxAs = mapX(state.A.s_inf ? -Infinity : state.A.s);
+            let pxAe = mapX(state.A.e_inf ? Infinity : state.A.e);
+            
+            document.getElementById('line-A').setAttribute('x1', pxAs);
+            document.getElementById('line-A').setAttribute('x2', pxAe);
+            
+            document.getElementById('drag-A-min').setAttribute('cx', pxAs);
+            document.getElementById('drag-A-max').setAttribute('cx', pxAe);
+            
+            document.getElementById('lbl-A-min').setAttribute('x', pxAs);
+            document.getElementById('lbl-A-min').textContent = state.A.s_cl ? "[" : "(";
+            document.getElementById('lbl-A-max').setAttribute('x', pxAe);
+            document.getElementById('lbl-A-max').textContent = state.A.e_cl ? "]" : ")";
+
+            // Ẩn hiện vô cực A
+            document.getElementById('drag-A-min').style.display = state.A.s_inf ? 'none' : 'block';
+            document.getElementById('lbl-A-min').style.display = state.A.s_inf ? 'none' : 'block';
+            document.getElementById('inf-A-left').style.display = state.A.s_inf ? 'block' : 'none';
+            if(state.A.s_inf) document.getElementById('inf-A-left').setAttribute('d', `M ${pxAs} 0 L ${pxAe} 0`);
+
+            document.getElementById('drag-A-max').style.display = state.A.e_inf ? 'none' : 'block';
+            document.getElementById('lbl-A-max').style.display = state.A.e_inf ? 'none' : 'block';
+            document.getElementById('inf-A-right').style.display = state.A.e_inf ? 'block' : 'none';
+            if(state.A.e_inf) document.getElementById('inf-A-right').setAttribute('d', `M ${pxAs} 0 L ${pxAe} 0`);
+
+
+            // 2. Vẽ Tập B
+            let pxBs = mapX(state.B.s_inf ? -Infinity : state.B.s);
+            let pxBe = mapX(state.B.e_inf ? Infinity : state.B.e);
+            
+            document.getElementById('line-B').setAttribute('x1', pxBs);
+            document.getElementById('line-B').setAttribute('x2', pxBe);
+            
+            document.getElementById('drag-B-min').setAttribute('cx', pxBs);
+            document.getElementById('drag-B-max').setAttribute('cx', pxBe);
+            
+            document.getElementById('lbl-B-min').setAttribute('x', pxBs);
+            document.getElementById('lbl-B-min').textContent = state.B.s_cl ? "[" : "(";
+            document.getElementById('lbl-B-max').setAttribute('x', pxBe);
+            document.getElementById('lbl-B-max').textContent = state.B.e_cl ? "]" : ")";
+            
+            document.getElementById('drag-B-min').style.display = state.B.s_inf ? 'none' : 'block';
+            document.getElementById('lbl-B-min').style.display = state.B.s_inf ? 'none' : 'block';
+            document.getElementById('inf-B-left').style.display = state.B.s_inf ? 'block' : 'none';
+            if(state.B.s_inf) document.getElementById('inf-B-left').setAttribute('d', `M ${pxBs} 0 L ${pxBe} 0`);
+
+            document.getElementById('drag-B-max').style.display = state.B.e_inf ? 'none' : 'block';
+            document.getElementById('lbl-B-max').style.display = state.B.e_inf ? 'none' : 'block';
+            document.getElementById('inf-B-right').style.display = state.B.s_inf ? 'block' : 'none';
+            if(state.B.e_inf) document.getElementById('inf-B-right').setAttribute('d', `M ${pxBs} 0 L ${pxBe} 0`);
+
+            // Nếu đang xem Phần Bù, làm mờ Tập B
+            document.getElementById('set-B-group').style.opacity = state.op === 'comp_A' ? 0.2 : 1;
+
+            // 3. Tính Toán & Vẽ Kết Quả
+            let resIntervals = formatMath();
+            
+            let resHTML = '';
+            let hatchHTML = '';
+
+            // Vẽ toàn bộ hatch xám nhạt làm nền (mô phỏng trục số)
+            hatchHTML += `<rect x="40" y="-15" width="720" height="30" fill="url(#hatch-gray)" />`;
+
+            resIntervals.forEach(I => {
+                let s = mapX(I.s); let e = mapX(I.e);
+                // Vẽ vùng màu xanh đè lên hatch
+                resHTML += `<line x1="${s}" y1="0" x2="${e}" y2="0" stroke="#10b981" class="result-bar stroke-linecap-round" stroke-width="14" />`;
+                
+                // Mũi tên vô cực nếu có
+                if(I.s === -Infinity) resHTML += `<path d="M ${s} 0 L ${e} 0" fill="none" stroke="#10b981" stroke-width="14" marker-start="url(#arrow)"/>`;
+                if(I.e === Infinity) resHTML += `<path d="M ${s} 0 L ${e} 0" fill="none" stroke="#10b981" stroke-width="14" marker-end="url(#arrow)"/>`;
+
+                // Điểm mút
+                if (I.s !== -Infinity) {
+                    let s_char = I.s_cl ? "[" : "(";
+                    resHTML += `<text x="${s}" y="-22" font-family="monospace" font-size="44" font-weight="bold" fill="#047857" text-anchor="middle">${s_char}</text>`;
+                }
+                if (I.e !== Infinity) {
+                    let e_char = I.e_cl ? "]" : ")";
+                    resHTML += `<text x="${e}" y="-22" font-family="monospace" font-size="44" font-weight="bold" fill="#047857" text-anchor="middle">${e_char}</text>`;
+                }
+                
+                // Xóa hatch ở vùng nghiệm bằng cách vẽ rect trắng đè dưới đường xanh
+                hatchHTML += `<rect x="${s}" y="-16" width="${e-s}" height="32" fill="white" />`;
+            });
+
+            document.getElementById('hatch-regions').innerHTML = hatchHTML;
+            document.getElementById('result-intervals').innerHTML = resHTML;
+        }
+
+        // --- TƯƠNG TÁC UI ---
+        function setOperation(op) {
+            state.op = op;
+            ['intersect', 'union', 'diff_AB', 'comp_A'].forEach(o => {
+                document.getElementById(`tab-${o}`).className = `op-tab text-sm font-bold py-1.5 rounded border ${o === op ? 'op-active' : 'op-inactive'}`;
+            });
+            renderSVG();
+        }
+
+        function toggleBracket(set, end) {
+            let s = state[set];
+            if (end === 'min') {
+                if (s.s_inf) { s.s_inf = false; s.s_cl = true; s.s = 0; } // Từ -inf về đoạn
+                else if (s.s_cl) s.s_cl = false; // [ -> (
+                else { s.s_inf = true; s.s_cl = false; } // ( -> -inf
+            } else {
+                if (s.e_inf) { s.e_inf = false; s.e_cl = true; s.e = 10; }
+                else if (s.e_cl) s.e_cl = false; // ] -> )
+                else { s.e_inf = true; s.e_cl = false; } // ) -> +inf
+            }
+            // Auto fix logic
+            if(!s.s_inf && !s.e_inf && s.s > s.e) { let tmp = s.s; s.s = s.e; s.e = tmp; }
+            renderSVG();
+        }
+
+        function updateBtnUI(set) {
+            let s = state[set];
+            let btnMin = document.getElementById(`btn-${set.toLowerCase()}-min`);
+            let btnMax = document.getElementById(`btn-${set.toLowerCase()}-max`);
+            
+            if (s.s_inf) { btnMin.textContent = "-∞"; btnMin.className = 'bracket-btn inf'; }
+            else { btnMin.textContent = s.s_cl ? "[" : "("; btnMin.className = s.s_cl ? 'bracket-btn closed' : 'bracket-btn open'; }
+
+            if (s.e_inf) { btnMax.textContent = "+∞"; btnMax.className = 'bracket-btn inf'; }
+            else { btnMax.textContent = s.e_cl ? "]" : ")"; btnMax.className = s.e_cl ? 'bracket-btn closed' : 'bracket-btn open'; }
+        }
+
+        // Dragging Logic
+        const svg = document.getElementById('math-plane');
+        function getMouseX(e) {
+            let pt = svg.createSVGPoint();
+            if(e.touches) { pt.x = e.touches[0].clientX; pt.y = e.touches[0].clientY; }
+            else { pt.x = e.clientX; pt.y = e.clientY; }
+            return pt.matrixTransform(svg.getScreenCTM().inverse()).x;
+        }
+
+        function handleDragStart(e, id) {
+            e.preventDefault();
+            dragging = id;
+        }
+        function handleDragMove(e) {
+            if (!dragging) return;
+            e.preventDefault();
+            let xVal = unmapX(getMouseX(e));
+            
+            // Constrain
+            if (xVal < valMin) xVal = valMin;
+            if (xVal > valMax) xVal = valMax;
+
+            if (dragging === 'A-min') { state.A.s = Math.min(xVal, state.A.e); }
+            else if (dragging === 'A-max') { state.A.e = Math.max(xVal, state.A.s); }
+            else if (dragging === 'B-min') { state.B.s = Math.min(xVal, state.B.e); }
+            else if (dragging === 'B-max') { state.B.e = Math.max(xVal, state.B.s); }
+            
+            renderSVG();
+        }
+        function handleDragEnd() { dragging = null; }
+
+        ['A', 'B'].forEach(set => {
+            ['min', 'max'].forEach(end => {
+                let el = document.getElementById(`drag-${set}-${end}`);
+                el.addEventListener('mousedown', (e) => handleDragStart(e, `${set}-${end}`));
+                el.addEventListener('touchstart', (e) => handleDragStart(e, `${set}-${end}`), {passive: false});
+            });
+        });
+
+        window.addEventListener('mousemove', handleDragMove);
+        window.addEventListener('touchmove', handleDragMove, {passive: false});
+        window.addEventListener('mouseup', handleDragEnd);
+        window.addEventListener('touchend', handleDragEnd);
+
+
+        // --- LUYỆN TẬP NGẪU NHIÊN ---
+        function generateQuiz() {
+            const types = [
+                { op: 'intersect', name: 'Tìm GIAO của 2 tập hợp' },
+                { op: 'union', name: 'Tìm HỢP của 2 tập hợp' },
+                { op: 'diff_AB', name: 'Tìm HIỆU (A \\ B)' }
+            ];
+            let type = types[Math.floor(Math.random() * types.length)];
+            
+            // Sinh tập ngẫu nhiên logic
+            let s1 = Math.floor(Math.random() * 10);
+            let e1 = s1 + Math.floor(Math.random() * 5) + 2;
+            let s2 = s1 + Math.floor(Math.random() * 8) - 2; // Có thể giao hoặc không
+            let e2 = s2 + Math.floor(Math.random() * 5) + 2;
+            
+            state.A = { s: s1, e: e1, s_cl: Math.random()>0.5, e_cl: Math.random()>0.5, s_inf: false, e_inf: false };
+            state.B = { s: s2, e: e2, s_cl: Math.random()>0.5, e_cl: Math.random()>0.5, s_inf: false, e_inf: false };
+            state.op = type.op;
+
+            // Generate string without displaying result yet
+            let texA = toTeX(getIntervals(state.A)[0], false).replace(/\\color\{.*?\}/, ''); // Strip color
+            let texB = toTeX(getIntervals(state.B)[0], false).replace(/\\color\{.*?\}/, '');
+            
+            let opSym = type.op === 'intersect' ? '∩' : (type.op === 'union' ? '∪' : '\\');
+            
+            document.getElementById('quiz-type').textContent = type.name;
+            document.getElementById('quiz-question').textContent = `${texA} ${opSym} ${texB} = ?`;
+            
+            // Ẩn kết quả svg đi để HS tự nghĩ
+            document.getElementById('result-group').style.opacity = '0';
+            document.getElementById('math-display-area').style.opacity = '0';
+            
+            renderSVG();
+        }
+
+        function showAnswer() {
+            setOperation(state.op); // Re-trigger formatMath and rendering properly
+            document.getElementById('result-group').style.opacity = '1';
+            document.getElementById('math-display-area').style.opacity = '1';
+        }
+
+        // --- QUẢN LÝ TIẾN TRÌNH ---
+        function activateStep(step) {
+            currentStep = step;
+            [1, 2, 3].forEach(i => {
+                let card = document.getElementById(`card-${i}`);
+                if(i < step) { card.classList.remove('hidden', 'inactive'); card.classList.add('inactive'); } 
+                else if(i === step) { card.classList.remove('hidden', 'inactive'); }
+            });
+
+            if (step === 1) {
+                // Setup default for Step 1
+                state.A = { s: 12, e: 18, s_cl: true, e_cl: true, s_inf: false, e_inf: false };
+                state.B = { s: 15, e: 25, s_cl: true, e_cl: true, s_inf: false, e_inf: false };
+                setOperation('intersect');
+            } else if (step === 2) {
+                document.getElementById('btn-next-3').classList.remove('hidden');
+            } else if (step === 3) {
+                generateQuiz();
+            }
+
+            setTimeout(() => { document.getElementById('sidebar').scrollTop = document.getElementById('sidebar').scrollHeight; }, 100);
+        }
+
+        function resetModel() {
+            [1, 2, 3].forEach(i => document.getElementById(`card-${i}`).classList.add('hidden', 'inactive'));
+            document.getElementById('result-group').style.opacity = '1';
+            document.getElementById('math-display-area').style.opacity = '1';
+            activateStep(1);
+            document.getElementById('card-1').classList.remove('inactive');
+        }
+
+        function toggleTeacherMode() {
+            document.getElementById('teacher-modal').classList.toggle('hidden');
+        }
+
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+        async function runScript() {
+            resetModel();
+            document.getElementById('result-group').style.opacity = '1';
+            document.getElementById('math-display-area').style.opacity = '1';
+            await sleep(1500);
+            
+            activateStep(2);
+            await sleep(1000);
+            
+            // Demo Giao
+            setOperation('intersect');
+            state.A.s = 2; state.A.e = 10;
+            state.B.s = 15; state.B.e = 20;
+            renderSVG();
+            await sleep(1500);
+            // Move B closer
+            state.B.s = 7; state.B.e = 15;
+            renderSVG();
+            await sleep(2000);
+
+            // Demo Hợp
+            setOperation('union');
+            await sleep(2000);
+
+            // Demo Hiệu
+            setOperation('diff_AB');
+            await sleep(2000);
+            
+            // Demo Phần Bù
+            setOperation('comp_A');
+            await sleep(2000);
+
+            activateStep(3);
+        }
+
+        document.getElementById('btnFullscreen').addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(e => console.log(e));
+                document.getElementById('txtFullscreen').innerHTML = '✖ Thu nhỏ';
+            } else {
+                document.exitFullscreen();
+                document.getElementById('txtFullscreen').innerHTML = '⛶ Toàn màn hình';
+            }
+        });
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) document.getElementById('txtFullscreen').innerHTML = '⛶ Toàn màn hình';
+        });
+
+        // INIT
+        window.onload = () => {
+            initAxis();
+            resetModel();
+        };
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Khám phá Vectơ - Toán 10</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Cấu hình MathJax cho công thức Toán học -->
+    <script>
+        window.MathJax = {
+            options: { enableMenu: false },
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f8fafc; /* Nền xám rất nhạt */
+            color: #334155; /* Chữ xám đậm */
+            margin: 0;
+            overflow: hidden; 
+            user-select: none;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Sidebar Styling - Nền sáng */
+        .sidebar {
+            width: 380px;
+            background-color: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 10;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.02);
+        }
+
+        /* Canvas Styling - Hiệu ứng giấy ô ly */
+        .canvas-area {
+            flex: 1;
+            position: relative;
+            background-color: #f1f5f9;
+            /* Lưới ô vuông chuẩn Toán học */
+            background-image: 
+                linear-gradient(#cbd5e1 1px, transparent 1px),
+                linear-gradient(90deg, #cbd5e1 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+
+        /* Bottom Panel Styling */
+        .bottom-panel {
+            min-height: 120px;
+            background-color: #ffffff;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            padding: 1rem 2rem;
+            z-index: 10;
+            gap: 2rem;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.02);
+        }
+
+        /* Buttons & Menu Items */
+        .menu-btn {
+            background-color: #f8fafc;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            text-align: left;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .menu-btn:hover { background-color: #e2e8f0; }
+        .menu-btn.active { 
+            background-color: #eff6ff; 
+            border-color: #bfdbfe; 
+            color: #1d4ed8; 
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1);
+        }
+        .menu-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            background-color: #94a3b8;
+            color: white;
+            border-radius: 50%;
+            font-size: 0.75rem;
+        }
+        .menu-btn.active .menu-num { background-color: #3b82f6; }
+
+        /* Khung câu hỏi khám phá */
+        .discovery-box {
+            display: none;
+            background-color: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-top: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .discovery-box.active { display: block; }
+
+        /* Typography */
+        .font-math { font-family: 'JetBrains Mono', monospace; }
+        .vec-blue { color: #2563eb; }
+        .vec-red { color: #dc2626; }
+        .vec-green { color: #16a34a; }
+
+        /* Chấm điểm SVG có thể kéo thả */
+        .draggable-point {
+            cursor: grab;
+            transition: r 0.1s, fill 0.1s;
+        }
+        .draggable-point:active { cursor: grabbing; r: 10; }
+        
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-weight: bold;
+            font-size: 0.875rem;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header Nền Sáng -->
+        <header class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-20">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm border border-blue-200">
+                    $\vec{v}$
+                </div>
+                <h1 class="text-base font-bold text-slate-700 uppercase tracking-wide">Mô phỏng Khái niệm Vectơ (Toán 10)</h1>
+            </div>
+            <button id="btnFullscreen" class="flex items-center gap-2 text-slate-500 hover:text-blue-600 px-3 py-1.5 rounded-md text-sm border border-slate-300 hover:border-blue-300 hover:bg-blue-50 transition font-medium">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                Toàn màn hình
+            </button>
+        </header>
+
+        <div class="main-content">
+            <!-- Sidebar Hoạt động -->
+            <aside class="sidebar p-5">
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Các Hoạt Động Khám Phá</div>
+                
+                <div class="flex flex-col gap-2" id="menuGroup">
+                    <button class="menu-btn active" data-mode="1">
+                        <span class="menu-num">1</span> Khái niệm cơ bản
+                    </button>
+                    <button class="menu-btn" data-mode="2">
+                        <span class="menu-num">2</span> Hai vectơ bằng nhau
+                    </button>
+                    <button class="menu-btn" data-mode="3">
+                        <span class="menu-num">3</span> Hai vectơ đối nhau
+                    </button>
+                    <button class="menu-btn" data-mode="4">
+                        <span class="menu-num">4</span> Vectơ-không ($\vec{0}$)
+                    </button>
+                    <button class="menu-btn" data-mode="5">
+                        <span class="menu-num">5</span> Ứng dụng: Hình bình hành
+                    </button>
+                </div>
+
+                <!-- Các Box Câu hỏi tương ứng với Mode -->
+                <div id="q-mode-1" class="discovery-box active">
+                    <div class="text-sm font-bold text-amber-600 mb-2 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Khám phá khái niệm
+                    </div>
+                    <ul class="text-sm text-slate-700 space-y-2 list-disc pl-4">
+                        <li>Kéo điểm B ra xa A. Độ dài thay đổi thế nào?</li>
+                        <li>Đổi vị trí A và B. $\overrightarrow{AB}$ và $\overrightarrow{BA}$ có giống nhau không? Khác ở đâu?</li>
+                    </ul>
+                </div>
+
+                <div id="q-mode-2" class="discovery-box">
+                    <div class="text-sm font-bold text-amber-600 mb-2 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Khám phá Vectơ bằng nhau
+                    </div>
+                    <ul class="text-sm text-slate-700 space-y-2 list-disc pl-4">
+                        <li>Hãy kéo C, D sao cho $\overrightarrow{CD}$ bằng $\overrightarrow{AB}$.</li>
+                        <li>Hai vectơ bằng nhau có cần chung điểm gốc không?</li>
+                        <li>Hai vectơ bằng nhau có cần nằm trên cùng một đường thẳng không?</li>
+                    </ul>
+                </div>
+
+                <div id="q-mode-3" class="discovery-box">
+                    <div class="text-sm font-bold text-amber-600 mb-2 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Khám phá Vectơ đối
+                    </div>
+                    <ul class="text-sm text-slate-700 space-y-2 list-disc pl-4">
+                        <li>Hãy kéo C, D tạo thành vectơ đối của $\overrightarrow{AB}$.</li>
+                        <li>Hai vectơ đối nhau giống nhau ở điểm nào? Khác nhau ở điểm nào?</li>
+                    </ul>
+                </div>
+
+                <div id="q-mode-4" class="discovery-box">
+                    <div class="text-sm font-bold text-amber-600 mb-2 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Vectơ đặc biệt
+                    </div>
+                    <ul class="text-sm text-slate-700 space-y-2 list-disc pl-4">
+                        <li>Hãy kéo điểm B đè lên điểm A.</li>
+                        <li>Độ dài của nó bằng bao nhiêu? Mũi tên chỉ về hướng nào?</li>
+                    </ul>
+                </div>
+
+                <div id="q-mode-5" class="discovery-box">
+                    <div class="text-sm font-bold text-amber-600 mb-2 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Hình bình hành
+                    </div>
+                    <ul class="text-sm text-slate-700 space-y-2 list-disc pl-4">
+                        <li>Cho ABCD là hình bình hành. Hãy kéo 1 đỉnh bất kỳ.</li>
+                        <li>Em luôn tìm được những cặp vectơ nào bằng nhau trong hình này?</li>
+                    </ul>
+                </div>
+            </aside>
+
+            <!-- Khu Vực Canvas SVG Nền ô ly -->
+            <main class="canvas-area" id="canvas-container">
+                <svg id="math-svg" width="100%" height="100%" style="min-width:800px;">
+                    <defs>
+                        <!-- Mũi tên Xanh (Vectơ AB) -->
+                        <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb" />
+                        </marker>
+                        <!-- Mũi tên Đỏ (Vectơ CD) -->
+                        <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#dc2626" />
+                        </marker>
+                        <!-- Mũi tên Xanh lá (Khi bằng nhau) -->
+                        <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#16a34a" />
+                        </marker>
+                        <!-- Mũi tên Tím (Khi đối nhau) -->
+                        <marker id="arrow-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#9333ea" />
+                        </marker>
+                    </defs>
+
+                    <!-- Các đường phụ trợ (Hình bình hành) -->
+                    <line id="line-ad" x1="0" y1="0" x2="0" y2="0" stroke="#94a3b8" stroke-width="2" stroke-dasharray="8 8" display="none"/>
+                    <line id="line-bc" x1="0" y1="0" x2="0" y2="0" stroke="#94a3b8" stroke-width="2" stroke-dasharray="8 8" display="none"/>
+
+                    <!-- Vectơ CD -->
+                    <g id="group-cd" display="none">
+                        <line id="vec-cd" x1="0" y1="0" x2="0" y2="0" stroke="#dc2626" stroke-width="4" marker-end="url(#arrow-red)" />
+                        <!-- Vùng đệm rỗng để dễ click bắt điểm -->
+                        <circle cx="0" cy="0" r="20" fill="transparent" class="draggable-point" data-id="C" id="touch-c"/>
+                        <circle cx="0" cy="0" r="20" fill="transparent" class="draggable-point" data-id="D" id="touch-d"/>
+                        <!-- Chấm hiển thị -->
+                        <circle id="pt-c" cx="0" cy="0" r="6" fill="#dc2626" stroke="#ffffff" stroke-width="2" pointer-events="none" />
+                        <circle id="pt-d" cx="0" cy="0" r="6" fill="#dc2626" stroke="#ffffff" stroke-width="2" pointer-events="none" />
+                        <text id="lbl-c" x="0" y="0" fill="#991b1b" font-weight="bold" font-size="18" font-family="serif" font-style="italic">C</text>
+                        <text id="lbl-d" x="0" y="0" fill="#991b1b" font-weight="bold" font-size="18" font-family="serif" font-style="italic">D</text>
+                    </g>
+
+                    <!-- Vectơ AB -->
+                    <g id="group-ab">
+                        <line id="vec-ab" x1="0" y1="0" x2="0" y2="0" stroke="#2563eb" stroke-width="4" marker-end="url(#arrow-blue)" />
+                        <circle cx="0" cy="0" r="20" fill="transparent" class="draggable-point" data-id="A" id="touch-a"/>
+                        <circle cx="0" cy="0" r="20" fill="transparent" class="draggable-point" data-id="B" id="touch-b"/>
+                        <circle id="pt-a" cx="0" cy="0" r="6" fill="#2563eb" stroke="#ffffff" stroke-width="2" pointer-events="none"/>
+                        <circle id="pt-b" cx="0" cy="0" r="6" fill="#2563eb" stroke="#ffffff" stroke-width="2" pointer-events="none"/>
+                        <text id="lbl-a" x="0" y="0" fill="#1e40af" font-weight="bold" font-size="18" font-family="serif" font-style="italic">A</text>
+                        <text id="lbl-b" x="0" y="0" fill="#1e40af" font-weight="bold" font-size="18" font-family="serif" font-style="italic">B</text>
+                    </g>
+                </svg>
+            </main>
+        </div>
+
+        <!-- Bảng Dữ Liệu Phía Dưới -->
+        <footer class="bottom-panel">
+            <!-- Thông tin Vectơ AB -->
+            <div class="flex-1 bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col justify-center">
+                <div class="text-sm font-bold text-blue-800 mb-2">VECTƠ THỨ NHẤT</div>
+                <div class="flex items-center justify-between">
+                    <div class="text-xl text-blue-900" id="math-ab">$\overrightarrow{AB}$</div>
+                    <div class="text-right font-math text-blue-700">
+                        <div>Tọa độ: <span id="coord-ab">(0; 0)</span></div>
+                        <div>Độ dài: <span id="len-ab">0</span> đơn vị</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Thông tin Vectơ CD (Bị ẩn ở Mode 1, 4) -->
+            <div id="panel-cd" class="flex-1 bg-red-50 border border-red-200 rounded-xl p-4 flex flex-col justify-center" style="display: none;">
+                <div class="text-sm font-bold text-red-800 mb-2">VECTƠ THỨ HAI</div>
+                <div class="flex items-center justify-between">
+                    <div class="text-xl text-red-900" id="math-cd">$\overrightarrow{CD}$</div>
+                    <div class="text-right font-math text-red-700">
+                        <div>Tọa độ: <span id="coord-cd">(0; 0)</span></div>
+                        <div>Độ dài: <span id="len-cd">0</span> đơn vị</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kết luận trạng thái -->
+            <div class="w-72 bg-white border border-slate-300 rounded-xl p-4 flex flex-col justify-center items-center shadow-sm">
+                <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Trạng thái quan hệ</div>
+                <div id="status-display" class="status-badge bg-slate-100 text-slate-600 border border-slate-200">
+                    Kéo điểm để bắt đầu
+                </div>
+                <div id="status-math" class="mt-2 text-lg font-bold"></div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const GRID_SIZE = 40; // Kích thước 1 ô lưới (px) để tạo tính năng Snap (Hút)
+        
+        // Trạng thái các điểm (Lưu theo px trên màn hình)
+        let pts = {
+            A: { x: 240, y: 320 },
+            B: { x: 440, y: 200 },
+            C: { x: 560, y: 320 },
+            D: { x: 760, y: 200 }
+        };
+
+        let currentMode = 1; // 1: Khái niệm, 2: Bằng nhau, 3: Đối, 4: Không, 5: Hình bình hành
+        let draggingPoint = null;
+
+        // Các thành phần DOM
+        const svg = document.getElementById('math-svg');
+        const vecAB = document.getElementById('vec-ab');
+        const vecCD = document.getElementById('vec-cd');
+        const groupCD = document.getElementById('group-cd');
+        const panelCD = document.getElementById('panel-cd');
+        const lineAD = document.getElementById('line-ad');
+        const lineBC = document.getElementById('line-bc');
+
+        function updateSVG() {
+            // Ràng buộc toán học đặc biệt trước khi vẽ
+            if (currentMode === 5) {
+                // Hình bình hành ABCD -> vecto(AB) = vecto(DC)
+                // D = C - B + A
+                if (draggingPoint === 'A' || draggingPoint === 'B' || draggingPoint === 'C') {
+                    pts.D.x = pts.C.x - pts.B.x + pts.A.x;
+                    pts.D.y = pts.C.y - pts.B.y + pts.A.y;
+                } else if (draggingPoint === 'D') {
+                    // Nếu cố tình kéo D, tính ngược lại C để giữ hình bình hành
+                    pts.C.x = pts.D.x + pts.B.x - pts.A.x;
+                    pts.C.y = pts.D.y + pts.B.y - pts.A.y;
+                }
+            }
+            if (currentMode === 4 && draggingPoint) {
+                // Vectơ không: Giữ B luôn bằng A nếu cố tình kéo
+                if(draggingPoint === 'B') {
+                    pts.A.x = pts.B.x; pts.A.y = pts.B.y;
+                }
+            }
+
+            // Cập nhật vị trí đồ hoạ cho Vectơ AB
+            ['A', 'B'].forEach(id => {
+                const lc = id.toLowerCase();
+                document.getElementById(`touch-${lc}`).setAttribute('cx', pts[id].x);
+                document.getElementById(`touch-${lc}`).setAttribute('cy', pts[id].y);
+                document.getElementById(`pt-${lc}`).setAttribute('cx', pts[id].x);
+                document.getElementById(`pt-${lc}`).setAttribute('cy', pts[id].y);
+                document.getElementById(`lbl-${lc}`).setAttribute('x', pts[id].x - 15);
+                document.getElementById(`lbl-${lc}`).setAttribute('y', pts[id].y + 25);
+            });
+            vecAB.setAttribute('x1', pts.A.x);
+            vecAB.setAttribute('y1', pts.A.y);
+            vecAB.setAttribute('x2', pts.B.x);
+            vecAB.setAttribute('y2', pts.B.y);
+
+            // Cập nhật cho Vectơ CD (nếu đang hiển thị)
+            if (currentMode === 2 || currentMode === 3 || currentMode === 5) {
+                ['C', 'D'].forEach(id => {
+                    const lc = id.toLowerCase();
+                    document.getElementById(`touch-${lc}`).setAttribute('cx', pts[id].x);
+                    document.getElementById(`touch-${lc}`).setAttribute('cy', pts[id].y);
+                    document.getElementById(`pt-${lc}`).setAttribute('cx', pts[id].x);
+                    document.getElementById(`pt-${lc}`).setAttribute('cy', pts[id].y);
+                    document.getElementById(`lbl-${lc}`).setAttribute('x', pts[id].x - 15);
+                    document.getElementById(`lbl-${lc}`).setAttribute('y', pts[id].y + 25);
+                });
+                vecCD.setAttribute('x1', pts.C.x);
+                vecCD.setAttribute('y1', pts.C.y);
+                vecCD.setAttribute('x2', pts.D.x);
+                vecCD.setAttribute('y2', pts.D.y);
+            }
+
+            // Cập nhật đường đứt nét cho hình bình hành
+            if (currentMode === 5) {
+                lineAD.setAttribute('x1', pts.A.x); lineAD.setAttribute('y1', pts.A.y);
+                lineAD.setAttribute('x2', pts.D.x); lineAD.setAttribute('y2', pts.D.y);
+                lineBC.setAttribute('x1', pts.B.x); lineBC.setAttribute('y1', pts.B.y);
+                lineBC.setAttribute('x2', pts.C.x); lineBC.setAttribute('y2', pts.C.y);
+            }
+
+            calculateMath();
+        }
+
+        function calculateMath() {
+            // Quy đổi px sang tọa độ grid để số đẹp (1 ô = 1 đơn vị)
+            const vx_ab = (pts.B.x - pts.A.x) / GRID_SIZE;
+            const vy_ab = -(pts.B.y - pts.A.y) / GRID_SIZE; // Trục Y của SVG ngược xuống
+            const len_ab = Math.sqrt(vx_ab*vx_ab + vy_ab*vy_ab);
+            
+            const vx_cd = (pts.D.x - pts.C.x) / GRID_SIZE;
+            const vy_cd = -(pts.D.y - pts.C.y) / GRID_SIZE;
+            const len_cd = Math.sqrt(vx_cd*vx_cd + vy_cd*vy_cd);
+
+            // Hàm làm tròn đẹp (0.00)
+            const fmt = (num) => (Math.round(num * 100) / 100).toFixed(2);
+            
+            // Cập nhật UI bảng điều khiển (Span Text - tránh gọi MathJax liên tục gây lag)
+            document.getElementById('coord-ab').textContent = `(${fmt(vx_ab)}; ${fmt(vy_ab)})`;
+            document.getElementById('len-ab').textContent = fmt(len_ab);
+            
+            if (currentMode !== 1 && currentMode !== 4) {
+                document.getElementById('coord-cd').textContent = `(${fmt(vx_cd)}; ${fmt(vy_cd)})`;
+                document.getElementById('len-cd').textContent = fmt(len_cd);
+            }
+
+            // Xử lý mũi tên vectơ không
+            if (len_ab === 0) vecAB.setAttribute('marker-end', '');
+            else vecAB.setAttribute('marker-end', 'url(#arrow-blue)');
+
+            // XÉT TRẠNG THÁI (EQUAL, OPPOSITE, ZERO)
+            const statusBadge = document.getElementById('status-display');
+            const statusMath = document.getElementById('status-math');
+            let isMathJaxDirty = false;
+
+            // Reset màu sắc về mặc định
+            vecAB.setAttribute('stroke', '#2563eb');
+            vecCD.setAttribute('stroke', '#dc2626');
+            if (len_ab !== 0) vecAB.setAttribute('marker-end', 'url(#arrow-blue)');
+            vecCD.setAttribute('marker-end', 'url(#arrow-red)');
+
+            if (currentMode === 4 || len_ab === 0) {
+                statusBadge.className = "status-badge bg-amber-100 text-amber-800 border-amber-300";
+                statusBadge.textContent = "Vectơ - Không";
+                if(statusMath.dataset.val !== '0') {
+                    statusMath.innerHTML = '$$\\overrightarrow{AB} = \\vec{0}$$';
+                    statusMath.dataset.val = '0';
+                    isMathJaxDirty = true;
+                }
+            } 
+            else if (currentMode === 2 || currentMode === 3 || currentMode === 5) {
+                // Kiểm tra bằng nhau: Cùng hướng & Cùng độ dài (Khoảng cách toạ độ nhỏ hơn sai số)
+                const isEqual = Math.abs(vx_ab - vx_cd) < 0.05 && Math.abs(vy_ab - vy_cd) < 0.05;
+                const isOpposite = Math.abs(vx_ab + vx_cd) < 0.05 && Math.abs(vy_ab + vy_cd) < 0.05;
+
+                if (isEqual) {
+                    statusBadge.className = "status-badge bg-green-100 text-green-700 border-green-300";
+                    statusBadge.textContent = "Cùng phương, cùng hướng, cùng độ dài";
+                    vecAB.setAttribute('stroke', '#16a34a');
+                    vecCD.setAttribute('stroke', '#16a34a');
+                    vecAB.setAttribute('marker-end', 'url(#arrow-green)');
+                    vecCD.setAttribute('marker-end', 'url(#arrow-green)');
+                    
+                    if(statusMath.dataset.val !== '=') {
+                        statusMath.innerHTML = '$$\\overrightarrow{AB} = \\overrightarrow{CD}$$';
+                        statusMath.dataset.val = '=';
+                        isMathJaxDirty = true;
+                    }
+                } 
+                else if (isOpposite) {
+                    statusBadge.className = "status-badge bg-purple-100 text-purple-700 border-purple-300";
+                    statusBadge.textContent = "Cùng phương, ngược hướng, cùng độ dài";
+                    vecAB.setAttribute('stroke', '#9333ea');
+                    vecCD.setAttribute('stroke', '#9333ea');
+                    vecAB.setAttribute('marker-end', 'url(#arrow-purple)');
+                    vecCD.setAttribute('marker-end', 'url(#arrow-purple)');
+                    
+                    if(statusMath.dataset.val !== '-') {
+                        statusMath.innerHTML = '$$\\overrightarrow{AB} = -\\overrightarrow{CD}$$';
+                        statusMath.dataset.val = '-';
+                        isMathJaxDirty = true;
+                    }
+                }
+                else {
+                    statusBadge.className = "status-badge bg-slate-100 text-slate-600 border-slate-300";
+                    statusBadge.textContent = "Các vectơ phân biệt";
+                    if(statusMath.dataset.val !== '!') {
+                        statusMath.innerHTML = '$$\\overrightarrow{AB} \\neq \\overrightarrow{CD}$$';
+                        statusMath.dataset.val = '!';
+                        isMathJaxDirty = true;
+                    }
+                }
+            } else {
+                // Mode 1
+                statusBadge.className = "status-badge bg-blue-100 text-blue-700 border-blue-300";
+                statusBadge.textContent = "Đang khám phá vectơ";
+                statusMath.innerHTML = '';
+                statusMath.dataset.val = '';
+            }
+
+            // Chỉ gọi MathJax khi công thức thực sự thay đổi để tránh giật lag khi kéo chuột
+            if(isMathJaxDirty && window.MathJax) {
+                MathJax.typesetPromise([statusMath]);
+            }
+        }
+
+        function setMode(modeNum) {
+            currentMode = parseInt(modeNum);
+            
+            // UI Sidebar Updates
+            document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.menu-btn[data-mode="${modeNum}"]`).classList.add('active');
+            
+            document.querySelectorAll('.discovery-box').forEach(box => box.classList.remove('active'));
+            document.getElementById(`q-mode-${modeNum}`).classList.add('active');
+
+            // Cấu hình Hình học dựa theo Mode
+            groupCD.style.display = (currentMode === 1 || currentMode === 4) ? 'none' : 'block';
+            panelCD.style.display = (currentMode === 1 || currentMode === 4) ? 'none' : 'flex';
+            lineAD.style.display = (currentMode === 5) ? 'block' : 'none';
+            lineBC.style.display = (currentMode === 5) ? 'block' : 'none';
+
+            // Thiết lập vị trí khởi tạo cho từng bài toán để học sinh dễ dàng kéo
+            if (currentMode === 1) {
+                pts.A = { x: 360, y: 320 }; pts.B = { x: 560, y: 200 };
+            } else if (currentMode === 2) {
+                // Gợi ý cho học sinh bằng cách để gần bằng nhau
+                pts.A = { x: 200, y: 320 }; pts.B = { x: 360, y: 200 };
+                pts.C = { x: 480, y: 320 }; pts.D = { x: 600, y: 160 }; // Cố tình lệch
+            } else if (currentMode === 3) {
+                pts.A = { x: 200, y: 320 }; pts.B = { x: 360, y: 200 };
+                pts.C = { x: 600, y: 200 }; pts.D = { x: 440, y: 320 }; // Gần ngược
+            } else if (currentMode === 4) {
+                pts.A = { x: 400, y: 300 }; pts.B = { x: 400, y: 300 }; // Ép về 0
+            } else if (currentMode === 5) {
+                pts.A = { x: 240, y: 400 }; pts.B = { x: 400, y: 240 };
+                pts.C = { x: 680, y: 240 }; pts.D = { x: 520, y: 400 }; // Hình bình hành
+            }
+
+            // Xoá công thức cũ để force render lại
+            document.getElementById('status-math').dataset.val = '';
+            
+            updateSVG();
+        }
+
+        document.querySelectorAll('.menu-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => setMode(e.currentTarget.dataset.mode));
+        });
+
+        svg.addEventListener('mousedown', (e) => {
+            if (e.target.classList.contains('draggable-point')) {
+                draggingPoint = e.target.dataset.id;
+            }
+        });
+        svg.addEventListener('touchstart', (e) => {
+            if (e.target.classList.contains('draggable-point')) {
+                draggingPoint = e.target.dataset.id;
+                e.preventDefault(); // Ngăn cuộn trang trên mobile
+            }
+        }, {passive: false});
+
+        window.addEventListener('mouseup', () => { draggingPoint = null; });
+        window.addEventListener('touchend', () => { draggingPoint = null; });
+
+        function handleDrag(clientX, clientY) {
+            if (!draggingPoint) return;
+            
+            const CTM = svg.getScreenCTM();
+            let rawX = (clientX - CTM.e) / CTM.a;
+            let rawY = (clientY - CTM.f) / CTM.d;
+
+            // SNAP TO GRID: Hút điểm vào mắt lưới để học sinh dễ dàng tạo vectơ bằng nhau
+            // Chỉ hút khi đưa lại gần mắt lưới (snap threshold = 15px)
+            const snapX = Math.round(rawX / GRID_SIZE) * GRID_SIZE;
+            const snapY = Math.round(rawY / GRID_SIZE) * GRID_SIZE;
+            
+            if (Math.abs(rawX - snapX) < 15) rawX = snapX;
+            if (Math.abs(rawY - snapY) < 15) rawY = snapY;
+
+            // Giới hạn không cho kéo văng ra ngoài khung hình
+            const padding = 20;
+            rawX = Math.max(padding, Math.min(svg.clientWidth - padding, rawX));
+            rawY = Math.max(padding, Math.min(svg.clientHeight - padding, rawY));
+
+            pts[draggingPoint].x = rawX;
+            pts[draggingPoint].y = rawY;
+            
+            updateSVG();
+        }
+
+        svg.addEventListener('mousemove', (e) => { handleDrag(e.clientX, e.clientY); });
+        svg.addEventListener('touchmove', (e) => {
+            if(draggingPoint) {
+                handleDrag(e.touches[0].clientX, e.touches[0].clientY);
+                e.preventDefault();
+            }
+        }, {passive: false});
+
+        const btnFullscreen = document.getElementById('btnFullscreen');
+        btnFullscreen.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Lỗi Fullscreen: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                btnFullscreen.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg> Thu nhỏ`;
+            } else {
+                btnFullscreen.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg> Toàn màn hình`;
+            }
+        });
+
+        // Khởi động
+        window.onload = () => { setMode(1); };
+    </script>
+</body>
+</html>

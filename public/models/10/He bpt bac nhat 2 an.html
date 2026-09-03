@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Khám phá: Hệ bất phương trình bậc nhất hai ẩn</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script>
+        window.MathJax = {
+            options: { enableMenu: false },
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            margin: 0; overflow: hidden; 
+            user-select: none; touch-action: none; background-color: #f8fafc; 
+        }
+        .app-container { display: flex; flex-direction: column; height: 100vh; width: 100vw; background: white;}
+        .main-content { display: flex; flex: 1; overflow: hidden; }
+
+        .sidebar {
+            width: 480px; background-color: #ffffff; border-right: 1px solid #e2e8f0;
+            display: flex; flex-direction: column; overflow-y: auto; z-index: 10;
+            box-shadow: 2px 0 15px rgba(0,0,0,0.05); padding: 1.5rem; scroll-behavior: smooth;
+        }
+
+        .canvas-area {
+            flex: 1; position: relative; background-color: #ffffff; display: flex;
+            align-items: center; justify-content: center; overflow: hidden;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 0); background-size: 30px 30px;
+        }
+
+        .activity-card {
+            background: white; border: 1px solid #e2e8f0; border-radius: 0.75rem;
+            padding: 1.25rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: all 0.4s ease; animation: slideIn 0.4s ease-out; margin-bottom: 1rem;
+        }
+        .activity-card.inactive { opacity: 0.4; pointer-events: none; filter: grayscale(50%); }
+        
+        @keyframes slideIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Custom Sliders */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 18px; width: 18px; border-radius: 50%;
+            background: #3b82f6; cursor: pointer; margin-top: -6px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; cursor: pointer; background: #cbd5e1; border-radius: 3px; }
+
+        .math-display { font-size: 1.1rem; overflow-x: auto; overflow-y: hidden; }
+        .hidden { display: none !important; }
+        
+        /* SVG Styling */
+        .axis { stroke: #475569; stroke-width: 2.5; }
+        .grid-line { stroke: #cbd5e1; stroke-width: 1; stroke-dasharray: 4 4; }
+        .line-border { stroke-width: 2.5; stroke-linecap: round; transition: all 0.3s; }
+        
+        /* Point M */
+        #point-M { cursor: grab; }
+        #point-M:active { cursor: grabbing; }
+
+        /* Region Fills */
+        .region-fill { transition: opacity 0.5s ease, fill 0.5s ease; }
+        
+        /* Optimization Line */
+        .opt-line { stroke: #8b5cf6; stroke-width: 3; stroke-dasharray: 8 6; transition: all 0.1s; }
+        
+        .status-badge { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; font-weight: bold; font-size: 12px; }
+        .status-ok { background-color: #dcfce7; color: #166534; }
+        .status-err { background-color: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- HEADER -->
+        <header class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-20">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-lg border border-indigo-200">
+                    ⋂
+                </div>
+                <h1 class="text-base font-bold text-slate-700 uppercase tracking-wide">Hệ BPT Bậc Nhất Hai Ẩn</h1>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="toggleTeacherMode()" class="flex items-center gap-2 text-amber-700 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-md text-sm border border-amber-200 transition font-medium">
+                    🎓 Gợi ý sư phạm
+                </button>
+                <button onclick="runScript()" class="flex items-center gap-2 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-md text-sm border border-emerald-200 transition font-medium">
+                    ▶ Trình chiếu
+                </button>
+                <button onclick="resetModel()" class="flex items-center gap-2 text-slate-500 hover:text-slate-700 px-3 py-1.5 rounded-md text-sm border border-slate-300 hover:bg-slate-50 transition font-medium">
+                    ↺ Đặt lại
+                </button>
+                <button id="btnFullscreen" class="flex items-center gap-2 text-slate-500 hover:text-blue-600 px-3 py-1.5 rounded-md text-sm border border-slate-300 hover:bg-slate-50 transition font-medium">
+                    <span id="txtFullscreen">⛶ Toàn màn hình</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- SIDEBAR -->
+            <aside class="sidebar" id="sidebar">
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Tiến trình Khám phá</div>
+                
+                <!-- HĐ 1: KHỞI ĐỘNG -->
+                <div class="activity-card" id="card-1">
+                    <h3 class="font-bold text-blue-700 mb-2">1. Khởi động: Bài toán Sản xuất</h3>
+                    <p class="text-sm text-slate-700 mb-3">Xưởng cần sản xuất SP <span class="font-bold text-blue-600">A</span> và SP <span class="font-bold text-red-600">B</span>. Nguồn lực giới hạn: Tối đa <b>40 giờ máy</b> và <b>36 giờ lao động</b>.</p>
+                    
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 mb-3 text-sm">
+                        <div class="mb-3">
+                            <label class="flex justify-between font-semibold text-slate-700 mb-1">
+                                <span>SL Sản phẩm A ($x$): <span id="val-x" class="text-blue-600 text-base">5</span></span>
+                            </label>
+                            <input type="range" id="slider-x" min="0" max="25" value="5">
+                        </div>
+                        <div>
+                            <label class="flex justify-between font-semibold text-slate-700 mb-1">
+                                <span>SL Sản phẩm B ($y$): <span id="val-y" class="text-red-600 text-base">5</span></span>
+                            </label>
+                            <input type="range" id="slider-y" min="0" max="25" value="5">
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 text-sm">
+                        <!-- Máy -->
+                        <div>
+                            <div class="flex justify-between text-slate-600 font-medium mb-1">
+                                <span>Giờ Máy: $2x + 1y$</span>
+                                <span id="res-m" class="font-mono font-bold">15 / 40</span>
+                            </div>
+                            <div class="w-full bg-slate-200 rounded-full h-2">
+                                <div id="bar-m" class="bg-blue-500 h-2 rounded-full transition-all" style="width: 37.5%"></div>
+                            </div>
+                        </div>
+                        <!-- Lao động -->
+                        <div>
+                            <div class="flex justify-between text-slate-600 font-medium mb-1">
+                                <span>Giờ LĐ: $1x + 2y$</span>
+                                <span id="res-l" class="font-mono font-bold">15 / 36</span>
+                            </div>
+                            <div class="w-full bg-slate-200 rounded-full h-2">
+                                <div id="bar-l" class="bg-red-500 h-2 rounded-full transition-all" style="width: 41.6%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="h1-msg" class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded text-sm text-amber-800 font-medium">
+                        Có vô số phương án khả thi! Chúng tạo thành một <b>"vùng"</b> trên đồ thị. Làm sao biểu diễn vùng này?
+                    </div>
+                    
+                    <button id="btn-next-2" onclick="activateStep(2)" class="w-full mt-3 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition shadow-sm">
+                        Chuyển sang Khám phá Hệ BPT
+                    </button>
+                </div>
+
+                <!-- HĐ 2: KHÁM PHÁ HỆ BPT -->
+                <div class="activity-card hidden" id="card-2">
+                    <h3 class="font-bold text-emerald-700 mb-2">2. Khái niệm Hệ Bất phương trình</h3>
+                    <p class="text-sm text-slate-700 mb-3">Hãy <b>kéo thả điểm M(x; y)</b> trên không gian tọa độ bên phải để kiểm tra sự thỏa mãn.</p>
+                    
+                    <div class="math-display bg-slate-50 py-2 rounded mb-3 text-center border border-slate-200">
+                        $$ \begin{cases} 2x + y \le 40 & (1) \\ x + 2y \le 36 & (2) \\ x \ge 0, y \ge 0 & (3,4) \end{cases} $$
+                    </div>
+
+                    <div class="space-y-2 text-sm">
+                        <div class="flex items-center justify-between p-2 rounded border" id="chk-1">
+                            <span>(1) Máy: $2x + y \le 40$</span> <span class="status-badge status-ok" id="st-1">✓</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2 rounded border" id="chk-2">
+                            <span>(2) LĐ: $x + 2y \le 36$</span> <span class="status-badge status-ok" id="st-2">✓</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2 rounded border" id="chk-3">
+                            <span>(3,4) Không âm: $x, y \ge 0$</span> <span class="status-badge status-ok" id="st-3">✓</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2 rounded bg-emerald-50 border border-emerald-300 font-bold text-emerald-800 transition-all" id="chk-sys">
+                            <span>KẾT LUẬN HỆ:</span> <span id="st-sys">THỎA MÃN</span>
+                        </div>
+                    </div>
+                    
+                    <button id="btn-next-3" onclick="activateStep(3)" class="w-full mt-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded transition shadow-sm hidden">
+                        Hiểu rồi! Bắt đầu vẽ Miền nghiệm
+                    </button>
+                </div>
+
+                <!-- HĐ 3 & 5: XÂY DỰNG MIỀN NGHIỆM -->
+                <div class="activity-card hidden" id="card-3">
+                    <h3 class="font-bold text-purple-700 mb-2">3. Xây dựng Miền nghiệm Hệ</h3>
+                    <p class="text-sm text-slate-700 mb-3">Quy tắc: <b>Gạch bỏ</b> nửa mặt phẳng <b>không</b> chứa nghiệm. Phần mặt phẳng <b>không bị gạch</b> là miền nghiệm của Hệ.</p>
+                    
+                    <div class="flex flex-col gap-2 mb-4">
+                        <button onclick="toggleRegion(1)" id="btn-reg-1" class="text-left px-3 py-2 rounded border border-blue-200 bg-white hover:bg-blue-50 text-sm font-medium flex justify-between items-center transition">
+                            <span>1. Gạch bỏ miền $2x + y > 40$</span> <span class="text-blue-500 hidden" id="icn-reg-1">👁</span>
+                        </button>
+                        <button onclick="toggleRegion(2)" id="btn-reg-2" class="text-left px-3 py-2 rounded border border-red-200 bg-white hover:bg-red-50 text-sm font-medium flex justify-between items-center transition">
+                            <span>2. Gạch bỏ miền $x + 2y > 36$</span> <span class="text-red-500 hidden" id="icn-reg-2">👁</span>
+                        </button>
+                        <button onclick="toggleRegion(3)" id="btn-reg-3" class="text-left px-3 py-2 rounded border border-emerald-200 bg-white hover:bg-emerald-50 text-sm font-medium flex justify-between items-center transition">
+                            <span>3. Gạch bỏ phần $x < 0$ hoặc $y < 0$</span> <span class="text-emerald-500 hidden" id="icn-reg-3">👁</span>
+                        </button>
+                    </div>
+
+                    <button onclick="showFinalRegion()" id="btn-intersect" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 px-4 rounded transition shadow-md flex items-center justify-center gap-2">
+                        ⋂ XÁC ĐỊNH MIỀN NGHIỆM (PHẦN KHÔNG BỊ GẠCH)
+                    </button>
+                    
+                    <button id="btn-next-4" onclick="activateStep(4)" class="w-full mt-4 bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 px-4 rounded transition shadow-sm hidden">
+                        Ứng dụng: Bài toán Tối ưu
+                    </button>
+                </div>
+
+                <!-- HĐ 7: TỐI ƯU HÓA -->
+                <div class="activity-card hidden" id="card-4">
+                    <h3 class="font-bold text-indigo-700 mb-2">4. Bài toán Tối ưu (F Max)</h3>
+                    <p class="text-sm text-slate-700 mb-3">Giả sử mỗi SP A lãi 5 triệu, SP B lãi 4 triệu. Ta cần tìm $(x;y)$ trong miền nghiệm để Hàm mục tiêu (Doanh thu) $F = 5x + 4y$ lớn nhất.</p>
+                    
+                    <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 mb-4 relative overflow-hidden">
+                        <div class="text-center font-mono text-xl font-bold text-indigo-900 mb-2">
+                            F = 5x + 4y = <span id="opt-val" class="text-3xl text-indigo-600">0</span>
+                        </div>
+                        <input type="range" id="slider-opt" min="0" max="150" value="0" class="w-full mt-2 z-10 relative">
+                        <p class="text-xs text-indigo-500 text-center mt-2">Trượt để thay đổi giá trị F. Quan sát đường thẳng màu tím di chuyển trên đồ thị.</p>
+                    </div>
+
+                    <div id="opt-msg" class="text-sm p-3 bg-white border border-slate-200 rounded shadow-sm text-slate-700 leading-relaxed text-center font-medium min-h-[60px] flex items-center justify-center">
+                        Hãy kéo thanh trượt sang phải để tăng F...
+                    </div>
+                </div>
+
+            </aside>
+
+            <!-- MAIN CANVAS -->
+            <main class="canvas-area relative" id="main-canvas">
+                <svg id="math-plane" viewBox="0 0 600 600" class="w-full h-full drop-shadow-xl" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569" />
+                        </marker>
+                        <!-- Pattern cho các vùng bị gạch bỏ -->
+                        <pattern id="hatch-blue" width="12" height="12" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="12" stroke="#3b82f6" stroke-width="3" opacity="0.6"/>
+                        </pattern>
+                        <pattern id="hatch-red" width="12" height="12" patternTransform="rotate(-45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="12" stroke="#ef4444" stroke-width="3" opacity="0.6"/>
+                        </pattern>
+                        <pattern id="hatch-orange" width="12" height="12" patternTransform="rotate(0 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="12" stroke="#f59e0b" stroke-width="3" opacity="0.6"/>
+                        </pattern>
+                    </defs>
+
+                    <!-- Lưới tọa độ -->
+                    <g id="grid-group"></g>
+
+                    <!-- Vùng Nền Mờ (Các nửa mặt phẳng BỊ GẠCH BỎ) -->
+                    <g id="regions-group">
+                        <!-- Region 1: 2x + y > 40 -->
+                        <polygon id="reg-1" class="region-fill opacity-0" fill="url(#hatch-blue)" points=""/>
+                        <!-- Region 2: x + 2y > 36 -->
+                        <polygon id="reg-2" class="region-fill opacity-0" fill="url(#hatch-red)" points=""/>
+                        <!-- Region 3: x < 0 hoặc y < 0 -->
+                        <polygon id="reg-3" class="region-fill opacity-0" fill="url(#hatch-orange)" points=""/>
+                        
+                        <!-- Miền nghiệm cuối cùng (Đa giác trắng viền xanh) -->
+                        <polygon id="reg-final" class="region-fill opacity-0" fill="transparent" stroke="#10b981" stroke-width="4" stroke-linejoin="round" points=""/>
+                    </g>
+
+                    <!-- Trục tọa độ -->
+                    <line x1="0" y1="500" x2="580" y2="500" class="axis" marker-end="url(#arrow)" /> <!-- Trục Ox -->
+                    <line x1="80" y1="600" x2="80" y2="20" class="axis" marker-end="url(#arrow)" />  <!-- Trục Oy -->
+                    
+                    <text x="565" y="520" fill="#475569" font-weight="bold" font-size="16">x</text>
+                    <text x="60" y="30" fill="#475569" font-weight="bold" font-size="16">y</text>
+                    <text x="65" y="520" fill="#475569" font-weight="bold" font-size="16">O</text>
+
+                    <!-- Các đường biên -->
+                    <g id="lines-group">
+                        <!-- L1: 2x + y = 40 (Đi qua (0,40) và (20,0)) -->
+                        <line id="svg-line1" class="line-border" stroke="#3b82f6" x1="0" y1="0" x2="0" y2="0"/>
+                        <text id="lbl-d1" fill="#2563eb" font-weight="bold" font-size="14" class="hidden">2x + y = 40</text>
+                        
+                        <!-- L2: x + 2y = 36 (Đi qua (0,18) và (36,0)) -->
+                        <line id="svg-line2" class="line-border" stroke="#ef4444" x1="0" y1="0" x2="0" y2="0"/>
+                        <text id="lbl-d2" fill="#dc2626" font-weight="bold" font-size="14" class="hidden">x + 2y = 36</text>
+                    </g>
+
+                    <!-- Đường trượt Tối ưu hóa F -->
+                    <line id="opt-line-svg" class="opt-line opacity-0" x1="0" y1="0" x2="0" y2="0" />
+
+                    <!-- Các Đỉnh của Miền nghiệm (Sẽ xuất hiện ở Step 4) -->
+                    <g id="vertices-group" class="opacity-0 transition-opacity duration-500">
+                        <circle cx="0" cy="0" r="5" fill="#10b981" id="v-O"/>
+                        <circle cx="0" cy="0" r="5" fill="#10b981" id="v-A"/>
+                        <circle cx="0" cy="0" r="5" fill="#10b981" id="v-B"/>
+                        <circle cx="0" cy="0" r="5" fill="#10b981" id="v-C"/>
+                        <!-- Text nhãn tọa độ -->
+                        <text id="lbl-v-A" x="0" y="0" font-size="12" fill="#065f46" font-weight="bold">A(20; 0)</text>
+                        <text id="lbl-v-B" x="0" y="0" font-size="12" fill="#065f46" font-weight="bold">B(14.7; 10.7)</text>
+                        <text id="lbl-v-C" x="0" y="0" font-size="12" fill="#065f46" font-weight="bold">C(0; 18)</text>
+                    </g>
+
+                    <!-- Điểm M (Kéo thả) -->
+                    <g id="point-M-group" class="hidden">
+                        <circle id="point-M-glow" cx="0" cy="0" r="15" fill="#f59e0b" fill-opacity="0.3" class="animate-pulse" />
+                        <circle id="point-M" cx="0" cy="0" r="7" fill="#f59e0b" stroke="white" stroke-width="2" />
+                        <text x="12" y="-12" fill="#b45309" font-weight="bold" font-size="16" id="point-M-label">M(x; y)</text>
+                    </g>
+                </svg>
+
+                <!-- UI Hoạt động 1 (Overlay) -->
+                <div id="overlay-h1" class="absolute inset-0 pointer-events-none flex items-start justify-end p-8 z-10 transition-opacity">
+                    <!-- Trống để đồ thị thoáng -->
+                </div>
+            </main>
+        </div>
+
+        <!-- MODAL GỢI Ý SƯ PHẠM -->
+        <div id="teacher-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl p-6 w-[650px] max-w-full max-h-[90vh] overflow-y-auto relative">
+                <div class="flex justify-between items-center mb-5 border-b pb-3">
+                    <h3 class="text-xl font-bold text-amber-600 flex items-center gap-2">🎓 Gợi ý sư phạm & Kịch bản</h3>
+                    <button onclick="toggleTeacherMode()" class="text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full w-8 h-8 flex items-center justify-center transition">✕</button>
+                </div>
+                
+                <h4 class="font-bold text-slate-800 mb-2 bg-slate-100 px-3 py-1 rounded">1. Triết lý Thiết kế (Khám phá)</h4>
+                <ul class="list-disc pl-6 mb-4 text-sm text-slate-700 space-y-1">
+                    <li><b>Bước qua giới hạn 1 nghiệm:</b> Bài toán mở đầu cố tình có rất nhiều cặp $(x,y)$ đúng. Học sinh thao tác và nhận ra: <i>Nghiệm không phải là một điểm, mà là một vùng.</i></li>
+                    <li><b>Kiểm chứng Điểm M:</b> Kéo thả M tự do giúp HS hiểu bản chất "thỏa mãn ĐỒNG THỜI" (dấu "và" - $\cap$) của Hệ BPT, chứ không học vẹt.</li>
+                    <li><b>Động học Tối ưu hóa:</b> Đường Hàm mục tiêu $F$ trượt song song trực quan hóa định lý cơ bản của Quy hoạch tuyến tính (Max/Min nằm ở đỉnh).</li>
+                </ul>
+                
+                <h4 class="font-bold text-slate-800 mb-2 bg-slate-100 px-3 py-1 rounded">2. Sai lầm HS thường mắc</h4>
+                <ul class="list-disc pl-6 mb-4 text-sm text-red-700 space-y-1">
+                    <li>Tô sai miền nghiệm (Nhầm nửa mặt phẳng).</li>
+                    <li>Lấy Hợp thay vì lấy Giao các miền.</li>
+                    <li>Bỏ quên các điều kiện thực tế (như $x \ge 0, y \ge 0$).</li>
+                </ul>
+                
+                <h4 class="font-bold text-slate-800 mb-2 bg-slate-100 px-3 py-1 rounded">3. Kiến thức trọng tâm cần chốt</h4>
+                <div class="bg-blue-50 p-4 rounded border border-blue-200 text-sm text-slate-800 mb-4 leading-relaxed">
+                    <p><b>1. Miền nghiệm của Hệ:</b> Là GIAO của các miền nghiệm thành phần.</p>
+                    <p><b>2. Điểm thuộc miền nghiệm:</b> Phải thỏa mãn ĐỒNG THỜI mọi BPT trong hệ.</p>
+                    <p><b>3. Tối ưu hóa:</b> Biểu thức $F = ax + by$ đạt GTLN/GTNN tại một trong các <b>đỉnh</b> của đa giác miền nghiệm.</p>
+                </div>
+
+                <div class="text-center">
+                    <button onclick="toggleTeacherMode()" class="bg-slate-800 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-slate-700 transition">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CẤU HÌNH HỆ TỌA ĐỘ SVG ---
+        // Không gian SVG: 600x600. Gốc O đặt tại (80, 500)
+        const cx = 80;  
+        const cy = 500; 
+        const unit = 12; // 1 đơn vị toán học = 12 pixel. (Max x=36 -> 432px, fits well)
+        
+        let currentStep = 1;
+        let isDragging = false;
+        let pointM = { x: 5, y: 5 }; // Default point
+        
+        // Trạng thái các vùng tô
+        let regState = { r1: false, r2: false, r3: false };
+
+        // --- HÀM CHUYỂN ĐỔI TỌA ĐỘ ---
+        function mapX(x) { return cx + x * unit; }
+        function mapY(y) { return cy - y * unit; }
+        function unmapX(px) { return (px - cx) / unit; }
+        function unmapY(py) { return -(py - cy) / unit; }
+
+        // --- VẼ LƯỚI TỌA ĐỘ & ĐƯỜNG BIÊN ---
+        function initSVG() {
+            const gridGroup = document.getElementById('grid-group');
+            let gridHTML = '';
+            // Lưới dọc
+            for (let i = -2; i <= 40; i+=2) {
+                if (i === 0) continue;
+                let px = mapX(i);
+                gridHTML += `<line x1="${px}" y1="0" x2="${px}" y2="600" class="grid-line" />`;
+                if(i%5 === 0) gridHTML += `<text x="${px - 8}" y="${cy + 18}" font-size="11" fill="#64748b">${i}</text>`;
+            }
+            // Lưới ngang
+            for (let i = -2; i <= 40; i+=2) {
+                if (i === 0) continue;
+                let py = mapY(i);
+                gridHTML += `<line x1="0" y1="${py}" x2="600" y2="${py}" class="grid-line" />`;
+                if(i%5 === 0) gridHTML += `<text x="${cx - 22}" y="${py + 4}" font-size="11" fill="#64748b">${i}</text>`;
+            }
+            gridGroup.innerHTML = gridHTML;
+
+            // Thiết lập tọa độ 2 đường thẳng
+            // L1: 2x + y = 40 -> Cắt trục tại (20,0) và (0,40)
+            let svgL1 = document.getElementById('svg-line1');
+            svgL1.setAttribute('x1', mapX(-2));  svgL1.setAttribute('y1', mapY(44)); // Kéo dài thêm
+            svgL1.setAttribute('x2', mapX(22));  svgL1.setAttribute('y2', mapY(-4));
+            
+            let lbl1 = document.getElementById('lbl-d1');
+            lbl1.setAttribute('x', mapX(20.5)); lbl1.setAttribute('y', mapY(-2));
+
+            // L2: x + 2y = 36 -> Cắt trục tại (36,0) và (0,18)
+            let svgL2 = document.getElementById('svg-line2');
+            svgL2.setAttribute('x1', mapX(-4));  svgL2.setAttribute('y1', mapY(20)); // Kéo dài thêm
+            svgL2.setAttribute('x2', mapX(38));  svgL2.setAttribute('y2', mapY(-1));
+
+            let lbl2 = document.getElementById('lbl-d2');
+            lbl2.setAttribute('x', mapX(36.5)); lbl2.setAttribute('y', mapY(-1.5));
+
+            // Khởi tạo các Polygon (Các vùng BỊ GẠCH BỎ)
+            // Khung Canvas giới hạn rộng hơn để phủ kín khi gạch
+            const xMin = -10, xMax = 50;
+            const yMin = -10, yMax = 50;
+
+            // R1 bị gạch bỏ: 2x + y > 40. Nửa trên đường thẳng L1.
+            // Vertices: (xMin, y(xMin)), (xMax, y(xMax)), (xMax, yMax), (xMin, yMax)
+            let p1Str = `${mapX(xMin)},${mapY(40-2*xMin)} ${mapX(xMax)},${mapY(40-2*xMax)} ${mapX(xMax)},${mapY(yMax)} ${mapX(xMin)},${mapY(yMax)}`;
+            document.getElementById('reg-1').setAttribute('points', p1Str);
+
+            // R2 bị gạch bỏ: x + 2y > 36. Nửa trên đường thẳng L2.
+            let p2Str = `${mapX(xMin)},${mapY(18-xMin/2)} ${mapX(xMax)},${mapY(18-xMax/2)} ${mapX(xMax)},${mapY(yMax)} ${mapX(xMin)},${mapY(yMax)}`;
+            document.getElementById('reg-2').setAttribute('points', p2Str);
+
+            // R3 bị gạch bỏ: x < 0 hoặc y < 0. Chữ L bao quanh các góc phần tư 2, 3, 4.
+            let p3Str = `${mapX(xMin)},${mapY(yMax)} ${mapX(0)},${mapY(yMax)} ${mapX(0)},${mapY(0)} ${mapX(xMax)},${mapY(0)} ${mapX(xMax)},${mapY(yMin)} ${mapX(xMin)},${mapY(yMin)}`;
+            document.getElementById('reg-3').setAttribute('points', p3Str);
+
+            // Tọa độ Miền nghiệm cuối cùng (Đa giác OABC - phần không bị gạch)
+            // O(0,0), A(20,0), B(14.667, 10.667), C(0,18)
+            let xb = 44/3, yb = 32/3;
+            let finalStr = `${mapX(0)},${mapY(0)} ${mapX(20)},${mapY(0)} ${mapX(xb)},${mapY(yb)} ${mapX(0)},${mapY(18)}`;
+            document.getElementById('reg-final').setAttribute('points', finalStr);
+
+            // Gán vị trí cho các đỉnh trong SVG
+            document.getElementById('v-O').setAttribute('cx', mapX(0)); document.getElementById('v-O').setAttribute('cy', mapY(0));
+            document.getElementById('v-A').setAttribute('cx', mapX(20)); document.getElementById('v-A').setAttribute('cy', mapY(0));
+            document.getElementById('v-B').setAttribute('cx', mapX(xb)); document.getElementById('v-B').setAttribute('cy', mapY(yb));
+            document.getElementById('v-C').setAttribute('cx', mapX(0)); document.getElementById('v-C').setAttribute('cy', mapY(18));
+            
+            document.getElementById('lbl-v-A').setAttribute('x', mapX(20)); document.getElementById('lbl-v-A').setAttribute('y', mapY(-2));
+            document.getElementById('lbl-v-B').setAttribute('x', mapX(xb+1)); document.getElementById('lbl-v-B').setAttribute('y', mapY(yb+1));
+            document.getElementById('lbl-v-C').setAttribute('x', mapX(-6)); document.getElementById('lbl-v-C').setAttribute('y', mapY(18));
+        }
+
+        // --- HOẠT ĐỘNG 1 LỌGIC ---
+        const sX = document.getElementById('slider-x');
+        const sY = document.getElementById('slider-y');
+
+        function updateH1() {
+            if(currentStep !== 1) return;
+            let x = parseInt(sX.value);
+            let y = parseInt(sY.value);
+            
+            document.getElementById('val-x').textContent = x;
+            document.getElementById('val-y').textContent = y;
+
+            let m = 2*x + y;
+            let l = x + 2*y;
+
+            document.getElementById('res-m').textContent = `${m} / 40`;
+            document.getElementById('res-l').textContent = `${l} / 36`;
+
+            let barM = document.getElementById('bar-m');
+            let barL = document.getElementById('bar-l');
+            
+            barM.style.width = Math.min(100, (m/40)*100) + '%';
+            barL.style.width = Math.min(100, (l/36)*100) + '%';
+
+            // Styling colors based on validity
+            if(m > 40) { barM.classList.replace('bg-blue-500', 'bg-red-600'); document.getElementById('res-m').classList.add('text-red-600'); }
+            else { barM.classList.replace('bg-red-600', 'bg-blue-500'); document.getElementById('res-m').classList.remove('text-red-600'); }
+
+            if(l > 36) { barL.classList.replace('bg-red-500', 'bg-red-600'); document.getElementById('res-l').classList.add('text-red-600'); }
+            else { barL.classList.replace('bg-red-600', 'bg-red-500'); document.getElementById('res-l').classList.remove('text-red-600'); }
+
+            // Thể hiện điểm M trên đồ thị (Chưa hiển thị đường kẻ)
+            pointM.x = x; pointM.y = y;
+            renderPointM();
+        }
+        sX.addEventListener('input', updateH1);
+        sY.addEventListener('input', updateH1);
+
+        // --- HOẠT ĐỘNG 2 LOGIC (DRAG & CHECK) ---
+        function renderPointM() {
+            let g = document.getElementById('point-M-group');
+            g.setAttribute('transform', `translate(${mapX(pointM.x)}, ${mapY(pointM.y)})`);
+            document.getElementById('point-M-label').textContent = `M(${pointM.x.toFixed(1)}; ${pointM.y.toFixed(1)})`;
+
+            if(currentStep === 2) {
+                checkInequalities(pointM.x, pointM.y);
+            }
+        }
+
+        function setStatus(id, valid) {
+            let el = document.getElementById(`st-${id}`);
+            let container = document.getElementById(`chk-${id}`);
+            if(valid) {
+                el.textContent = '✓'; el.className = 'status-badge status-ok';
+                container.classList.replace('border-red-300', 'border-emerald-200');
+                container.classList.replace('bg-red-50', 'bg-white');
+            } else {
+                el.textContent = '✗'; el.className = 'status-badge status-err';
+                container.classList.replace('border-emerald-200', 'border-red-300');
+                container.classList.replace('bg-white', 'bg-red-50');
+            }
+            return valid;
+        }
+
+        function checkInequalities(x, y) {
+            let c1 = setStatus(1, (2*x + y <= 40));
+            let c2 = setStatus(2, (x + 2*y <= 36));
+            let c3 = setStatus(3, (x >= 0 && y >= 0));
+
+            let sysEl = document.getElementById('chk-sys');
+            let sysText = document.getElementById('st-sys');
+            
+            if(c1 && c2 && c3) {
+                sysEl.className = 'flex items-center justify-between p-2 rounded bg-emerald-100 border border-emerald-400 font-bold text-emerald-800 transition-all';
+                sysText.textContent = "THỎA MÃN TẤT CẢ";
+                document.getElementById('btn-next-3').classList.remove('hidden');
+            } else {
+                sysEl.className = 'flex items-center justify-between p-2 rounded bg-red-100 border border-red-400 font-bold text-red-800 transition-all';
+                sysText.textContent = "VI PHẠM";
+            }
+        }
+
+        // Dragging Logic
+        const svgArea = document.getElementById('math-plane');
+        svgArea.addEventListener('mousedown', (e) => {
+            if(currentStep !== 2) return;
+            let pt = svgArea.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+            let svgP = pt.matrixTransform(svgArea.getScreenCTM().inverse());
+            let px = mapX(pointM.x); let py = mapY(pointM.y);
+            if(Math.hypot(svgP.x - px, svgP.y - py) < 30) isDragging = true;
+        });
+        window.addEventListener('mousemove', (e) => {
+            if(isDragging && currentStep === 2) {
+                let pt = svgArea.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+                let svgP = pt.matrixTransform(svgArea.getScreenCTM().inverse());
+                pointM.x = unmapX(svgP.x); pointM.y = unmapY(svgP.y);
+                renderPointM();
+            }
+        });
+        window.addEventListener('mouseup', () => isDragging = false);
+
+        // --- HOẠT ĐỘNG 3: TÔ MIỀN ---
+        function toggleRegion(num) {
+            regState[`r${num}`] = !regState[`r${num}`];
+            let el = document.getElementById(`reg-${num}`);
+            let btn = document.getElementById(`btn-reg-${num}`);
+            let icn = document.getElementById(`icn-reg-${num}`);
+            
+            if(regState[`r${num}`]) {
+                el.classList.replace('opacity-0', 'opacity-100');
+                btn.classList.add('ring-2', 'ring-offset-1');
+                icn.classList.remove('hidden');
+            } else {
+                el.classList.replace('opacity-100', 'opacity-0');
+                btn.classList.remove('ring-2', 'ring-offset-1');
+                icn.classList.add('hidden');
+            }
+        }
+
+        function showFinalRegion() {
+            // Hiển thị TẤT CẢ các vùng gạch bỏ để lại khoảng trắng ở giữa
+            [1,2,3].forEach(i => {
+                regState[`r${i}`] = true;
+                document.getElementById(`reg-${i}`).classList.replace('opacity-0', 'opacity-100');
+                document.getElementById(`btn-reg-${i}`).classList.add('ring-2', 'ring-offset-1');
+                document.getElementById(`icn-reg-${i}`).classList.remove('hidden');
+            });
+            
+            // Bật viền bao quanh miền nghiệm (trắng)
+            document.getElementById('reg-final').classList.replace('opacity-0', 'opacity-100');
+            document.getElementById('btn-next-4').classList.remove('hidden');
+        }
+
+        // --- HOẠT ĐỘNG 7: TỐI ƯU HÓA ---
+        const sOpt = document.getElementById('slider-opt');
+        sOpt.addEventListener('input', (e) => {
+            let k = parseFloat(e.target.value);
+            document.getElementById('opt-val').textContent = k;
+            
+            // F = 5x + 4y = k => y = -1.25x + k/4
+            let optLine = document.getElementById('opt-line-svg');
+            
+            // Điểm 1: Kéo dài ra đến x = -10
+            // Điểm 2: Kéo dài ra đến x = 50
+            optLine.setAttribute('x1', mapX(-10)); optLine.setAttribute('y1', mapY(-1.25 * -10 + k/4));
+            optLine.setAttribute('x2', mapX(50)); optLine.setAttribute('y2', mapY(-1.25 * 50 + k/4));
+            optLine.classList.replace('opacity-0', 'opacity-100');
+
+            // Cập nhật Message
+            let msg = document.getElementById('opt-msg');
+            if(k === 0) {
+                msg.innerHTML = "Đường thẳng đang đi qua đỉnh $O(0;0)$. Doanh thu bằng 0.";
+            } else if (k > 0 && k < 100) {
+                msg.innerHTML = "Đường thẳng cắt ngang miền nghiệm. Các điểm trên đường này đều cho doanh thu " + k + " triệu.";
+            } else if (Math.abs(k - 100) < 1.5) {
+                msg.innerHTML = "Đường thẳng chạm đỉnh $A(20;0)$. F = 100.<br/>Liệu có thể đẩy F cao hơn nữa?";
+            } else if (Math.abs(k - 116) < 1.5) {
+                msg.innerHTML = "🎉 Tuyệt vời! Đường thẳng vừa <b>chạm đỉnh B(14.7; 10.7)</b> trước khi rời khỏi miền nghiệm. <br/><b>Giá trị LỚN NHẤT: F = 116.</b>";
+                msg.className = "text-sm p-3 bg-indigo-100 border border-indigo-400 rounded shadow-sm text-indigo-900 leading-relaxed text-center font-bold min-h-[60px] flex items-center justify-center";
+            } else if (k > 117) {
+                msg.innerHTML = "❌ Đường thẳng đã rời khỏi miền khả thi! Không đủ nguồn lực để đạt mức doanh thu này.";
+                msg.className = "text-sm p-3 bg-red-50 border border-red-200 rounded shadow-sm text-red-800 leading-relaxed text-center font-medium min-h-[60px] flex items-center justify-center";
+            } else {
+                msg.className = "text-sm p-3 bg-white border border-slate-200 rounded shadow-sm text-slate-700 leading-relaxed text-center font-medium min-h-[60px] flex items-center justify-center";
+            }
+        });
+
+
+        // --- QUẢN LÝ TIẾN TRÌNH ---
+        function activateStep(step) {
+            currentStep = step;
+            
+            // Sidebar UI
+            [1, 2, 3, 4].forEach(i => {
+                let card = document.getElementById(`card-${i}`);
+                if(i < step) {
+                    card.classList.remove('hidden', 'inactive');
+                    card.classList.add('inactive'); // Dim previous steps
+                } else if(i === step) {
+                    card.classList.remove('hidden', 'inactive');
+                }
+            });
+
+            // SVG Logic Management
+            if (step === 1) {
+                document.getElementById('lbl-d1').classList.add('hidden');
+                document.getElementById('lbl-d2').classList.add('hidden');
+                document.getElementById('point-M-group').classList.remove('hidden');
+            } 
+            else if (step === 2) {
+                document.getElementById('lbl-d1').classList.remove('hidden');
+                document.getElementById('lbl-d2').classList.remove('hidden');
+                document.getElementById('point-M-group').classList.remove('hidden');
+                pointM = { x: 25, y: 15 }; // Move M out to force user to drag it in
+                renderPointM();
+            } 
+            else if (step === 3) {
+                document.getElementById('point-M-group').classList.add('hidden');
+            } 
+            else if (step === 4) {
+                showFinalRegion(); // Ensure final is on
+                document.getElementById('vertices-group').classList.replace('opacity-0', 'opacity-100');
+                // Auto trigger slider slightly to show line
+                setTimeout(() => { sOpt.value = 40; sOpt.dispatchEvent(new Event('input')); }, 500);
+            }
+
+            // Scroll to bottom
+            setTimeout(() => {
+                const sidebar = document.getElementById('sidebar');
+                sidebar.scrollTop = sidebar.scrollHeight;
+            }, 100);
+        }
+
+        function resetModel() {
+            [1, 2, 3, 4].forEach(i => document.getElementById(`card-${i}`).classList.add('hidden', 'inactive'));
+            
+            sX.value = 5; sY.value = 5; updateH1();
+            
+            [1,2,3].forEach(i => {
+                regState[`r${i}`] = false;
+                document.getElementById(`reg-${i}`).classList.replace('opacity-100', 'opacity-0');
+                document.getElementById(`btn-reg-${i}`).classList.remove('ring-2');
+                document.getElementById(`icn-reg-${i}`).classList.add('hidden');
+            });
+            document.getElementById('reg-final').classList.replace('opacity-100', 'opacity-0');
+            
+            document.getElementById('vertices-group').classList.replace('opacity-100', 'opacity-0');
+            document.getElementById('opt-line-svg').classList.replace('opacity-100', 'opacity-0');
+            sOpt.value = 0; sOpt.dispatchEvent(new Event('input'));
+
+            activateStep(1);
+            document.getElementById('card-1').classList.remove('inactive');
+        }
+
+        function toggleTeacherMode() {
+            document.getElementById('teacher-modal').classList.toggle('hidden');
+        }
+
+        // --- AUTO-PLAY SCRIPT ---
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+        async function runScript() {
+            resetModel();
+            await sleep(1000);
+            
+            // HĐ1
+            sX.value = 15; updateH1(); await sleep(600);
+            sY.value = 12; updateH1(); await sleep(1500);
+            
+            activateStep(2);
+            await sleep(1000);
+            // Drag Point M into region
+            let dx = (10 - pointM.x) / 30;
+            let dy = (8 - pointM.y) / 30;
+            for(let i=0; i<=30; i++) {
+                pointM.x += dx; pointM.y += dy;
+                renderPointM();
+                await sleep(40);
+            }
+            await sleep(1500);
+            
+            activateStep(3);
+            await sleep(1000);
+            toggleRegion(1); await sleep(1200);
+            toggleRegion(2); await sleep(1200);
+            toggleRegion(3); await sleep(1500);
+            showFinalRegion(); await sleep(2000);
+
+            activateStep(4);
+            await sleep(1500);
+            // Sweep Opt line
+            for(let v = 0; v <= 116; v+=2) {
+                sOpt.value = v;
+                sOpt.dispatchEvent(new Event('input'));
+                await sleep(50);
+            }
+        }
+
+        document.getElementById('btnFullscreen').addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+                document.getElementById('txtFullscreen').innerHTML = '✖ Thu nhỏ';
+            } else {
+                document.exitFullscreen();
+                document.getElementById('txtFullscreen').innerHTML = '⛶ Toàn màn hình';
+            }
+        });
+
+        // Lắng nghe phím ESC để đổi text nút
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                document.getElementById('txtFullscreen').innerHTML = '⛶ Toàn màn hình';
+            }
+        });
+
+        // INIT
+        window.onload = () => {
+            initSVG();
+            updateH1();
+            resetModel();
+        };
+
+    </script>
+</body>
+</html>

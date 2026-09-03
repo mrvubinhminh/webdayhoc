@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Khởi động: Quỹ đạo ISS - Góc lượng giác</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script>
+        window.MathJax = {
+            options: { enableMenu: false },
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            margin: 0;
+            overflow: hidden; 
+            user-select: none;
+            background-color: #0f172a; 
+            touch-action: none;
+        }
+        
+        .app-container { display: flex; flex-direction: column; height: 100vh; width: 100vw; background: white;}
+        .main-content { display: flex; flex: 1; overflow: hidden; }
+
+        .sidebar {
+            width: 420px;
+            background-color: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 10;
+            box-shadow: 2px 0 15px rgba(0,0,0,0.05);
+            padding: 1.5rem;
+            scroll-behavior: smooth;
+        }
+
+        .canvas-area {
+            flex: 1;
+            position: relative;
+            background-color: #0f172a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Hình nền sao vũ trụ */
+        .stars-bg {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, #ffffff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #ffffff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, #ffffff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #ffffff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, #ffffff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 160px 120px, #ffffff, rgba(0,0,0,0));
+            background-repeat: repeat;
+            background-size: 200px 200px;
+            opacity: 0.3;
+        }
+
+        .activity-card {
+            background: white; border: 1px solid #e2e8f0; border-radius: 0.75rem;
+            padding: 1.25rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            animation: slideIn 0.4s ease-out;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 20px; width: 20px;
+            border-radius: 50%; background: #3b82f6; cursor: pointer;
+            margin-top: -8px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 6px; cursor: pointer;
+            background: #cbd5e1; border-radius: 3px;
+        }
+
+        .math-display { font-size: 1.1rem; overflow-x: auto; overflow-y: hidden; }
+        .hidden { display: none !important; }
+        
+        /* Hiệu ứng Trái Đất Quay */
+        .earth-map-group {
+            animation: spinEarth 40s linear infinite;
+        }
+        @keyframes spinEarth {
+            from { transform: translateX(0px); }
+            to { transform: translateX(-600px); } /* Độ dài của 1 chu kỳ bản đồ */
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-20">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm border border-indigo-200">
+                    ISS
+                </div>
+                <h1 class="text-base font-bold text-slate-700 uppercase tracking-wide">Độ dài cung tròn - Góc lượng giác</h1>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="toggleTeacherMode()" class="flex items-center gap-2 text-amber-700 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-md text-sm border border-amber-200 transition font-medium">
+                    🎓 Gợi ý sư phạm
+                </button>
+                <button onclick="runScript()" class="flex items-center gap-2 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-md text-sm border border-emerald-200 transition font-medium">
+                    ▶ Trình chiếu
+                </button>
+                <button onclick="resetModel()" class="flex items-center gap-2 text-slate-500 hover:text-slate-700 px-3 py-1.5 rounded-md text-sm border border-slate-300 hover:bg-slate-50 transition font-medium">
+                    ↺ Đặt lại
+                </button>
+                <button id="btnFullscreen" class="flex items-center gap-2 text-slate-500 hover:text-blue-600 px-3 py-1.5 rounded-md text-sm border border-slate-300 hover:bg-slate-50 transition font-medium">
+                    <span id="txtFullscreen">Toàn màn hình</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <aside class="sidebar">
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Tiến trình Khám phá</div>
+                
+                <div class="activity-card" id="card-intro">
+                    <h3 class="font-bold text-blue-700 mb-2">Tình huống thực tiễn</h3>
+                    <p class="text-sm text-slate-700 mb-3 leading-relaxed">Trạm vũ trụ quốc tế ISS chuyển động trên quỹ đạo tròn quanh Trái Đất ở độ cao khoảng 400 km. Một trạm mặt đất có thể theo dõi ISS khi nó di chuyển trong một cung quỹ đạo ứng với góc ở tâm <b>45°</b>.</p>
+                    <ul class="text-sm text-slate-600 mb-3 list-disc pl-5">
+                        <li>Bán kính Trái Đất: $R = 6400 \text{ km}$</li>
+                        <li>Bán kính quỹ đạo: $R + 400 = 6800 \text{ km}$</li>
+                    </ul>
+                    <div class="bg-amber-50 p-3 rounded-lg border border-amber-200 mb-3">
+                        <p class="text-sm font-semibold text-amber-800 text-center">ISS đã di chuyển bao nhiêu km trong thời gian được theo dõi?</p>
+                    </div>
+                    
+                    <label class="text-sm font-bold text-slate-700 block mb-1">Dự đoán quãng đường ISS:</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="input-guess" class="border border-slate-300 rounded px-3 py-1.5 flex-1 focus:outline-none focus:border-blue-500 transition" placeholder="Ví dụ: 5000">
+                        <button onclick="checkPrediction()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-4 rounded transition">Kiểm tra</button>
+                    </div>
+                </div>
+
+                <div class="activity-card hidden mt-4 border-red-200 bg-red-50" id="card-conflict">
+                    <h3 class="font-bold text-red-600 mb-2">Mâu thuẫn nhận thức</h3>
+                    <p class="text-sm text-red-900 mb-2">❌ Quãng đường ISS di chuyển <b>không phải là một đoạn thẳng</b>.</p>
+                    <p class="text-sm text-red-900 mb-3">Do đó, ta <b>không thể</b> áp dụng định lý Pitago hay các công thức trong tam giác vuông để tính khoảng cách này.</p>
+                    <p class="text-sm font-semibold text-red-800 mb-3 text-center">Chúng ta cần một công thức mới để tính độ dài cung tròn!</p>
+                    <button onclick="showDiscovery()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded transition shadow-sm">Bắt đầu Khám phá</button>
+                </div>
+
+                <div class="activity-card hidden mt-4 border-emerald-200" id="card-discovery">
+                    <h3 class="font-bold text-emerald-700 mb-2">Khám phá mối liên hệ</h3>
+                    <p class="text-sm text-slate-700 mb-3">Hãy kéo thanh trượt để điều khiển vệ tinh bay và quan sát đồ hoạ:</p>
+                    <div class="flex items-center gap-3 mb-4 bg-slate-50 p-3 rounded border border-slate-200">
+                        <span class="text-sm font-bold text-slate-500">0°</span>
+                        <input type="range" id="angle-slider" min="0" max="180" value="0" class="flex-1">
+                        <span class="text-sm font-bold text-slate-500">180°</span>
+                    </div>
+                    <ul class="text-sm text-slate-700 list-disc pl-5 mb-4 space-y-1">
+                        <li>Quãng đường ISS di chuyển chính là <b>độ dài cung tròn</b>.</li>
+                        <li>Khi góc ở tâm tăng lên $\rightarrow$ Độ dài cung <b>tăng tỉ lệ thuận</b>.</li>
+                    </ul>
+                    <button onclick="showResult()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition shadow-sm">Xem Công thức Toán học</button>
+                </div>
+
+                <div class="activity-card hidden mt-4 bg-blue-50 border-blue-200" id="card-result">
+                    <h3 class="font-bold text-blue-800 mb-2">Công thức tính độ dài cung tròn</h3>
+                    <div class="math-display text-center mb-3 text-blue-900">
+                        $$ s = \frac{\alpha}{360^\circ} \cdot 2\pi R $$
+                    </div>
+                    <p class="text-sm text-slate-700 mb-1">Với quỹ đạo ISS thực tế:</p>
+                    <div id="dynamic-formula" class="math-display text-center font-bold text-blue-700 min-h-[60px] flex items-center justify-center">
+                        <!-- Cập nhật qua JS -->
+                    </div>
+                </div>
+            </aside>
+
+            <main class="canvas-area">
+                <div class="stars-bg"></div>
+                
+                <svg id="main-svg" viewBox="0 0 900 600" width="100%" height="100%" style="z-index: 1;">
+                    <defs>
+                        <!-- Glow effect cho quỹ đạo -->
+                        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="4" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                        
+                        <!-- Mặt nạ (Clip Path) cắt Trái Đất thành hình tròn -->
+                        <clipPath id="earth-clip">
+                            <circle cx="450" cy="300" r="150" />
+                        </clipPath>
+
+                        <!-- Đổ bóng 3D cho Trái Đất -->
+                        <radialGradient id="sphere-shade" cx="30%" cy="30%" r="70%">
+                            <stop offset="0%" stop-color="rgba(255,255,255,0.4)"/>
+                            <stop offset="60%" stop-color="rgba(0,0,0,0.1)"/>
+                            <stop offset="100%" stop-color="rgba(0,0,0,0.8)"/>
+                        </radialGradient>
+                    </defs>
+
+                    <!-- Góc ở tâm (Sector) -->
+                    <path id="angle-sector" fill="#3b82f6" fill-opacity="0.15" />
+                    <!-- Hình quạt góc alpha nhỏ tại tâm -->
+                    <path id="angle-arc-small" fill="none" stroke="#60a5fa" stroke-width="2" />
+                    <text id="angle-label-text" fill="#93c5fd" font-size="16" font-style="italic" font-weight="bold" text-anchor="middle" dominant-baseline="middle">α</text>
+
+                    <!-- TRÁI ĐẤT QUAY (Pseudo-3D) -->
+                    <g id="earth-group">
+                        <!-- Nước đại dương -->
+                        <circle cx="450" cy="300" r="150" fill="#1e3a8a" stroke="#3b82f6" stroke-width="2"/>
+                        
+                        <!-- Lớp bản đồ trượt ngang bị cắt bởi hình tròn -->
+                        <g clip-path="url(#earth-clip)">
+                            <g class="earth-map-group" transform="translate(0, 300)">
+                                <!-- Chu kỳ 1 -->
+                                <g transform="translate(0, 0)">
+                                    <!-- Lục địa chung (Stylized) -->
+                                    <path d="M400,-100 Q450,-120 500,-90 T550,-30 Q570,20 520,60 T450,110 Q400,90 380,40 Z M200,-80 Q250,-100 280,-40 T220,50 Q180,80 150,20 Z" fill="#3b82f6" opacity="0.6"/>
+                                    <!-- BẢN ĐỒ VIỆT NAM MÀU ĐỎ -->
+                                    <path d="M530,20 Q545,25 540,40 Q535,55 545,65 Q550,75 530,90 Q520,80 525,60 Q525,40 520,30 Z" fill="#ef4444" filter="drop-shadow(0 0 3px rgba(239,68,68,0.8))"/>
+                                </g>
+                                <!-- Chu kỳ 2 (Lặp lại để cuộn liên tục) -->
+                                <g transform="translate(600, 0)">
+                                    <path d="M400,-100 Q450,-120 500,-90 T550,-30 Q570,20 520,60 T450,110 Q400,90 380,40 Z M200,-80 Q250,-100 280,-40 T220,50 Q180,80 150,20 Z" fill="#3b82f6" opacity="0.6"/>
+                                    <path d="M530,20 Q545,25 540,40 Q535,55 545,65 Q550,75 530,90 Q520,80 525,60 Q525,40 520,30 Z" fill="#ef4444" filter="drop-shadow(0 0 3px rgba(239,68,68,0.8))"/>
+                                </g>
+                            </g>
+                        </g>
+
+                        <!-- Phủ gradient tạo độ cong (Sphere effect) -->
+                        <circle cx="450" cy="300" r="150" fill="url(#sphere-shade)" />
+                        
+                        <!-- Lưới toạ độ quả địa cầu -->
+                        <ellipse cx="450" cy="300" rx="150" ry="50" fill="none" stroke="#93c5fd" stroke-width="0.5" stroke-opacity="0.3" />
+                        <ellipse cx="450" cy="300" rx="50" ry="150" fill="none" stroke="#93c5fd" stroke-width="0.5" stroke-opacity="0.3" />
+                    </g>
+
+                    <!-- Quỹ đạo (Đường đứt nét) -->
+                    <circle cx="450" cy="300" r="230" fill="none" stroke="#475569" stroke-width="1.5" stroke-dasharray="6,6" />
+
+                    <!-- Các đường bán kính giới hạn góc -->
+                    <line id="radius-line-1" x1="450" y1="300" x2="450" y2="70" stroke="#64748b" stroke-dasharray="4,4" />
+                    <line id="radius-line-2" x1="450" y1="300" x2="450" y2="70" stroke="#64748b" stroke-dasharray="4,4" />
+
+                    <!-- Quỹ đạo đang bay (Cung tròn nổi bật) -->
+                    <path id="orbit-arc" fill="none" stroke="#f59e0b" stroke-width="5" filter="url(#glow)" stroke-linecap="round"/>
+
+                    <!-- ISS (Trạm Vũ trụ) -->
+                    <g id="iss-group">
+                        <!-- Cột cờ gắn ở đuôi ISS -->
+                        <line x1="-8" y1="0" x2="-30" y2="0" stroke="#cbd5e1" stroke-width="1.5"/>
+                        <!-- Lá cờ Việt Nam (bay phấp phới) -->
+                        <g transform="translate(-30, -5)" class="flag-wave">
+                            <rect x="-14" y="0" width="14" height="10" fill="#da251d"/>
+                            <path d="M-7 2.2 L-6.37 4.14 L-4.34 4.14 L-5.98 5.33 L-5.36 7.26 L-7 6.07 L-8.64 7.26 L-8.02 5.33 L-9.66 4.14 L-7.63 4.14 Z" fill="#ffce00"/>
+                        </g>
+
+                        <!-- Tấm pin mặt trời -->
+                        <rect x="-18" y="-14" width="36" height="10" fill="#38bdf8" stroke="#0284c7" stroke-width="1"/>
+                        <rect x="-18" y="4" width="36" height="10" fill="#38bdf8" stroke="#0284c7" stroke-width="1"/>
+                        <!-- Thân trạm -->
+                        <rect x="-8" y="-8" width="16" height="16" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1" rx="3"/>
+                        <circle cx="0" cy="0" r="3" fill="#ef4444"/>
+                    </g>
+                    
+                    <!-- Nhãn động trên đồ hoạ -->
+                    <text id="lbl-R1" x="450" y="240" fill="#94a3b8" font-size="14" text-anchor="end" transform="rotate(-11 450 300)">R = 6400</text>
+                    <text id="lbl-R2" x="450" y="150" fill="#cbd5e1" font-size="14" text-anchor="end" transform="rotate(-11 450 300)">h = 400</text>
+                </svg>
+
+                <!-- Bảng Dashboard hiển thị chỉ số động -->
+                <div class="absolute bottom-6 right-6 bg-slate-900/85 backdrop-blur border border-slate-700 p-5 rounded-xl shadow-2xl text-slate-200 text-sm min-w-[260px] z-10">
+                    <div class="flex justify-between gap-6 mb-3">
+                        <span class="text-slate-400">Góc ở tâm ($\alpha$):</span>
+                        <span class="font-bold text-white text-lg" id="dash-angle">0°</span>
+                    </div>
+                    <div class="flex justify-between gap-6 mb-3">
+                        <span class="text-slate-400">Bán kính quỹ đạo:</span>
+                        <span class="font-bold text-white text-base">6800 km</span>
+                    </div>
+                    <div class="flex justify-between gap-6 pt-3 border-t border-slate-700">
+                        <span class="text-amber-400 font-bold uppercase text-xs tracking-wider mt-1.5">Quãng đường bay:</span>
+                        <span class="font-bold text-amber-400 text-xl" id="dash-length">0 km</span>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <div id="teacher-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl p-6 w-[550px] max-w-full max-h-[90vh] overflow-y-auto relative">
+                <div class="flex justify-between items-center mb-5 border-b pb-3">
+                    <h3 class="text-xl font-bold text-amber-600 flex items-center gap-2">🎓 Gợi ý sư phạm Toán 10/11</h3>
+                    <button onclick="toggleTeacherMode()" class="text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full w-8 h-8 flex items-center justify-center transition">✕</button>
+                </div>
+                
+                <h4 class="font-bold text-slate-800 mb-2 bg-slate-100 px-3 py-1 rounded">1. Ý tưởng thiết kế</h4>
+                <ul class="list-disc pl-6 mb-4 text-sm text-slate-700 space-y-1">
+                    <li><b>Đồ hoạ:</b> Trái Đất quay với bản đồ Việt Nam màu đỏ, mô phỏng góc nhìn vệ tinh, tạo sự hứng thú.</li>
+                    <li><b>Chuyển động:</b> ISS bay mượt mà theo thời gian thực thay vì "nhảy cóc", giúp HS cảm nhận quỹ đạo là quãng đường.</li>
+                </ul>
+                
+                <h4 class="font-bold text-slate-800 mb-2 bg-slate-100 px-3 py-1 rounded">2. Sai lầm thường gặp của HS</h4>
+                <ul class="list-disc pl-6 mb-4 text-sm text-red-700 space-y-1">
+                    <li>Tính nhầm bán kính quỹ đạo là 6400 km (quên cộng thêm độ cao 400 km của trạm).</li>
+                    <li>Áp dụng định lý hàm Cosin để tính độ dài <b>đoạn thẳng</b> thay vì cung tròn.</li>
+                </ul>
+                
+                <h4 class="font-bold text-slate-800 mb-2 bg-slate-100 px-3 py-1 rounded">3. Kiến thức cần chốt</h4>
+                <div class="bg-blue-50 p-4 rounded border border-blue-200 text-sm text-slate-800 font-medium text-center">
+                    Công thức: <span class="text-blue-700 text-lg">s = Rθ</span> <br>
+                    <span class="font-normal text-slate-600">(với θ tính bằng số đo radian)</span>
+                </div>
+                <div class="mt-6 text-center">
+                    <button onclick="toggleTeacherMode()" class="bg-slate-800 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-slate-700 transition">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Cấu hình Toạ độ Trung tâm
+        const cx = 450;
+        const cy = 300;
+        const rEarth = 150;
+        const rOrbit = 230;
+        const rSmallArc = 50; // Bán kính góc nhỏ
+        
+        let currentState = 0;
+        let mathTimeout = null;
+        let animFrame = null;
+        
+        // Biến phục vụ Animation bay mượt mà
+        let currentVisualAlpha = 0; 
+        let targetAlpha = 0;
+
+        function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
+            let angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+            return {
+                x: centerX + (radius * Math.cos(angleInRadians)),
+                y: centerY + (radius * Math.sin(angleInRadians))
+            };
+        }
+
+        function describeArc(x, y, radius, startAngle, endAngle){
+            if (Math.abs(endAngle - startAngle) < 0.01) return "";
+            let start = polarToCartesian(x, y, radius, startAngle);
+            let end = polarToCartesian(x, y, radius, endAngle);
+            let largeArcFlag = Math.abs(endAngle - startAngle) <= 180 ? "0" : "1";
+            return [
+                "M", start.x, start.y, 
+                "A", radius, radius, 0, largeArcFlag, 1, end.x, end.y
+            ].join(" ");       
+        }
+
+        function describeSector(x, y, radius, startAngle, endAngle){
+            if (Math.abs(endAngle - startAngle) < 0.01) return "";
+            let start = polarToCartesian(x, y, radius, startAngle);
+            let end = polarToCartesian(x, y, radius, endAngle);
+            let largeArcFlag = Math.abs(endAngle - startAngle) <= 180 ? "0" : "1";
+            return [
+                "M", x, y,
+                "L", start.x, start.y, 
+                "A", radius, radius, 0, largeArcFlag, 1, end.x, end.y,
+                "Z"
+            ].join(" ");       
+        }
+
+        // Vòng lặp Animation (Render liên tục để tạo hiệu ứng bay)
+        function animateFrame() {
+            // Easing function: Di chuyển mượt mà về target
+            let diff = targetAlpha - currentVisualAlpha;
+            if (Math.abs(diff) > 0.1) {
+                currentVisualAlpha += diff * 0.08; 
+            } else {
+                currentVisualAlpha = targetAlpha;
+            }
+
+            drawSVG(currentVisualAlpha);
+            animFrame = requestAnimationFrame(animateFrame);
+        }
+
+        // Vẽ trạng thái SVG tại một góc alpha cụ thể
+        function drawSVG(alpha) {
+            let sAngle = -alpha/2;
+            let eAngle = alpha/2;
+
+            // 1. Vẽ Quỹ đạo và góc
+            document.getElementById('orbit-arc').setAttribute('d', describeArc(cx, cy, rOrbit, sAngle, eAngle));
+            document.getElementById('angle-sector').setAttribute('d', describeSector(cx, cy, rEarth, sAngle, eAngle));
+            document.getElementById('angle-arc-small').setAttribute('d', describeArc(cx, cy, rSmallArc, sAngle, eAngle));
+            
+            // Cập nhật vị trí nhãn góc alpha
+            if(alpha > 5) {
+                let lblPos = polarToCartesian(cx, cy, rSmallArc + 15, 0);
+                document.getElementById('angle-label-text').setAttribute('x', lblPos.x);
+                document.getElementById('angle-label-text').setAttribute('y', lblPos.y);
+                document.getElementById('angle-label-text').classList.remove('hidden');
+            } else {
+                document.getElementById('angle-label-text').classList.add('hidden');
+            }
+
+            // 2. Cập nhật các đường biên góc
+            let startP = polarToCartesian(cx, cy, rOrbit, sAngle);
+            let endP = polarToCartesian(cx, cy, rOrbit, eAngle);
+            document.getElementById('radius-line-1').setAttribute('x2', startP.x);
+            document.getElementById('radius-line-1').setAttribute('y2', startP.y);
+            document.getElementById('radius-line-2').setAttribute('x2', endP.x);
+            document.getElementById('radius-line-2').setAttribute('y2', endP.y);
+
+            // 3. Cập nhật vị trí và góc nghiêng của ISS (Bay theo đường tròn)
+            let issP = polarToCartesian(cx, cy, rOrbit, eAngle);
+            document.getElementById('iss-group').setAttribute('transform', `translate(${issP.x}, ${issP.y}) rotate(${eAngle})`);
+            
+            // Xoay nhãn R, h bám theo cạnh trái
+            document.getElementById('lbl-R1').setAttribute('transform', `rotate(${sAngle-2} ${cx} ${cy})`);
+            document.getElementById('lbl-R2').setAttribute('transform', `rotate(${sAngle-2} ${cx} ${cy})`);
+
+            // 4. Cập nhật Dashboard (Đếm số km nhảy liên tục)
+            document.getElementById('dash-angle').textContent = `${Math.round(alpha)}°`;
+            
+            let s_val = (alpha / 360) * 2 * Math.PI * 6800;
+            document.getElementById('dash-length').textContent = `${Math.round(s_val)} km`;
+        }
+
+        // Sự kiện kéo thanh trượt
+        document.getElementById('angle-slider').addEventListener('input', (e) => {
+            targetAlpha = parseFloat(e.target.value);
+            // Cập nhật MathJax nếu đã qua bước 3
+            if(currentState >= 3) {
+                updateDynamicFormula(targetAlpha);
+            }
+        });
+
+        // Cập nhật Công thức MathJax
+        function updateDynamicFormula(alpha) {
+            let formulaDiv = document.getElementById('dynamic-formula');
+            let s_val = (alpha / 360) * 2 * Math.PI * 6800;
+            let pi_factor = (alpha / 360) * 2 * 6800;
+            let pi_str = Number.isInteger(pi_factor) ? `${pi_factor}\\pi` : `${pi_factor.toFixed(1)}\\pi`;
+            if(alpha === 0) pi_str = "0";
+            
+            formulaDiv.innerHTML = `$$s = \\frac{${Math.round(alpha)}^\\circ}{360^\\circ} \\cdot 2\\pi \\cdot 6800 = ${pi_str} \\approx ${Math.round(s_val)} \\text{ km}$$`;
+            
+            clearTimeout(mathTimeout);
+            mathTimeout = setTimeout(() => {
+                if(window.MathJax && window.mathJaxLoaded) {
+                    MathJax.typesetPromise([formulaDiv]);
+                }
+            }, 100);
+        }
+
+        // --- TIẾN TRÌNH SƯ PHẠM ---
+        function checkPrediction() {
+            let input = document.getElementById('input-guess');
+            if(!input.value) {
+                input.classList.add('border-red-500', 'bg-red-50');
+                setTimeout(() => input.classList.remove('border-red-500', 'bg-red-50'), 1000);
+                return;
+            }
+            document.getElementById('card-conflict').classList.remove('hidden');
+            currentState = 1;
+            scrollToBottom();
+        }
+
+        function showDiscovery() {
+            document.getElementById('card-discovery').classList.remove('hidden');
+            currentState = 2;
+            
+            // Kích hoạt vệ tinh bay mượt mà đến 45 độ
+            targetAlpha = 45;
+            document.getElementById('angle-slider').value = 45;
+            
+            scrollToBottom();
+        }
+
+        function showResult() {
+            document.getElementById('card-result').classList.remove('hidden');
+            currentState = 3;
+            updateDynamicFormula(targetAlpha);
+            scrollToBottom();
+        }
+
+        function resetModel() {
+            currentState = 0;
+            document.getElementById('input-guess').value = '';
+            document.getElementById('card-conflict').classList.add('hidden');
+            document.getElementById('card-discovery').classList.add('hidden');
+            document.getElementById('card-result').classList.add('hidden');
+            
+            targetAlpha = 0;
+            document.getElementById('angle-slider').value = 0;
+            document.querySelector('.sidebar').scrollTop = 0;
+        }
+
+        function scrollToBottom() {
+            const sidebar = document.querySelector('.sidebar');
+            setTimeout(() => sidebar.scrollTop = sidebar.scrollHeight, 100);
+        }
+
+        function toggleTeacherMode() {
+            document.getElementById('teacher-modal').classList.toggle('hidden');
+        }
+
+        // Trình chiếu tự động (Script Mode)
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+        async function runScript() {
+            resetModel();
+            await sleep(800);
+            
+            let input = document.getElementById('input-guess');
+            input.value = "5000";
+            await sleep(600);
+            
+            checkPrediction();
+            await sleep(2500);
+            
+            showDiscovery();
+            await sleep(2000);
+            
+            showResult();
+        }
+
+        // Fullscreen
+        document.getElementById('btnFullscreen').addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+                document.getElementById('txtFullscreen').textContent = 'Thu nhỏ';
+            } else {
+                document.exitFullscreen();
+                document.getElementById('txtFullscreen').textContent = 'Toàn màn hình';
+            }
+        });
+
+        // Khởi động vòng lặp Animation ngay khi Load
+        window.onload = () => {
+            animFrame = requestAnimationFrame(animateFrame);
+            updateDynamicFormula(0);
+        };
+    </script>
+</body>
+</html>

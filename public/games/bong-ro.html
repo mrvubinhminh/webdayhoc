@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bóng Rổ Toán Học AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- KaTeX Core -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Roboto:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #0f172a;
+            overflow: hidden;
+            margin: 0;
+            user-select: none;
+            height: 100vh;
+        }
+
+        .court {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at bottom, #7c2d12 0%, #1e293b 80%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .floor {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 12vh;
+            background: repeating-linear-gradient(90deg, #9a3412, #9a3412 40px, #a1401f 40px, #a1401f 80px);
+            border-top: 5px solid #fb923c;
+            z-index: 1;
+        }
+
+        /* Bảng rổ */
+        .backboard-area { width: 95vw; max-width: 95vw; height: 40vh; background: rgba(255, 255, 255, 0.98); border: 6px solid #334155; border-radius: 12px; position: relative; margin-top: 8vh; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5); z-index: 50; }
+
+        .hoop-rim { width: 120px; height: 20px; border: 5px solid #ef4444; border-radius: 50%; position: absolute; bottom: -10px; z-index: 20; opacity: 0.3; }
+
+        .basket-net { width: 100px; height: 100px; background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.4) 10px, rgba(255,255,255,0.4) 12px), repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(255,255,255,0.4) 10px, rgba(255,255,255,0.4) 12px); position: absolute; bottom: -100px; border-radius: 0 0 50px 50px; z-index: 5; opacity: 0.3; }
+
+        .question-container {
+            font-size: 3rem; 
+            color: #1e293b;
+            text-align: center;
+            padding: 10px 30px;
+            width: 100%;
+            max-height: 90%; 
+            overflow: hidden; 
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Vùng đáp án */
+        .options-zone { display: flex; flex-wrap: nowrap; gap: 1vw; z-index: 50; justify-content: space-between; align-items: flex-end; width: 98vw; padding-bottom: 2vh; max-height: 45vh; }
+
+        .ball-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: transform 0.2s; width: 24%; max-width: 24%; }
+
+        /* Bóng rổ thiết kế mới */
+        .basketball {
+            width: 130px;
+            height: 130px;
+            background: radial-gradient(circle at 35% 35%, #ff8a3d 0%, #d35400 60%, #8e2a00 100%);
+            border-radius: 50%;
+            box-shadow: inset -8px -8px 25px rgba(0,0,0,0.6), 0 10px 20px rgba(0,0,0,0.4);
+            position: relative;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .basketball svg {
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        .answer-label { background: #fff; padding: 15px; border-radius: 12px; font-weight: 800; margin-bottom: 10px; width: 100%; text-align: center; color: #1e293b; box-shadow: 0 4px 8px rgba(0,0,0,0.2); border: 3px solid #fb923c; font-size: 2rem; display: flex; align-items: center; justify-content: center; min-height: 100px; white-space: normal; word-break: break-word; line-height: 1.2; }
+
+        .ball-item.long-text .basketball {
+            width: 85px;
+            height: 85px;
+        }
+        .ball-item.long-text .answer-label {
+            font-size: 1.2rem;
+            padding: 6px 10px;
+            border-width: 2px;
+        }
+
+        .flying-ball {
+            position: fixed;
+            z-index: 100;
+            pointer-events: none;
+            background: radial-gradient(circle at 35% 35%, #ff8a3d 0%, #d35400 60%, #8e2a00 100%);
+            border-radius: 50%;
+            box-shadow: inset -8px -8px 25px rgba(0,0,0,0.6);
+        }
+
+        .stats-hud {
+            position: absolute;
+            top: 10px;
+            width: 95%;
+            display: flex;
+            justify-content: space-between;
+            color: white;
+            font-family: 'Bangers', cursive;
+            z-index: 50;
+        }
+
+        .stat-card {
+            background: rgba(15, 23, 42, 0.9);
+            padding: 5px 20px;
+            border: 2px solid #fb923c;
+            border-radius: 8px;
+            font-size: 1.8rem;
+        }
+
+        #result-popup {
+            position: fixed;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 6rem;
+            font-family: 'Bangers';
+            z-index: 200;
+            pointer-events: none;
+            opacity: 0;
+            text-shadow: 3px 3px 0 #000;
+        }
+
+        .animate-pop { animation: popResult 1.2s forwards; }
+        @keyframes popResult {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            30% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+            100% { transform: translate(-50%, -60%) scale(0.8); opacity: 0; }
+        }
+
+        #start-modal, #prompt-modal, #loading-indicator {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.98);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            color: white;
+        }
+
+        #prompt-modal { z-index: 1050; display: none; text-align: left; }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #fb923c; border-radius: 3px; }
+        
+        .grade-folder { background: #334155; margin-bottom: 5px; border-radius: 6px; overflow: hidden; }
+        .grade-header { padding: 10px; font-weight: bold; color: #fb923c; cursor: pointer; display: flex; justify-content: space-between; background: #1e293b; }
+        .grade-content { display: none; padding: 5px; background: #334155; }
+        .grade-folder.open .grade-content { display: block; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+    <!-- MÀN HÌNH CHÍNH -->
+    <div id="start-modal">
+        <h1 class="text-6xl font-bold text-orange-500 mb-2" style="font-family: 'Bangers';">AI BASKETBALL</h1>
+        <p class="text-xl text-slate-300 mb-6">Học Toán Qua Từng Cú Ném</p>
+        
+        <div class="flex flex-col md:flex-row gap-4 w-11/12 max-w-5xl h-[70vh] bg-slate-800/80 p-6 rounded-2xl border-2 border-slate-600">
+            <!-- Tải lên -->
+            <div class="flex-1 flex flex-col bg-slate-900 p-4 rounded-xl border border-slate-700">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-orange-400">Tải Bài Học</h2>
+                    <button onclick="openPromptModal()" class="bg-purple-600 text-xs px-3 py-1 rounded font-bold">TẠO LỆNH AI</button>
+                </div>
+                <input type="file" id="file-upload" accept=".json, .xlsx, .xls" class="mb-4 text-xs text-slate-300">
+                <input type="text" id="bank-name" placeholder="Tên bài học..." class="w-full bg-slate-800 text-white px-3 py-2 rounded mb-2 text-sm">
+                <select id="bank-grade" class="w-full bg-slate-800 text-white px-3 py-2 rounded mb-4 text-sm">
+                    <option value="12">Lớp 12</option><option value="11">Lớp 11</option><option value="10">Lớp 10</option>
+                    <option value="9">Lớp 9</option><option value="8">Lớp 8</option><option value="7">Lớp 7</option>
+                    <option value="6">Lớp 6</option><option value="5">Lớp 5</option><option value="4">Lớp 4</option>
+                    <option value="3">Lớp 3</option><option value="2">Lớp 2</option><option value="1">Lớp 1</option>
+                </select>
+                <div class="mt-auto flex gap-2">
+                    <button onclick="startGame(true)" class="flex-1 bg-blue-600 py-2 rounded font-bold text-sm">LƯU & CHƠI</button>
+                    <button onclick="startGame(false)" class="flex-1 bg-orange-600 py-2 rounded font-bold text-sm">CHƠI NGAY</button>
+                </div>
+            </div>
+            <!-- Ngân hàng -->
+            <div class="flex-1 flex flex-col bg-slate-900 p-4 rounded-xl border border-slate-700 overflow-hidden text-left">
+                <h2 class="text-xl font-bold text-orange-400 mb-4">Bài Đã Lưu</h2>
+                <div id="tree-container" class="flex-1 overflow-y-auto custom-scrollbar text-sm"></div>
+            </div>
+        </div>
+        <button onclick="downloadSampleFile()" class="mt-4 text-orange-400 underline text-sm">📥 Tải JSON Mẫu</button>
+    </div>
+
+    <!-- MÀN HÌNH GAME -->
+    <div class="court">
+        <div class="stats-hud">
+            <button onclick="goHome()" class="stat-card hover:bg-slate-700">🏠 MENU</button>
+            <div class="stat-card">CÂU: <span id="q-num" class="text-orange-400">1</span></div>
+            <div class="stat-card">HITS: <span id="score" class="text-green-400">0</span></div>
+        </div>
+
+        <div class="backboard-area">
+            <div id="question-display" class="question-container"></div>
+            <div class="hoop-rim"></div>
+            <div class="basket-net"></div>
+        </div>
+
+        <div class="options-zone" id="options-container"></div>
+        <div class="floor"></div>
+    </div>
+
+    <div id="result-popup"></div>
+
+    <!-- PROMPT MODAL -->
+    <div id="prompt-modal">
+        <div class="bg-slate-900 border-2 border-purple-500 rounded-2xl p-6 w-11/12 max-w-2xl relative">
+            <button onclick="closePromptModal()" class="absolute top-2 right-4 text-2xl">&times;</button>
+            <h2 class="text-2xl font-bold text-purple-400 mb-4">Trợ Lý Tạo Câu Hỏi AI</h2>
+            <textarea id="p-result" readonly class="w-full h-40 bg-black/50 text-green-400 p-3 rounded text-xs mb-4 font-mono"></textarea>
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <input type="text" id="p-topic" placeholder="Chủ đề..." class="bg-slate-800 p-2 rounded text-sm">
+                <input type="number" id="p-count" value="10" class="bg-slate-800 p-2 rounded text-sm">
+            </div>
+            <button onclick="generatePrompt()" class="w-full bg-purple-600 py-2 rounded font-bold mb-2">TẠO LỆNH</button>
+            <button onclick="copyPrompt()" id="copy-btn" class="w-full bg-slate-700 py-2 rounded text-sm">SAO CHÉP</button>
+        </div>
+    </div>
+
+    <script>
+
+    function parseExcelToJSON(file, callback) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = e.target.result;
+                const wb = XLSX.read(data, { type: 'binary' });
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+                
+                let questions = [];
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row || row.length < 6) continue;
+                    if (String(row[0]).toLowerCase().includes('câu hỏi') || String(row[1]).toLowerCase().includes('đáp án')) continue;
+                    
+                    
+                        questions.push({
+                            q: String(row[0]),
+                            opts: [String(row[1]), String(row[2]), String(row[3]), String(row[4])],
+                            a: String(row[parseInt(row[5], 10)])
+                        });
+                        
+                }
+                callback(null, questions);
+            } catch (error) {
+                callback(error, null);
+            }
+        };
+        reader.readAsBinaryString(file);
+    }
+    
+
+        let score = 0, qCount = 0, currentProblem = null, isShooting = false;
+        let loadedQuestions = [], currentQuestionIndex = 0;
+        const STORAGE_KEY = 'ai_math_banks';
+
+        // --- HỆ THỐNG ÂM THANH ---
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            if (type === 'correct') {
+                // Tiếng Ding vui nhộn
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+                osc.frequency.exponentialRampToValueAtTime(1320, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.5);
+            } else {
+                // Tiếng Buzz trầm
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(110, audioCtx.currentTime); // A2
+                osc.frequency.linearRampToValueAtTime(55, audioCtx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            }
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+        }
+
+        const BASKETBALL_SVG = `
+            <svg viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="48" fill="none" stroke="black" stroke-width="1.5"/>
+                <path d="M2 50 Q 50 50 98 50" fill="none" stroke="black" stroke-width="1.5"/>
+                <path d="M50 2 Q 50 50 50 98" fill="none" stroke="black" stroke-width="1.5"/>
+                <path d="M15 15 Q 50 50 85 85" fill="none" stroke="black" stroke-width="1.5"/>
+                <path d="M15 85 Q 50 50 85 15" fill="none" stroke="black" stroke-width="1.5"/>
+                <path d="M5 30 A 60 60 0 0 1 95 30" fill="none" stroke="black" stroke-width="1.2" opacity="0.6"/>
+                <path d="M5 70 A 60 60 0 0 0 95 70" fill="none" stroke="black" stroke-width="1.2" opacity="0.6"/>
+            </svg>
+        `;
+
+        function getBanksFromLocal() { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+        function saveBanksToLocal(banks) { localStorage.setItem(STORAGE_KEY, JSON.stringify(banks)); }
+
+        function renderTree() {
+            const container = document.getElementById('tree-container'), banks = getBanksFromLocal();
+            container.innerHTML = '';
+            const grades = {}; for(let i=1; i<=12; i++) grades[i] = [];
+            for (const id in banks) { const b = banks[id]; if (grades[b.grade]) grades[b.grade].push(b); }
+            for(let i=12; i>=1; i--) {
+                if (grades[i].length === 0) continue;
+                const folder = document.createElement('div');
+                folder.className = 'grade-folder';
+                folder.innerHTML = `<div class="grade-header" onclick="this.parentElement.classList.toggle('open')"><span>Lớp ${i} (${grades[i].length} bài)</span><span>▶</span></div><div class="grade-content"></div>`;
+                const content = folder.querySelector('.grade-content');
+                grades[i].forEach(b => {
+                    const item = document.createElement('div');
+                    item.className = 'flex justify-between p-2 bg-black/20 mb-1 rounded cursor-pointer hover:bg-orange-500/20';
+                    item.innerHTML = `<span onclick="playFromBank('${b.id}')">📝 ${b.name}</span><span class="text-red-500 font-bold" onclick="deleteBank('${b.id}', event)">X</span>`;
+                    content.appendChild(item);
+                });
+                container.appendChild(folder);
+            }
+        }
+
+        function deleteBank(id, e) { e.stopPropagation(); if(confirm("Xóa bài học này?")){ const b = getBanksFromLocal(); delete b[id]; saveBanksToLocal(b); renderTree(); } }
+
+        function startGame(shouldSave) {
+            initAudio();
+            const fileInput = document.getElementById('file-upload'), file = fileInput.files[0];
+            if (!file) return alert("Chọn file JSON!");
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    let raw = e.target.result.replace(/(?<!\\)\\([a-zA-Z{}%$])/g, '\\\\$1');
+                    const parsed = JSON.parse(raw);
+                    if (shouldSave) {
+                        const b = getBanksFromLocal(), id = 'bank_' + Date.now();
+                        b[id] = { id, name: document.getElementById('bank-name').value || 'Mới', grade: document.getElementById('bank-grade').value, questions: parsed };
+                        saveBanksToLocal(b); renderTree();
+                    }
+                    loadedQuestions = parsed; startPlay();
+                } catch (err) { alert("Lỗi định dạng file!"); }
+            };
+            reader.readAsText(file);
+        }
+
+        function playFromBank(id) { 
+            initAudio();
+            const b = getBanksFromLocal(); 
+            if(b[id]) { loadedQuestions = b[id].questions; startPlay(); } 
+        }
+        
+        function startPlay() { currentQuestionIndex = 0; score = 0; qCount = 0; document.getElementById('score').innerText = 0; document.getElementById('start-modal').style.display = 'none'; nextLevel(); }
+
+        function nextLevel() {
+            if (currentQuestionIndex >= loadedQuestions.length) return showGameOver();
+            isShooting = false; qCount++;
+            document.getElementById('q-num').innerText = qCount;
+            currentProblem = loadedQuestions[currentQuestionIndex++];
+            const qEl = document.getElementById('question-display');
+            renderMathContent(currentProblem.q, qEl, true);
+            autoAdjustFontSize(qEl);
+            
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            const isLong = currentProblem.opts.some(o => o.length > 20 || /[àáạảã]/.test(o));
+            
+            [...currentProblem.opts].sort(() => Math.random() - 0.5).forEach(opt => {
+                const item = document.createElement('div');
+                item.className = 'ball-item' + (isLong ? ' long-text' : '');
+                const label = document.createElement('div');
+                label.className = 'answer-label';
+                renderMathContent(opt, label);
+                const ball = document.createElement('div');
+                ball.className = 'basketball';
+                ball.innerHTML = BASKETBALL_SVG;
+                item.appendChild(label); item.appendChild(ball);
+                item.onclick = () => performShoot(opt, item);
+                container.appendChild(item);
+            });
+        }
+
+        function renderMathContent(text, element, isDisplay = false) {
+            const clean = text.replace(/```json/g, "").replace(/```/g, "").trim();
+            if (/\$|\\\(|\\\[/.test(clean)) {
+                element.innerHTML = clean;
+                renderMathInElement(element, { delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}], throwOnError: false });
+            } else {
+                if (/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(clean)) element.innerText = clean;
+                else { try { katex.render(clean, element, { throwOnError: false, displayMode: isDisplay }); } catch(e) { element.innerText = clean; } }
+            }
+        }
+
+        function autoAdjustFontSize(el) {
+            el.style.fontSize = '3.5rem';
+            requestAnimationFrame(() => {
+                let size = 3.5;
+                while ((el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth) && size > 0.8) {
+                    size -= 0.1; el.style.fontSize = size + 'rem';
+                }
+            });
+        }
+
+        function performShoot(selected, el) {
+            if (isShooting) return; isShooting = true;
+            const isCorrect = selected === currentProblem.a;
+            const ball = el.querySelector('.basketball'), rect = ball.getBoundingClientRect();
+            const hoop = document.querySelector('.hoop-rim').getBoundingClientRect();
+            const fly = document.createElement('div');
+            fly.className = 'flying-ball';
+            fly.style.width = fly.style.height = rect.width + 'px';
+            fly.style.left = rect.left + 'px'; fly.style.top = rect.top + 'px';
+            fly.innerHTML = BASKETBALL_SVG;
+            document.body.appendChild(fly);
+
+            const tx = hoop.left + (hoop.width/2) - (rect.width/2), ty = hoop.top;
+            if (isCorrect) {
+                fly.animate([{left:rect.left+'px', top:rect.top+'px', transform:'rotate(0deg) scale(1)'}, {left:(rect.left+tx)/2+'px', top:(rect.top-300)+'px', transform:'rotate(180deg) scale(0.8)', offset:0.5}, {left:tx+'px', top:ty+'px', transform:'rotate(360deg) scale(0.5)'}], {duration:800, easing:'ease-out'}).onfinish = () => { fly.remove(); showResult(true); };
+            } else {
+                fly.animate([{left:rect.left+'px', top:rect.top+'px', transform:'rotate(0deg)'}, {left:tx+'px', top:ty-50+'px', transform:'rotate(180deg)', offset:0.6}, {left:tx+(Math.random()>0.5?150:-150)+'px', top:'100vh', transform:'rotate(360deg)'}], {duration:800, easing:'ease-in'}).onfinish = () => { fly.remove(); showResult(false); };
+            }
+        }
+
+        function showResult(correct) {
+            const p = document.getElementById('result-popup');
+            p.className = 'animate-pop';
+            if (correct) { 
+                playSound('correct');
+                score++; 
+                document.getElementById('score').innerText = score; 
+                p.innerText = "ĐÚNG RỒI!"; 
+                p.style.color = "#4ade80"; 
+                setTimeout(nextLevel, 1500); 
+            }
+            else { 
+                playSound('wrong');
+                p.innerText = "SAI RỒI!"; 
+                p.style.color = "#f87171"; 
+                setTimeout(() => { p.className = ''; isShooting = false; }, 1200); 
+            }
+        }
+
+        function showGameOver() { alert(`HOÀN THÀNH! Điểm của bạn: ${score}/${qCount}`); goHome(); }
+        function goHome() { document.getElementById('start-modal').style.display = 'flex'; isShooting = false; document.querySelectorAll('.flying-ball').forEach(b => b.remove()); }
+
+        function openPromptModal() { document.getElementById('prompt-modal').style.display = 'flex'; generatePrompt(); }
+        function closePromptModal() { document.getElementById('prompt-modal').style.display = 'none'; }
+        function generatePrompt() {
+            const topic = document.getElementById('p-topic').value || "Toán học";
+            document.getElementById('p-result').value = `Tạo bộ câu hỏi trắc nghiệm JSON ARRAY chủ đề ${topic}. Định dạng: [{"q":"Câu hỏi ($...$ cho toán)","a":"đáp án đúng","opts":["đúng","sai1","sai2","sai3"]}]. Dùng \\\\ cho LaTeX.`;
+        }
+        function copyPrompt() { navigator.clipboard.writeText(document.getElementById('p-result').value); document.getElementById('copy-btn').innerText = "ĐÃ COPY"; }
+        function downloadSampleFile() {
+            const sample = [{"q":"Đạo hàm của $y=x^2$ là?","a":"$2x$","opts":["$2x$","$x^2$","$x$","$3x^2$"]}];
+            const blob = new Blob([JSON.stringify(sample, null, 2)], {type:"application/json"});
+            const url = URL.createObjectURL(blob), a = document.createElement('a');
+            a.href = url; a.download = "mau_cau_hoi.json"; a.click();
+        }
+
+        
+    function downloadSampleExcel() {
+        const ws = XLSX.utils.aoa_to_sheet([
+            ["Câu hỏi", "Đáp án A", "Đáp án B", "Đáp án C", "Đáp án D", "Cột đúng (1-4)"],
+            ["Câu hỏi mẫu: 1 + 1 bằng mấy?", "1", "2", "3", "4", 2]
+        ]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Câu Hỏi");
+        XLSX.writeFile(wb, "Mau_Cau_Hoi.xlsx");
+    }
+    
+    window.onload = renderTree;
+    </script>
+</body>
+</html>

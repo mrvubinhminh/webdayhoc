@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #0b0f19;
+  --color-foreground: #ffffff;
+  --color-card: rgba(255, 255, 255, 0.03);
+  --color-card-hover: rgba(255, 255, 255, 0.08);
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-accent: #0ea5e9;
+  --color-accent-hover: #38bdf8;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+}
+
+.glass-card {
+  background-color: var(--color-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  background-color: var(--color-card-hover);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 40px -10px rgba(14, 165, 233, 0.2);
+}
+
+.text-gradient {
+  background: linear-gradient(to right, #38bdf8, #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hex-shape {
+  clip-path: polygon(2rem 0, calc(100% - 2rem) 0, 100% 50%, calc(100% - 2rem) 100%, 2rem 100%, 0 50%);
+}
+
+.hex-border {
+  clip-path: polygon(2rem 0, calc(100% - 2rem) 0, 100% 50%, calc(100% - 2rem) 100%, 2rem 100%, 0 50%);
+  padding: 2px;
+  background: linear-gradient(to right, transparent, rgba(59, 130, 246, 0.5), transparent);
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+.animate-shake {
+  animation: shake 0.6s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes pulse-tense {
+  0%, 100% { box-shadow: 0 0 30px rgba(234, 179, 8, 0.4); transform: scale(1); }
+  50% { box-shadow: 0 0 60px rgba(234, 179, 8, 0.8); transform: scale(1.02); }
+}
+.animate-tense {
+  animation: pulse-tense 1.5s infinite ease-in-out;
+}
+
+@keyframes flash-correct {
+  0% { box-shadow: 0 0 100px rgba(34, 197, 94, 1); background-color: rgba(34, 197, 94, 0.5); }
+  100% { box-shadow: 0 0 30px rgba(34, 197, 94, 0.6); background-color: transparent; }
+}
+.animate-correct-flash {
+  animation: flash-correct 1.5s ease-out forwards;
+}
+
+@keyframes flash-wrong {
+  0% { box-shadow: 0 0 100px rgba(239, 68, 68, 1); background-color: rgba(239, 68, 68, 0.5); }
+  100% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.6); background-color: transparent; }
+}
+.animate-wrong-flash {
+  animation: flash-wrong 1.5s ease-out forwards;
+}
+
+@keyframes swayLeft {
+  0% { transform: rotate(15deg); }
+  100% { transform: rotate(35deg); }
+}
+@keyframes fly-right {
+  from { left: -20vw; }
+  to { left: 120vw; }
+}
+
+@keyframes fly-left {
+  from { left: 120vw; }
+  to { left: -20vw; }
+}
+
+.bird-container {
+  position: absolute;
+  cursor: crosshair;
+  transition: transform 0.1s;
+}
+.bird-container:hover {
+  transform: scale(1.1);
+}
+
+

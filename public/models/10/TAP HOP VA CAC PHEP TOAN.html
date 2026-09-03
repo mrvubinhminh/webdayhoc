@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Khởi động: Tập hợp và Các phép toán</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+    
+    <script>
+        window.MathJax = {
+            options: { enableMenu: false },
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            margin: 0; overflow: hidden; 
+            user-select: none; touch-action: none; background-color: #f1f5f9; 
+            color: #000000;
+        }
+        .app-container { display: flex; flex-direction: column; height: 100vh; width: 100vw; background: white;}
+        .main-content { display: flex; flex: 1; overflow: hidden; }
+
+        /* Sidebar khổng lồ */
+        .sidebar {
+            width: 550px; background-color: #ffffff; border-right: 2px solid #e2e8f0;
+            display: flex; flex-direction: column; overflow-y: auto; z-index: 10;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.05); padding: 1.5rem; scroll-behavior: smooth;
+        }
+
+        .canvas-area {
+            flex: 1; position: relative; background-color: #ffffff; display: flex; flex-direction: column;
+            overflow: hidden; background-image: radial-gradient(#cbd5e1 2px, transparent 0); background-size: 40px 40px;
+        }
+
+        .activity-card {
+            background: white; border: 2px solid #e2e8f0; border-radius: 1rem;
+            padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: all 0.4s ease; animation: slideIn 0.4s ease-out; margin-bottom: 1.5rem;
+        }
+        .activity-card.inactive { opacity: 0.3; pointer-events: none; filter: grayscale(100%); }
+        
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* SVG Styling */
+        .set-circle { transition: all 0.5s ease; stroke-width: 6; fill-opacity: 0.1; }
+        .set-circle.active-fill { fill-opacity: 0.6; }
+        
+        /* Draggable Items */
+        .drag-item { cursor: grab; transition: transform 0.1s; }
+        .drag-item:active { cursor: grabbing; transform: scale(1.1); }
+        .drag-item text { pointer-events: none; }
+        
+        .math-display { font-size: 1.5rem; font-weight: bold; overflow-x: auto; overflow-y: hidden; }
+        .hidden { display: none !important; }
+
+        .btn-large {
+            width: 100%; font-size: 1.25rem; font-weight: 800; padding: 1rem; 
+            border-radius: 0.75rem; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header class="h-20 bg-white border-b-2 border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-20">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-xl bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-3xl border-2 border-blue-200">
+                    ∪
+                </div>
+                <h1 class="text-3xl font-extrabold text-slate-800 uppercase tracking-wide">Tập hợp và Các phép toán</h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="toggleTeacherMode()" class="flex items-center gap-2 text-amber-800 bg-amber-100 hover:bg-amber-200 px-5 py-3 rounded-xl text-xl border-2 border-amber-300 transition font-bold">
+                    🎓 Gợi ý sư phạm
+                </button>
+                <button onclick="runScript()" class="flex items-center gap-2 text-emerald-800 bg-emerald-100 hover:bg-emerald-200 px-5 py-3 rounded-xl text-xl border-2 border-emerald-300 transition font-bold">
+                    ▶ Trình chiếu
+                </button>
+                <button onclick="resetModel()" class="flex items-center gap-2 text-slate-700 hover:text-slate-900 px-5 py-3 rounded-xl text-xl border-2 border-slate-300 hover:bg-slate-100 transition font-bold">
+                    ↺ Đặt lại
+                </button>
+                <button id="btnFullscreen" class="flex items-center gap-2 text-slate-700 hover:text-blue-700 px-5 py-3 rounded-xl text-xl border-2 border-slate-300 hover:bg-slate-100 transition font-bold">
+                    <span id="txtFullscreen">⛶ Toàn màn hình</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <aside class="sidebar" id="sidebar">
+                <div class="text-xl font-black text-slate-400 uppercase tracking-widest mb-6">Tiến trình Khám phá</div>
+                
+                <!-- HĐ 1: TÌNH HUỐNG & KÉO THẢ -->
+                <div class="activity-card" id="card-1">
+                    <h3 class="text-2xl font-black text-blue-700 mb-4">1. Danh sách Câu lạc bộ</h3>
+                    <p class="text-xl text-slate-800 mb-4 font-semibold">CLB Lịch sử có 12 thành viên chia làm 2 danh sách:</p>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="bg-blue-50 p-4 rounded-xl border-2 border-blue-200">
+                            <h4 class="font-bold text-xl text-blue-800 mb-2 border-b-2 border-blue-200 pb-2">Chuyên đề 1 (A)</h4>
+                            <p class="text-xl text-slate-800 font-semibold leading-relaxed">Nam, Tú, Khánh, Hương, Bình, Chi, Ngân.</p>
+                        </div>
+                        <div class="bg-orange-50 p-4 rounded-xl border-2 border-orange-200">
+                            <h4 class="font-bold text-xl text-orange-800 mb-2 border-b-2 border-orange-200 pb-2">Chuyên đề 2 (B)</h4>
+                            <p class="text-xl text-slate-800 font-semibold leading-relaxed">Hương, Khánh, Hiền, Chi, Bình, Lam, Tú, Hân.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-amber-100 p-4 rounded-xl border-2 border-amber-300 mb-6 shadow-inner">
+                        <p class="text-xl font-bold text-amber-900 mb-2">🤔 Trợ giúp Chủ nhiệm CLB:</p>
+                        <p class="text-xl text-amber-800">Hãy dùng chuột <b>kéo thả</b> tên các thành viên (bên phải) vào đúng vị trí trên <b>Sơ đồ Venn</b>.</p>
+                    </div>
+                    
+                    <div class="flex justify-between items-center bg-slate-100 p-4 rounded-xl border-2 border-slate-300 mb-4">
+                        <span class="text-xl font-bold text-slate-700">Đã xếp đúng:</span>
+                        <span class="text-3xl font-black text-blue-600"><span id="score">0</span>/12</span>
+                    </div>
+
+                    <button id="btn-next-2" onclick="activateStep(2)" class="btn-large bg-blue-600 hover:bg-blue-700 text-white hidden">
+                        Tiếp tục khám phá Phép toán
+                    </button>
+                </div>
+
+                <!-- HĐ 2: KHÁM PHÁ GIAO, HỢP, HIỆU -->
+                <div class="activity-card hidden" id="card-2">
+                    <h3 class="text-2xl font-black text-emerald-700 mb-4">2. Khám phá Các Vùng Dữ liệu</h3>
+                    <p class="text-xl text-slate-800 mb-6 font-semibold">Bấm vào các nút dưới đây để tô sáng từng vùng trên sơ đồ và xem kết quả tương ứng.</p>
+                    
+                    <div class="space-y-4 mb-6">
+                        <button onclick="highlightRegion('intersect')" id="btn-intersect" class="w-full text-left bg-white border-2 border-slate-300 hover:border-emerald-500 hover:bg-emerald-50 p-4 rounded-xl transition flex justify-between items-center">
+                            <span class="text-xl font-bold text-slate-800">1. Tham gia CẢ HAI chuyên đề?</span>
+                            <span class="text-2xl">🔍</span>
+                        </button>
+                        
+                        <button onclick="highlightRegion('union')" id="btn-union" class="w-full text-left bg-white border-2 border-slate-300 hover:border-blue-500 hover:bg-blue-50 p-4 rounded-xl transition flex justify-between items-center">
+                            <span class="text-xl font-bold text-slate-800">2. Tham gia ÍT NHẤT 1 chuyên đề?</span>
+                            <span class="text-2xl">🔍</span>
+                        </button>
+
+                        <button onclick="highlightRegion('diffA')" id="btn-diffA" class="w-full text-left bg-white border-2 border-slate-300 hover:border-purple-500 hover:bg-purple-50 p-4 rounded-xl transition flex justify-between items-center">
+                            <span class="text-xl font-bold text-slate-800">3. CHỈ tham gia chuyên đề 1?</span>
+                            <span class="text-2xl">🔍</span>
+                        </button>
+                    </div>
+
+                    <div id="math-result" class="min-h-[80px] bg-slate-100 border-2 border-slate-300 rounded-xl p-4 flex items-center justify-center font-bold text-2xl text-slate-900 text-center">
+                        <!-- Kết quả sẽ hiện ở đây -->
+                        Hãy chọn một vùng để phân tích.
+                    </div>
+
+                    <button id="btn-next-3" onclick="activateStep(3)" class="btn-large bg-emerald-600 hover:bg-emerald-700 text-white mt-6 hidden">
+                        Tìm Vấn đề trung tâm
+                    </button>
+                </div>
+
+                <!-- HĐ 3: VẤN ĐỀ TRUNG TÂM (PHẦN BÙ) -->
+                <div class="activity-card hidden border-4 border-red-400" id="card-3">
+                    <h3 class="text-2xl font-black text-red-700 mb-4">3. Trả lời câu hỏi ban đầu</h3>
+                    
+                    <div class="bg-red-50 p-5 rounded-xl border-2 border-red-200 mb-6">
+                        <p class="text-2xl text-red-900 font-bold mb-3 text-center">"Có bao nhiêu thành viên vắng mặt trong cả hai chuyên đề?"</p>
+                    </div>
+
+                    <button onclick="highlightRegion('complement')" class="btn-large bg-red-600 hover:bg-red-700 text-white mb-6 animate-pulse">
+                        Kiểm tra trên Sơ đồ Venn
+                    </button>
+
+                    <div id="final-conclusion" class="hidden">
+                        <div class="math-display text-center mb-4 text-red-700 bg-red-100 p-4 rounded-xl border-2 border-red-300">
+                            $$ U \setminus (A \cup B) = \{ \text{Long}, \text{Mai} \} $$
+                        </div>
+                        <p class="text-xl text-slate-800 font-bold leading-relaxed mb-6">Đếm thủ công rất dễ bị lặp và sai sót! Sơ đồ Venn và Ngôn ngữ Tập hợp giúp ta bao quát toàn bộ vấn đề một cách trực quan và chính xác tuyệt đối.</p>
+                        
+                        <div class="bg-slate-800 text-white p-5 rounded-xl text-center shadow-lg transform hover:scale-105 transition">
+                            <h4 class="text-xl font-bold mb-2 opacity-80">BÀI HỌC HÔM NAY:</h4>
+                            <p class="text-3xl font-black text-amber-400 uppercase">Tập hợp và Các phép toán</p>
+                        </div>
+                    </div>
+                </div>
+
+            </aside>
+
+            <main class="canvas-area relative" id="main-canvas">
+                <svg id="venn-svg" viewBox="0 0 1200 800" class="w-full h-full max-h-[900px]" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <!-- Mask để tô màu các vùng -->
+                        <!-- Mask Giao A & B -->
+                        <clipPath id="clip-A">
+                            <circle cx="450" cy="450" r="250" />
+                        </clipPath>
+                        <clipPath id="clip-B">
+                            <circle cx="750" cy="450" r="250" />
+                        </clipPath>
+                        
+                        <!-- Mask cho U \ (A U B) -->
+                        <mask id="mask-complement">
+                            <rect width="1200" height="800" fill="white" />
+                            <circle cx="450" cy="450" r="250" fill="black" />
+                            <circle cx="750" cy="450" r="250" fill="black" />
+                        </mask>
+                        
+                        <!-- Mask cho A \ B -->
+                        <mask id="mask-diff-A">
+                            <circle cx="450" cy="450" r="250" fill="white" />
+                            <circle cx="750" cy="450" r="250" fill="black" />
+                        </mask>
+
+                        <!-- Mask cho B \ A -->
+                        <mask id="mask-diff-B">
+                            <circle cx="750" cy="450" r="250" fill="white" />
+                            <circle cx="450" cy="450" r="250" fill="black" />
+                        </mask>
+                    </defs>
+
+                    <!-- Khung Tập Nền U -->
+                    <rect x="50" y="50" width="1100" height="700" rx="20" fill="white" stroke="#64748b" stroke-width="4" stroke-dasharray="10 10"/>
+                    <text x="70" y="100" font-size="40" font-weight="900" fill="#475569">U (Toàn bộ CLB Lịch sử)</text>
+
+                    <!-- VÙNG TÔ MÀU HIGHLIGHT (Ẩn mặc định) -->
+                    <g id="highlight-layer" class="opacity-0 transition-opacity duration-500">
+                        <!-- Union A U B -->
+                        <circle id="hl-union-A" cx="450" cy="450" r="250" fill="#3b82f6" class="set-circle hidden" />
+                        <circle id="hl-union-B" cx="750" cy="450" r="250" fill="#3b82f6" class="set-circle hidden" />
+                        
+                        <!-- Intersection A ∩ B -->
+                        <circle id="hl-intersect" cx="750" cy="450" r="250" fill="#10b981" clip-path="url(#clip-A)" class="set-circle hidden" />
+                        
+                        <!-- Difference A \ B -->
+                        <rect id="hl-diff-A" x="0" y="0" width="1200" height="800" fill="#8b5cf6" mask="url(#mask-diff-A)" class="set-circle hidden" />
+                        
+                        <!-- Complement U \ (A U B) -->
+                        <rect id="hl-comp" x="50" y="50" width="1100" height="700" rx="20" fill="#ef4444" mask="url(#mask-complement)" class="set-circle hidden" />
+                    </g>
+
+                    <!-- VIỀN CỦA 2 TẬP HỢP -->
+                    <circle cx="450" cy="450" r="250" fill="none" stroke="#2563eb" stroke-width="8"/>
+                    <text x="250" y="250" font-size="45" font-weight="900" fill="#1d4ed8">A (Chuyên đề 1)</text>
+
+                    <circle cx="750" cy="450" r="250" fill="none" stroke="#ea580c" stroke-width="8"/>
+                    <text x="700" y="250" font-size="45" font-weight="900" fill="#c2410c">B (Chuyên đề 2)</text>
+
+                    <!-- KHU VỰC DANH SÁCH CHỜ (Danh sách thành viên chưa xếp) -->
+                    <rect x="50" y="150" width="1100" height="120" rx="15" fill="#f8fafc" stroke="#cbd5e1" stroke-width="3" id="waiting-area"/>
+                    
+                    <!-- LỚP CHỨA CÁC VIÊN BI TÊN THÀNH VIÊN -->
+                    <g id="members-layer"></g>
+
+                </svg>
+            </main>
+        </div>
+
+        <!-- MODAL GỢI Ý SƯ PHẠM -->
+        <div id="teacher-modal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl shadow-2xl p-8 w-[800px] max-w-full max-h-[90vh] overflow-y-auto relative border-4 border-amber-300">
+                <div class="flex justify-between items-center mb-6 border-b-4 border-amber-100 pb-4">
+                    <h3 class="text-3xl font-black text-amber-700 flex items-center gap-3">🎓 Gợi ý sư phạm Toán 10</h3>
+                    <button onclick="toggleTeacherMode()" class="text-slate-400 hover:text-red-600 bg-slate-100 rounded-full w-12 h-12 flex items-center justify-center transition text-2xl font-bold">✕</button>
+                </div>
+                
+                <h4 class="font-black text-slate-800 text-2xl mb-3 bg-amber-100 px-4 py-2 rounded-xl inline-block">1. Mục tiêu khởi động</h4>
+                <ul class="list-disc pl-8 mb-6 text-xl text-slate-800 space-y-2 font-medium">
+                    <li>Tạo nhu cầu sử dụng tập hợp và các phép toán (giao, hợp, hiệu, phần bù).</li>
+                    <li>Giúp học sinh thấy rõ ưu thế vượt trội của <b>Sơ đồ Venn</b> trong việc xử lí và trực quan hóa dữ liệu bị trùng lặp so với việc đếm danh sách thủ công.</li>
+                </ul>
+                
+                <h4 class="font-black text-slate-800 text-2xl mb-3 bg-blue-100 px-4 py-2 rounded-xl inline-block">2. Sai lầm thường gặp của HS</h4>
+                <ul class="list-disc pl-8 mb-6 text-xl text-red-700 space-y-2 font-medium">
+                    <li><b>Đếm lặp:</b> Cộng tổng số người của Chuyên đề 1 và 2 (7+8 = 15) rồi kết luận sai tổng số người tham gia.</li>
+                    <li><b>Bỏ sót phần bù:</b> Quên mất những thành viên nằm trong danh sách tổng (U) nhưng không tham gia bất kỳ chuyên đề nào.</li>
+                </ul>
+                
+                <h4 class="font-black text-slate-800 text-2xl mb-3 bg-emerald-100 px-4 py-2 rounded-xl inline-block">3. Kịch bản tổ chức (Trình chiếu)</h4>
+                <div class="bg-slate-50 p-5 rounded-xl border-2 border-slate-200 text-xl text-slate-800 mb-6 font-medium leading-relaxed">
+                    <p><b>Bước 1:</b> Chiếu danh sách. Yêu cầu 1 HS thử đếm nhẩm số người vắng mặt. Chắc chắn HS sẽ gặp khó khăn vì bị rối.</p>
+                    <p><b>Bước 2:</b> Gọi HS lên bảng tương tác, tự tay <b>kéo thả</b> các tên vào sơ đồ Venn. Việc này ép HS phải suy nghĩ: "Tên này nằm ở đâu?".</p>
+                    <p><b>Bước 3:</b> Giáo viên dùng các nút tô màu để chốt lại định nghĩa hình học của Giao, Hợp, Hiệu.</p>
+                    <p><b>Bước 4:</b> Bấm nút cuối cùng để lộ ra "Phần bù" - chốt lại mâu thuẫn và dẫn vào bài mới.</p>
+                </div>
+
+                <div class="text-center mt-8">
+                    <button onclick="toggleTeacherMode()" class="bg-slate-800 text-white px-8 py-3 rounded-xl text-xl font-bold hover:bg-slate-700 transition shadow-xl">Đóng Hướng Dẫn</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DỮ LIỆU THÀNH VIÊN VÀ LOGIC ---
+        // U = 12 thành viên
+        // A (Chuyên đề 1): Nam, Tú, Khánh, Hương, Bình, Chi, Ngân.
+        // B (Chuyên đề 2): Hương, Khánh, Hiền, Chi, Bình, Lam, Tú, Hân.
+        // Phân tích:
+        // Cả hai (Giao): Tú, Khánh, Hương, Bình, Chi (5)
+        // Chỉ A: Nam, Ngân (2)
+        // Chỉ B: Hiền, Lam, Hân (3)
+        // Không tham gia (Bù): 12 - (5+2+3) = 2 người. Giả sử tên là "Long", "Mai".
+
+        const memberData = [
+            { name: "Nam", target: "A_only" },
+            { name: "Ngân", target: "A_only" },
+            { name: "Tú", target: "Both" },
+            { name: "Khánh", target: "Both" },
+            { name: "Hương", target: "Both" },
+            { name: "Bình", target: "Both" },
+            { name: "Chi", target: "Both" },
+            { name: "Hiền", target: "B_only" },
+            { name: "Lam", target: "B_only" },
+            { name: "Hân", target: "B_only" },
+            { name: "Long", target: "None" },
+            { name: "Mai", target: "None" }
+        ];
+
+        // Tọa độ các vùng đích (Snap targets)
+        const targets = {
+            "A_only": { cx: 280, cy: 450, r: 100 },
+            "B_only": { cx: 920, cy: 450, r: 100 },
+            "Both": { cx: 600, cy: 450, r: 60 },
+            "None": { cx: 200, cy: 700, r: 100 } // Góc dưới bên trái của U
+        };
+
+        let currentStep = 1;
+        let score = 0;
+        let draggedElement = null;
+        let offset = { x: 0, y: 0 };
+        const svg = document.getElementById('venn-svg');
+
+        // Hàm tạo các Node thành viên
+        function initMembers() {
+            const layer = document.getElementById('members-layer');
+            layer.innerHTML = ''; // Clear
+            score = 0;
+            document.getElementById('score').innerText = score;
+
+            // Xếp các thành viên lên khu vực Waiting Area ban đầu
+            let startX = 80;
+            let startY = 190;
+            
+            // Xáo trộn mảng để hs phải tìm
+            let shuffled = [...memberData].sort(() => Math.random() - 0.5);
+
+            shuffled.forEach((m, index) => {
+                let px = startX + (index % 6) * 170;
+                let py = startY + Math.floor(index / 6) * 50;
+
+                let g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                g.setAttribute("class", "drag-item");
+                g.setAttribute("transform", `translate(${px}, ${py})`);
+                g.setAttribute("data-name", m.name);
+                g.setAttribute("data-target", m.target);
+                g.setAttribute("data-placed", "false");
+                g.setAttribute("data-ox", px); // Origin X
+                g.setAttribute("data-oy", py); // Origin Y
+
+                let rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                rect.setAttribute("x", "-60");
+                rect.setAttribute("y", "-20");
+                rect.setAttribute("width", "120");
+                rect.setAttribute("height", "40");
+                rect.setAttribute("rx", "20");
+                rect.setAttribute("fill", "#e2e8f0");
+                rect.setAttribute("stroke", "#94a3b8");
+                rect.setAttribute("stroke-width", "3");
+                rect.setAttribute("class", "bg-rect");
+
+                let text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.setAttribute("x", "0");
+                text.setAttribute("y", "8");
+                text.setAttribute("font-size", "22");
+                text.setAttribute("font-weight", "bold");
+                text.setAttribute("fill", "#0f172a");
+                text.setAttribute("text-anchor", "middle");
+                text.textContent = m.name;
+
+                g.appendChild(rect);
+                g.appendChild(text);
+
+                // Add Events
+                g.addEventListener('mousedown', startDrag);
+                g.addEventListener('touchstart', startDrag, {passive: false});
+                
+                layer.appendChild(g);
+            });
+        }
+
+        // --- KÉO THẢ (DRAG & DROP) LOGIC ---
+        function getMousePosition(evt) {
+            let CTM = svg.getScreenCTM();
+            if (evt.touches) {
+                return {
+                    x: (evt.touches[0].clientX - CTM.e) / CTM.a,
+                    y: (evt.touches[0].clientY - CTM.f) / CTM.d
+                };
+            }
+            return {
+                x: (evt.clientX - CTM.e) / CTM.a,
+                y: (evt.clientY - CTM.f) / CTM.d
+            };
+        }
+
+        function startDrag(evt) {
+            if (currentStep !== 1) return; // Chỉ cho kéo thả ở Bước 1
+            evt.preventDefault();
+            draggedElement = evt.currentTarget;
+            
+            // Nếu đã xếp đúng rồi thì ko cho kéo nữa (tuỳ chọn, ở đây cấm kéo nếu đã done)
+            if (draggedElement.getAttribute('data-placed') === 'true') {
+                draggedElement = null; return;
+            }
+
+            // Đẩy node lên trên cùng để không bị che
+            draggedElement.parentNode.appendChild(draggedElement);
+
+            let coord = getMousePosition(evt);
+            let transforms = draggedElement.transform.baseVal;
+            if (transforms.length === 0 || transforms.getItem(0).type !== SVGTransform.SVG_TRANSFORM_TRANSLATE) {
+                let translate = svg.createSVGTransform();
+                translate.setTranslate(0, 0);
+                draggedElement.transform.baseVal.insertItemBefore(translate, 0);
+            }
+            let translate = transforms.getItem(0);
+            offset.x = coord.x - translate.matrix.e;
+            offset.y = coord.y - translate.matrix.f;
+        }
+
+        function drag(evt) {
+            if (draggedElement) {
+                evt.preventDefault();
+                let coord = getMousePosition(evt);
+                let transform = draggedElement.transform.baseVal.getItem(0);
+                transform.setTranslate(coord.x - offset.x, coord.y - offset.y);
+            }
+        }
+
+        function endDrag(evt) {
+            if (draggedElement) {
+                let transform = draggedElement.transform.baseVal.getItem(0);
+                let currX = transform.matrix.e;
+                let currY = transform.matrix.f;
+                
+                let targetType = draggedElement.getAttribute('data-target');
+                let tZone = targets[targetType];
+
+                // Kiểm tra xem có thả vào đúng vùng không (tính khoảng cách tâm)
+                let dist = Math.sqrt(Math.pow(currX - tZone.cx, 2) + Math.pow(currY - tZone.cy, 2));
+                
+                if (dist < tZone.r + 50) {
+                    // Xếp đúng
+                    draggedElement.setAttribute('data-placed', 'true');
+                    let rect = draggedElement.querySelector('.bg-rect');
+                    rect.setAttribute('fill', '#dcfce7'); // Xanh lá nhạt
+                    rect.setAttribute('stroke', '#22c55e'); // Xanh lá đậm
+                    
+                    // Snap vào 1 vị trí random nhẹ trong vùng để ko đè nhau
+                    let snapX = tZone.cx + (Math.random() - 0.5) * (tZone.r);
+                    let snapY = tZone.cy + (Math.random() - 0.5) * (tZone.r);
+                    transform.setTranslate(snapX, snapY);
+                    
+                    score++;
+                    document.getElementById('score').innerText = score;
+                    checkStep1Completion();
+                } else {
+                    // Xếp sai, trả về vị trí cũ
+                    let ox = parseFloat(draggedElement.getAttribute('data-ox'));
+                    let oy = parseFloat(draggedElement.getAttribute('data-oy'));
+                    transform.setTranslate(ox, oy);
+                    
+                    // Nhấp nháy đỏ báo sai
+                    let rect = draggedElement.querySelector('.bg-rect');
+                    rect.setAttribute('fill', '#fee2e2');
+                    rect.setAttribute('stroke', '#ef4444');
+                    setTimeout(() => {
+                        if(draggedElement) {
+                            rect.setAttribute('fill', '#e2e8f0');
+                            rect.setAttribute('stroke', '#94a3b8');
+                        }
+                    }, 500);
+                }
+                draggedElement = null;
+            }
+        }
+
+        svg.addEventListener('mousemove', drag);
+        svg.addEventListener('touchmove', drag, {passive: false});
+        svg.addEventListener('mouseup', endDrag);
+        svg.addEventListener('touchend', endDrag);
+        svg.addEventListener('mouseleave', endDrag);
+
+        function checkStep1Completion() {
+            if (score === 12) {
+                document.getElementById('btn-next-2').classList.remove('hidden');
+                // Ẩn vùng waiting area đi cho đẹp
+                document.getElementById('waiting-area').style.opacity = '0.3';
+            }
+        }
+
+
+        // --- QUẢN LÝ TIẾN TRÌNH (UI & HIGHLIGHT) ---
+        function activateStep(step) {
+            currentStep = step;
+            
+            // Cập nhật Sidebar
+            [1, 2, 3].forEach(i => {
+                let card = document.getElementById(`card-${i}`);
+                if (i < step) {
+                    card.classList.remove('hidden', 'inactive');
+                    card.classList.add('inactive'); // Làm mờ bước cũ
+                } else if (i === step) {
+                    card.classList.remove('hidden', 'inactive');
+                }
+            });
+
+            // Logic theo từng bước
+            if (step === 2) {
+                // Bật layer highlight SVG
+                document.getElementById('highlight-layer').classList.remove('opacity-0');
+            } else if (step === 3) {
+                // Tắt các highlight cũ
+                resetHighlights();
+            }
+
+            // Cuộn xuống cuối
+            setTimeout(() => {
+                document.getElementById('sidebar').scrollTop = document.getElementById('sidebar').scrollHeight;
+            }, 100);
+        }
+
+        function resetHighlights() {
+            ['union-A', 'union-B', 'intersect', 'diff-A', 'comp'].forEach(id => {
+                let el = document.getElementById(`hl-${id}`);
+                if(el) el.classList.remove('active-fill');
+            });
+            // Ẩn hết
+            ['hl-union-A', 'hl-union-B', 'hl-intersect', 'hl-diff-A', 'hl-comp'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            
+            // Reset viền nút
+            ['intersect', 'union', 'diffA'].forEach(id => {
+                let btn = document.getElementById(`btn-${id}`);
+                if(btn) btn.classList.remove('ring-4', 'ring-blue-300');
+            });
+        }
+
+        function highlightRegion(type) {
+            resetHighlights();
+            let resBox = document.getElementById('math-result');
+            let mathString = "";
+
+            if (type === 'intersect') {
+                document.getElementById('hl-intersect').classList.remove('hidden');
+                setTimeout(() => document.getElementById('hl-intersect').classList.add('active-fill'), 50);
+                document.getElementById('btn-intersect').classList.add('ring-4', 'ring-emerald-300');
+                mathString = "$$ A \\cap B = \\{ \\text{5 bạn} \\} $$<br/><span class='text-lg'>(Giao của A và B)</span>";
+            } 
+            else if (type === 'union') {
+                document.getElementById('hl-union-A').classList.remove('hidden');
+                document.getElementById('hl-union-B').classList.remove('hidden');
+                setTimeout(() => {
+                    document.getElementById('hl-union-A').classList.add('active-fill');
+                    document.getElementById('hl-union-B').classList.add('active-fill');
+                }, 50);
+                document.getElementById('btn-union').classList.add('ring-4', 'ring-blue-300');
+                mathString = "$$ A \\cup B = \\{ \\text{10 bạn} \\} $$<br/><span class='text-lg'>(Hợp của A và B)</span>";
+            }
+            else if (type === 'diffA') {
+                document.getElementById('hl-diff-A').classList.remove('hidden');
+                setTimeout(() => document.getElementById('hl-diff-A').classList.add('active-fill'), 50);
+                document.getElementById('btn-diffA').classList.add('ring-4', 'ring-purple-300');
+                mathString = "$$ A \\setminus B = \\{ \\text{2 bạn} \\} $$<br/><span class='text-lg'>(Hiệu của A và B)</span>";
+            }
+            else if (type === 'complement') {
+                document.getElementById('hl-comp').classList.remove('hidden');
+                setTimeout(() => document.getElementById('hl-comp').classList.add('active-fill'), 50);
+                document.getElementById('final-conclusion').classList.remove('hidden');
+                
+                // Cập nhật lại Mathjax ở block cuối
+                setTimeout(() => {
+                    if (window.mathJaxLoaded) MathJax.typesetPromise([document.getElementById('final-conclusion')]);
+                }, 100);
+                
+                // Cuộn xuống
+                setTimeout(() => { document.getElementById('sidebar').scrollTop = document.getElementById('sidebar').scrollHeight; }, 100);
+                return; // Thoát để ko đụng resBox ở HĐ2
+            }
+
+            resBox.innerHTML = mathString;
+            // Render Mathjax cho HĐ 2
+            if (window.mathJaxLoaded) MathJax.typesetPromise([resBox]);
+            
+            // Hiển thị nút chuyển Bước 3 nếu chưa hiện
+            document.getElementById('btn-next-3').classList.remove('hidden');
+        }
+
+        // --- CÁC HÀM TIỆN ÍCH ---
+        function resetModel() {
+            [1, 2, 3].forEach(i => document.getElementById(`card-${i}`).classList.add('hidden', 'inactive'));
+            document.getElementById('btn-next-2').classList.add('hidden');
+            document.getElementById('btn-next-3').classList.add('hidden');
+            document.getElementById('final-conclusion').classList.add('hidden');
+            document.getElementById('highlight-layer').classList.add('opacity-0');
+            document.getElementById('waiting-area').style.opacity = '1';
+            
+            document.getElementById('math-result').innerHTML = "Hãy chọn một vùng để phân tích.";
+            resetHighlights();
+            initMembers();
+            activateStep(1);
+        }
+
+        function toggleTeacherMode() {
+            const modal = document.getElementById('teacher-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        // Script Trình chiếu tự động (Auto-solver)
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+        async function runScript() {
+            resetModel();
+            await sleep(1000);
+            
+            // Auto giải HĐ 1 bằng cách lặp qua các node và set vị trí đích
+            const layer = document.getElementById('members-layer');
+            const items = layer.querySelectorAll('.drag-item');
+            
+            for (let i = 0; i < items.length; i++) {
+                let item = items[i];
+                let targetType = item.getAttribute('data-target');
+                let tZone = targets[targetType];
+                let transform = item.transform.baseVal.getItem(0);
+                
+                // Tạo tọa độ ngẫu nhiên trong vùng đích
+                let snapX = tZone.cx + (Math.random() - 0.5) * (tZone.r);
+                let snapY = tZone.cy + (Math.random() - 0.5) * (tZone.r);
+                
+                // Di chuyển
+                item.style.transition = 'transform 0.5s ease'; // Thêm transition CSS tạm
+                transform.setTranslate(snapX, snapY);
+                
+                // Đổi màu
+                item.setAttribute('data-placed', 'true');
+                let rect = item.querySelector('.bg-rect');
+                rect.setAttribute('fill', '#dcfce7');
+                rect.setAttribute('stroke', '#22c55e');
+                
+                score++;
+                document.getElementById('score').innerText = score;
+                
+                await sleep(300); // Đợi giữa các lần kéo
+                item.style.transition = 'none'; // Xóa transition đi
+            }
+
+            checkStep1Completion();
+            await sleep(1500);
+
+            // Chuyển HĐ2
+            activateStep(2);
+            await sleep(1500);
+            highlightRegion('intersect'); await sleep(2500);
+            highlightRegion('union'); await sleep(2500);
+            highlightRegion('diffA'); await sleep(2500);
+
+            // Chuyển HĐ3
+            activateStep(3);
+            await sleep(2000);
+            highlightRegion('complement');
+        }
+
+        // Fullscreen Toggle
+        document.getElementById('btnFullscreen').addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(e => console.log(e));
+                document.getElementById('txtFullscreen').innerHTML = '✖ Thu nhỏ';
+            } else {
+                document.exitFullscreen();
+                document.getElementById('txtFullscreen').innerHTML = '⛶ Toàn màn hình';
+            }
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) document.getElementById('txtFullscreen').innerHTML = '⛶ Toàn màn hình';
+        });
+
+        // INIT
+        window.onload = () => {
+            initMembers();
+            activateStep(1);
+        };
+    </script>
+</body>
+</html>

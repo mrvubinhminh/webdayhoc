@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alchemy Lab - Phòng Thí Nghiệm Phù Thủy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- KaTeX Core -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Almendra:wght@400;700&family=Roboto:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #0f172a;
+            overflow: hidden;
+            margin: 0;
+            user-select: none;
+            height: 100vh;
+        }
+
+        .lab-bg {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at center, #1e1b4b 0%, #020617 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Vạc thuốc trung tâm */
+        .cauldron-area {
+            position: relative;
+            margin-top: 25vh; 
+            width: 400px;
+            height: 300px;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .cauldron-svg { width: 240px; height: 220px; filter: drop-shadow(0 0 30px rgba(168, 85, 247, 0.5)); transition: transform 0.2s ease; opacity: 0.2; } /* Dim background */
+
+        /* Cuộn giấy câu hỏi */
+        .scroll-question { position: absolute; top: -20vh; left: 50%; transform: translateX(-50%); background: #fef3c7; border: 6px solid #78350f; padding: 25px 45px; border-radius: 4px; color: #451a03; box-shadow: 0 15px 40px rgba(0,0,0,0.6); width: 95vw; min-width: 95vw; max-width: 95vw; z-index: 50; font-family: 'Almendra', serif; display: flex; justify-content: center; align-items: center; min-height: 35vh; }
+
+        .question-text {
+            font-size: 2.8rem;
+            text-align: center;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        /* Hiệu ứng khói */
+        .smoke-particle {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 100;
+            filter: blur(15px);
+            animation: magicSmoke 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+
+        @keyframes magicSmoke {
+            0% { transform: translateY(0) scale(0.5); opacity: 0; }
+            20% { opacity: 0.9; }
+            100% { transform: translateY(-400px) scale(5); opacity: 0; }
+        }
+
+        /* Hiệu ứng nổ */
+        .explosion {
+            position: fixed;
+            width: 20px; height: 20px;
+            background: #ef4444;
+            border-radius: 50%;
+            z-index: 100;
+            box-shadow: 0 0 50px #ef4444;
+            animation: explode 0.6s ease-out forwards;
+        }
+
+        @keyframes explode {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(40); opacity: 0; }
+        }
+
+        /* Vùng đáp án */
+        .options-zone { display: flex; gap: 1vw; z-index: 50; justify-content: space-between; align-items: flex-end; width: 98vw; padding-bottom: 2vh; }
+
+        .ingredient-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: all 0.3s; width: 24%; max-width: 24%; }
+
+        .ingredient-item:hover { transform: translateY(-15px) scale(1.1); }
+
+        .answer-label { background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(10px); padding: 15px; border-radius: 12px; font-weight: 800; color: #fbbf24; border: 2px solid #92400e; font-size: 2rem; text-align: center; width: 100%; display: flex; align-items: center; justify-content: center; min-height: 100px; box-shadow: 0 10px 20px rgba(0,0,0,0.6); transition: all 0.4s ease; }
+
+        /* HIỆU ỨNG HÓA MÀU KHI ĐÚNG */
+        .correct-glow {
+            background: #15803d !important;
+            color: #ffffff !important;
+            border-color: #4ade80 !important;
+            box-shadow: 0 0 35px #22c55e !important;
+            transform: scale(1.05);
+        }
+
+        /* HUD */
+        .stats-hud {
+            position: absolute;
+            top: 15px;
+            width: 95%;
+            display: flex;
+            justify-content: space-between;
+            color: white;
+            z-index: 50;
+            font-family: 'Almendra', serif;
+        }
+
+        .stat-card {
+            background: rgba(15, 23, 42, 0.95);
+            padding: 10px 30px;
+            border: 2px solid #92400e;
+            border-radius: 8px;
+            font-size: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .btn-size {
+            width: 32px; height: 32px; background: #92400e; color: #fef3c7; border-radius: 4px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold;
+        }
+
+        /* Modals */
+        #start-modal, #prompt-modal, #summary-modal, #guide-modal, #name-modal, #intro-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.98);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            color: white;
+        }
+
+        #summary-modal { display: none; z-index: 2000; backdrop-filter: blur(15px); }
+        #prompt-modal { display: none; z-index: 1500; }
+        #guide-modal { display: none; z-index: 1600; }
+        #intro-modal { display: none; z-index: 1150; backdrop-filter: blur(10px); }
+        #name-modal { display: none; z-index: 1100; }
+
+        .modal-box {
+            background: #1e293b;
+            padding: 40px;
+            border-radius: 32px;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+            border: 6px solid #fbbf24;
+            box-shadow: 0 0 100px rgba(251, 191, 36, 0.2);
+        }
+
+        .grade-folder { background: rgba(255,255,255,0.05); margin-bottom: 8px; border-radius: 8px; overflow: hidden; }
+        .grade-header { padding: 15px; cursor: pointer; color: #fbbf24; font-weight: bold; background: rgba(0,0,0,0.4); }
+        .grade-content { display: none; }
+        .grade-folder.open .grade-content { display: block; }
+        
+        .btn-magic {
+            background: linear-gradient(135deg, #92400e 0%, #451a03 100%);
+            color: #fef3c7;
+            padding: 15px 35px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-family: 'Almendra', serif;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+            border: 2px solid #fbbf24;
+        }
+        .btn-magic:hover { transform: scale(1.05); box-shadow: 0 0 30px rgba(251, 191, 36, 0.5); }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #92400e; border-radius: 3px; }
+
+        #result-popup {
+            position: fixed;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 7rem;
+            font-family: 'Almendra';
+            z-index: 200;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        .animate-pop { animation: popResult 1.5s ease-out forwards; }
+        @keyframes popResult {
+            0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+            20% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -65%) scale(0.8); opacity: 0; }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+    <!-- MÀN HÌNH BẮT ĐẦU -->
+    <div id="start-modal">
+        <h1 class="text-8xl font-bold text-amber-500 mb-2" style="font-family: 'Almendra'; text-shadow: 0 0 30px rgba(245, 158, 11, 0.3);">ALCHEMY LAB</h1>
+        <p class="text-2xl text-slate-400 mb-10 tracking-widest italic text-center">Pha Chế Xác Suất & Tổ Hợp THPT</p>
+        
+        <div class="flex flex-col md:flex-row gap-8 w-11/12 max-w-6xl h-[70vh] bg-slate-900/80 p-10 rounded-3xl border border-amber-900/50 backdrop-blur-xl">
+            <div class="flex-1 flex flex-col items-start">
+                <div class="flex justify-between w-full mb-6 items-center">
+                    <h2 class="text-3xl font-bold text-amber-400">🧪 NẠP NGUYÊN LIỆU</h2>
+                    <div class="flex gap-2">
+                        <button onclick="openGuideModal()" class="bg-amber-700 hover:bg-amber-600 text-xs px-4 py-2 rounded-full font-bold transition-all shadow-lg">❓ HƯỚNG DẪN</button>
+                        <button onclick="openPromptModal()" class="bg-purple-700 hover:bg-purple-600 text-xs px-4 py-2 rounded-full font-bold transition-all shadow-lg">✨ TẠO LỆNH AI</button>
+                    </div>
+                </div>
+
+                <div class="mb-6 w-full text-left">
+                    <button onclick="downloadSampleFile()" class="text-amber-300 underline text-sm font-bold mb-2 block hover:text-white transition-colors">📥 TẢI FILE JSON MẪU</button>
+                    <input type="file" id="file-upload" accept=".json, .xlsx, .xls" class="w-full text-sm text-slate-400 file:bg-amber-700 file:border-0 file:rounded-full file:px-6 file:py-2 file:text-white file:font-bold cursor-pointer">
+                </div>
+
+                <input type="text" id="bank-name" placeholder="Tên bài học..." class="w-full bg-black/40 border border-amber-900/30 p-4 rounded-xl mb-4 focus:border-amber-500 outline-none text-white text-lg">
+                <select id="bank-grade" class="w-full bg-black/40 border border-amber-900/30 p-4 rounded-xl mb-8 text-white outline-none text-lg">
+                    <option value="12">Khối 12</option><option selected value="11">Khối 11</option><option value="10">Khối 10</option>
+                </select>
+                <div class="flex gap-4 w-full mt-auto">
+                    <button onclick="prepareStart(true)" class="btn-magic flex-1">LƯU & CHẾ THUỐC</button>
+                    <button onclick="prepareStart(false)" class="flex-1 border border-amber-700 rounded-xl font-bold hover:bg-amber-700/20 transition-all text-white">CHƠI NGAY</button>
+                </div>
+            </div>
+
+            <div class="flex-1 flex flex-col items-start border-l border-amber-900/20 pl-8 overflow-hidden">
+                <h2 class="text-3xl font-bold text-amber-400 mb-6">📖 CÔNG THỨC ĐÃ LƯU</h2>
+                <div id="tree-container" class="flex-1 overflow-y-auto w-full pr-4 text-lg custom-scrollbar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH GIỚI THIỆU TRÒ CHƠI (INTRO) -->
+    <div id="intro-modal">
+        <div class="modal-box max-w-2xl bg-[#111827] border-emerald-500">
+            <h2 class="text-5xl font-bold text-emerald-400 mb-6" style="font-family: Almendra;">LỜI MỜI TỪ ĐẠI PHÙ THỦY</h2>
+            <div class="text-xl text-slate-200 leading-relaxed space-y-4 text-justify px-4">
+                <p>Chào mừng học việc trẻ tuổi! Bạn vừa bước chân vào **Phòng Thí Nghiệm Giả Kim** huyền thoại, nơi những công thức toán học không chỉ là con số, mà là tinh hoa của ma thuật tối thượng.</p>
+                <p>Để chế tạo ra **Trường Sinh Linh Dược**, bạn phải chinh phục các cuộn giấy cổ về **Xác suất và Tổ hợp**. Mỗi bình nguyên liệu bạn chọn sẽ quyết định vận mệnh của cuộc thí nghiệm.</p>
+                <p class="italic text-amber-400 font-bold">Hãy cẩn trọng: một sai lầm nhỏ có thể dẫn đến vụ nổ kinh hoàng, nhưng sự chuẩn xác sẽ đưa bạn lên ngôi vị Phù Thủy Tối Thượng!</p>
+            </div>
+            <button onclick="proceedToName()" class="w-full btn-magic mt-10 bg-emerald-700 border-emerald-400">TÔI ĐÃ SẴN SÀNG</button>
+        </div>
+    </div>
+
+    <!-- NHẬP TÊN MODAL -->
+    <div id="name-modal">
+        <div class="modal-box">
+            <h2 class="text-4xl font-bold text-amber-500 mb-6" style="font-family: Almendra;">DANH TÁNH PHÙ THỦY</h2>
+            <p class="text-xl text-slate-300 mb-6">Vui lòng cho biết danh tánh của bạn để ghi vào sử sách phòng thí nghiệm.</p>
+            <input type="text" id="player-name-input" placeholder="Họ và tên..." class="w-full bg-black/40 border border-amber-900/50 p-4 rounded-xl mb-8 focus:border-amber-500 outline-none text-white text-center text-2xl uppercase tracking-widest font-bold">
+            <button onclick="confirmNameAndStart()" class="w-full btn-magic">BẮT ĐẦU THÍ NGHIỆM</button>
+        </div>
+    </div>
+
+    <!-- HƯỚNG DẪN MODAL -->
+    <div id="guide-modal">
+        <div class="modal-box text-left">
+            <h2 class="text-4xl font-bold text-amber-500 mb-6 text-center" style="font-family: Almendra;">HƯỚNG DẪN THÍ NGHIỆM</h2>
+            <ul class="space-y-4 text-xl font-light text-slate-200">
+                <li class="flex items-start gap-3"><span class="text-amber-500 font-bold">1.</span> Chọn một công thức từ danh sách hoặc nạp tệp JSON mới.</li>
+                <li class="flex items-start gap-3"><span class="text-amber-500 font-bold">2.</span> Đọc kỹ câu hỏi trên cuộn giấy cổ treo trên vạc thuốc.</li>
+                <li class="flex items-start gap-3"><span class="text-amber-500 font-bold">3.</span> Nhấp vào bình nguyên liệu chứa đáp án đúng để đổ vào vạc.</li>
+                <li class="flex items-start gap-3"><span class="text-amber-500 font-bold">4.</span> Pha chế <span class="text-green-400">Thành công</span> sẽ tạo khói màu. <span class="text-red-400">Lỗi phép</span> sẽ gây nổ nhẹ và hiện đáp án đúng.</li>
+            </ul>
+            <button onclick="closeGuideModal()" class="w-full btn-magic mt-8">ĐÃ HIỂU</button>
+        </div>
+    </div>
+
+    <!-- PROMPT MODAL -->
+    <div id="prompt-modal">
+        <div class="bg-slate-900 border-4 border-purple-500 rounded-3xl p-8 w-11/12 max-w-4xl max-h-[90vh] overflow-y-auto custom-scrollbar relative text-left">
+            <button onclick="closePromptModal()" class="absolute top-4 right-6 text-slate-400 hover:text-red-400 text-4xl font-bold">&times;</button>
+            <h2 class="text-4xl font-bold text-purple-400 mb-6 text-center" style="font-family: 'Almendra';">🤖 TRỢ LÝ VIẾT LỆNH AI</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label class="block text-sm font-bold text-slate-400 mb-1 uppercase tracking-tighter">Chủ đề bài học</label>
+                    <input type="text" id="p-topic" placeholder="VD: Hoán vị, Chỉnh hợp..." class="w-full bg-slate-800 px-4 py-3 rounded border border-slate-700 focus:border-purple-400 outline-none text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-400 mb-1 uppercase tracking-tighter">Số lượng câu</label>
+                    <input type="number" id="p-count" value="10" class="w-full bg-slate-800 px-4 py-3 rounded border border-slate-700 focus:border-purple-400 outline-none text-white">
+                </div>
+            </div>
+
+            <button onclick="generatePrompt()" class="w-full bg-purple-600 hover:bg-purple-500 text-white py-4 rounded-xl font-bold text-xl mb-6 transition-all shadow-xl">⬇️ BẤM ĐỂ TẠO CÂU LỆNH ⬇️</button>
+
+            <label class="block text-sm font-bold text-green-400 mb-2 uppercase tracking-tighter">Kết quả:</label>
+            <textarea id="p-result" readonly class="w-full h-48 bg-black/80 text-green-300 p-4 rounded-lg border border-slate-700 font-mono text-sm resize-none outline-none custom-scrollbar mb-4"></textarea>
+            
+            <button onclick="copyPrompt()" id="copy-btn" class="w-full bg-slate-700 hover:bg-slate-600 text-white py-4 rounded-xl font-bold transition-all">📋 SAO CHÉP VÀO KHAY NHỚ TẠM</button>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH TỔNG KẾT -->
+    <div id="summary-modal">
+        <div class="summary-box">
+            <div id="rank-title" class="text-4xl text-amber-400 font-bold mb-4 uppercase" style="font-family: 'Almendra';">BẬC THẦY</div>
+            <h2 class="text-5xl font-bold text-amber-500 mb-8" style="font-family: 'Almendra';">BÁO CÁO THÍ NGHIỆM</h2>
+            <div class="space-y-6 text-2xl mb-10 font-light text-left bg-black/20 p-8 rounded-2xl border border-white/5">
+                <p>🧙‍♂️ Phù thủy: <span id="sum-player-name" class="font-black text-amber-500 uppercase tracking-widest">GUESTS</span></p>
+                <p>📖 Bài học: <span id="sum-name" class="font-bold text-amber-200">N/A</span></p>
+                <p>🧪 Tổng mẫu vật: <span id="sum-total" class="font-bold">0</span></p>
+                <p>✨ Thành công: <span id="sum-score" class="text-green-400 font-bold">0</span></p>
+                <div class="pt-6 border-t border-amber-900/30 text-center">
+                    <p class="text-2xl text-slate-400">ĐỘ TINH KHIẾT MA THUẬT</p>
+                    <p id="sum-percent" class="text-7xl font-bold text-amber-500 mt-4">0%</p>
+                </div>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="startPlay()" class="btn-magic flex-1">CHẾ LẠI</button>
+                <button onclick="goHome()" class="flex-1 bg-slate-700 rounded-xl font-bold text-xl hover:bg-slate-600 text-white transition-colors">🏠 MENU</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GIAO DIỆN CHÍNH -->
+    <div class="lab-bg">
+        <div class="stats-hud">
+            <div class="flex gap-3">
+                <button onclick="goHome()" class="stat-card hover:bg-slate-800 transition-colors">🏠 MENU</button>
+                <div class="stat-card">
+                    <span>SIZE</span>
+                    <div class="flex gap-3">
+                        <div class="btn-size" onclick="changeFontSize(-0.1)">-</div>
+                        <div class="btn-size" onclick="changeFontSize(0.1)">+</div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex gap-3 text-right">
+                <div class="stat-card text-amber-400 text-xl font-bold italic" id="hud-player-name">🧙‍♂️ PHÙ THỦY</div>
+                <div class="stat-card text-amber-400">STAGE: <span id="q-num">1</span></div>
+                <div class="stat-card text-green-400">HITS: <span id="score">0</span></div>
+            </div>
+        </div>
+
+        <div class="cauldron-area">
+            <div class="scroll-question">
+                <div id="question-display" class="question-text"></div>
+            </div>
+            <div id="cauldron" class="cauldron-svg">
+                <svg viewBox="0 0 100 100">
+                    <path d="M10 40 Q 10 95 50 95 Q 90 95 90 40 L 85 35 L 15 35 Z" fill="#1e293b" stroke="#64748b" stroke-width="3"/>
+                    <ellipse id="potion-surface" cx="50" cy="35" rx="35" ry="8" fill="#a855f7" opacity="0.9">
+                        <animate attributeName="ry" values="7;10;7" dur="3s" repeatCount="indefinite" />
+                    </ellipse>
+                    <path d="M20 35 L 15 30 L 85 30 L 80 35" fill="#334155"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="options-zone" id="options-container"></div>
+    </div>
+
+    <div id="result-popup"></div>
+
+    <script>
+
+    function parseExcelToJSON(file, callback) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = e.target.result;
+                const wb = XLSX.read(data, { type: 'binary' });
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+                
+                let questions = [];
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row || row.length < 6) continue;
+                    if (String(row[0]).toLowerCase().includes('câu hỏi') || String(row[1]).toLowerCase().includes('đáp án')) continue;
+                    
+                    
+                        questions.push({
+                            q: String(row[0]),
+                            opts: [String(row[1]), String(row[2]), String(row[3]), String(row[4])],
+                            a: String(row[parseInt(row[5], 10)])
+                        });
+                        
+                }
+                callback(null, questions);
+            } catch (error) {
+                callback(error, null);
+            }
+        };
+        reader.readAsBinaryString(file);
+    }
+    
+
+        let score = 0, qCount = 0, currentProblem = null, isShooting = false;
+        let loadedQuestions = [], currentQuestionIndex = 0, currentLessonName = "";
+        let userFontSizeScale = 1.0;
+        let playerName = "Ẩn danh";
+        const STORAGE_KEY = 'alchemy_lab_banks_v2';
+
+        let audioCtx = null;
+        function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        
+        function playSound(type) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            if (type === 'smoke') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1);
+                osc.start(); osc.stop(audioCtx.currentTime + 1);
+            } else if (type === 'pour') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+            } else { 
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+            }
+            osc.connect(gain); gain.connect(audioCtx.destination);
+        }
+
+        function getBottleSVG(color) {
+            return `<svg viewBox="0 0 60 100"><path d="M20 5 L 40 5 L 40 25 Q 55 35 55 60 Q 55 95 30 95 Q 5 95 5 60 Q 5 35 20 25 Z" fill="${color}" opacity="0.7" stroke="white" stroke-width="2"/><rect x="18" y="2" width="24" height="6" rx="2" fill="#92400e"/></svg>`;
+        }
+
+        function getBanks() { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+        function saveBanks(b) { localStorage.setItem(STORAGE_KEY, JSON.stringify(b)); }
+
+        function renderTree() {
+            const container = document.getElementById('tree-container'), b = getBanks();
+            container.innerHTML = '';
+            const g = { 10: [], 11: [], 12: [] };
+            for (const id in b) g[b[id].grade]?.push(b[id]);
+            [12, 11, 10].forEach(grade => {
+                if (!g[grade].length) return;
+                const folder = document.createElement('div');
+                folder.className = 'grade-folder';
+                folder.innerHTML = `<div class="grade-header" onclick="this.parentElement.classList.toggle('open')">📜 Khối ${grade} (${g[grade].length} bài) 🔽</div><div class="grade-content"></div>`;
+                const content = folder.querySelector('.grade-content');
+                g[grade].forEach(item => {
+                    const row = document.createElement('div');
+                    row.className = 'flex justify-between items-center p-4 hover:bg-amber-500/10 cursor-pointer text-amber-100 transition-colors border-b border-white/5';
+                    row.innerHTML = `<span class="flex-1 truncate" onclick="playBank('${item.id}')">🧪 ${item.name}</span><span class="text-red-400 font-bold px-4 hover:scale-150 transition-transform" onclick="delBank('${item.id}', event)">×</span>`;
+                    content.appendChild(row);
+                });
+                container.appendChild(folder);
+            });
+        }
+
+        function delBank(id, e) { e.stopPropagation(); if(confirm("Xóa công thức ma thuật này?")){ const b = getBanks(); delete b[id]; saveBanks(b); renderTree(); } }
+        
+        function playBank(id) { 
+            const b = getBanks(); 
+            if(b[id]) { 
+                loadedQuestions = b[id].questions; 
+                currentLessonName = b[id].name; 
+                openIntroModal();
+            } 
+        }
+
+        function openIntroModal() { document.getElementById('intro-modal').style.display = 'flex'; }
+        function proceedToName() { 
+            document.getElementById('intro-modal').style.display = 'none';
+            document.getElementById('name-modal').style.display = 'flex'; 
+        }
+
+        function openGuideModal() { document.getElementById('guide-modal').style.display = 'flex'; }
+        function closeGuideModal() { document.getElementById('guide-modal').style.display = 'none'; }
+        function openPromptModal() { document.getElementById('prompt-modal').style.display = 'flex'; }
+        function closePromptModal() { document.getElementById('prompt-modal').style.display = 'none'; }
+
+        function prepareStart(shouldSave) {
+            initAudio();
+            const f = document.getElementById('file-upload').files[0];
+            if (!f && shouldSave) return alert("Chọn file JSON!");
+            
+            if (f) {
+                if (f.name.endsWith('.xlsx') || f.name.endsWith('.xls')) {
+                parseExcelToJSON(f, function(err, parsedData) {
+                    if (err) { alert('Lỗi đọc Excel!'); return; }
+                    const e = { target: { result: JSON.stringify(parsedData) } };
+                    try {
+                        let raw = e.target.result.replace(/(?<!\\)\\([a-zA-Z{}%$])/g, '\\\\$1');
+                        const parsed = JSON.parse(raw);
+                        const name = document.getElementById('bank-name').value || 'Công thức mới';
+                        if (shouldSave || save) {
+                            const b = getBanksFromLocal ? getBanksFromLocal() : getBanks(); 
+                            const id = 'bank_' + Date.now();
+                            b[id] = { id, name, grade: document.getElementById('bank-grade').value, questions: parsed };
+                            saveBanksToLocal ? saveBanksToLocal(b) : saveBanks(b); renderTree();
+                        }
+                        loadedQuestions = parsed; 
+                        if (typeof currentLessonName !== 'undefined') currentLessonName = name;
+                        if (typeof campaignName !== 'undefined') campaignName = name;
+                        if (typeof openIntroModal === 'function') openIntroModal();
+                        else startPlay();
+                    } catch(err) { alert("Lỗi nạp file Excel!"); }
+                });
+                return;
+            }
+            const r = new FileReader();
+            r.onload = (e) => {
+                    try {
+                        let raw = e.target.result.replace(/(?<!\\)\\([a-zA-Z{}%$])/g, '\\\\$1');
+                        const parsed = JSON.parse(raw);
+                        const name = document.getElementById('bank-name').value || 'Công thức mới';
+                        if (shouldSave) {
+                            const b = getBanks(), id = 'al_'+Date.now();
+                            b[id] = { id, name, grade: document.getElementById('bank-grade').value, questions: parsed };
+                            saveBanks(b); renderTree();
+                        }
+                        loadedQuestions = parsed; currentLessonName = name;
+                        openIntroModal();
+                    } catch(err) { alert("Lỗi nạp file!"); }
+                };
+                r.readAsText(f);
+            }
+        }
+
+        function confirmNameAndStart() {
+            const input = document.getElementById('player-name-input').value.trim();
+            playerName = input || "Học việc vô danh";
+            document.getElementById('hud-player-name').innerText = `🧙‍♂️ ${playerName}`;
+            document.getElementById('name-modal').style.display = 'none';
+            startPlay();
+        }
+
+        function startPlay() {
+            currentQuestionIndex = 0; score = 0; qCount = 0;
+            document.getElementById('score').innerText = 0;
+            document.getElementById('start-modal').style.display = 'none';
+            document.getElementById('summary-modal').style.display = 'none';
+            next();
+        }
+
+        function next() {
+            if (currentQuestionIndex >= loadedQuestions.length) return showGameOver();
+            isShooting = false; qCount++;
+            document.getElementById('q-num').innerText = qCount;
+            currentProblem = loadedQuestions[currentQuestionIndex++];
+            
+            const qEl = document.getElementById('question-display');
+            renderMathContent(currentProblem.q, qEl, true);
+            autoAdjustFontSize(qEl);
+
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            const colors = ["#f87171", "#4ade80", "#60a5fa", "#fbbf24"];
+            [...currentProblem.opts].sort(() => Math.random() - 0.5).forEach((opt, idx) => {
+                const item = document.createElement('div');
+                item.className = 'ingredient-item';
+                const color = colors[idx % colors.length];
+                item.setAttribute('data-ans-raw', opt); 
+                item.innerHTML = `<div class="bottle-visual w-[70px] h-[90px]">${getBottleSVG(color)}</div><div class="answer-label"></div>`;
+                const label = item.querySelector('.answer-label');
+                label.innerHTML = opt;
+                renderMathInElement(label, { delimiters: [{left:'$', right:'$', display:false}], throwOnError: false });
+                label.style.fontSize = (1.6 * userFontSizeScale) + 'rem';
+                item.onclick = () => mixPotion(opt, item, color);
+                container.appendChild(item);
+            });
+        }
+
+        function normalize(str) {
+            if (!str) return "";
+            return str.toString().replace(/\\/g, "").replace(/\s/g, "").replace(/\$/g, "").trim();
+        }
+
+        function mixPotion(ans, el, color) {
+            if (isShooting) return; isShooting = true;
+            const correct = normalize(ans) === normalize(currentProblem.a);
+            const labelEl = el.querySelector('.answer-label');
+            
+            playSound('pour');
+            const cauldron = document.getElementById('cauldron');
+            const cRect = cauldron.getBoundingClientRect();
+            const bRect = el.querySelector('.bottle-visual').getBoundingClientRect();
+
+            const fly = document.createElement('div');
+            fly.className = 'fixed z-[100] w-[60px] h-[80px] pointer-events-none';
+            fly.innerHTML = getBottleSVG(color);
+            fly.style.left = bRect.left + 'px'; fly.style.top = bRect.top + 'px';
+            document.body.appendChild(fly);
+
+            const tx = cRect.left + cRect.width / 2 - 30;
+            const ty = cRect.top + 30;
+
+            fly.animate([
+                { left: bRect.left + 'px', top: bRect.top + 'px', transform: 'rotate(0deg) scale(1)' },
+                { left: (bRect.left + tx)/2 + 'px', top: ty - 180 + 'px', transform: 'rotate(90deg) scale(0.9)', offset: 0.5 },
+                { left: tx + 'px', top: ty + 'px', transform: 'rotate(180deg) scale(0.6)' }
+            ], { duration: 900, easing: 'ease-in' }).onfinish = () => {
+                fly.remove();
+                document.getElementById('potion-surface').setAttribute('fill', color);
+                
+                if (correct) {
+                    labelEl.classList.add('correct-glow');
+                    createSmokeEffect(tx + 30, ty + 20);
+                    showResult(true);
+                    setTimeout(next, 2000);
+                } else {
+                    createExplosion(tx + 30, ty + 20);
+                    showResult(false);
+                    // HIỆN CÂU TRẢ LỜI ĐÚNG KHI SAI
+                    setTimeout(() => {
+                        const items = document.querySelectorAll('.ingredient-item');
+                        items.forEach(item => {
+                            if(normalize(item.getAttribute('data-ans-raw')) === normalize(currentProblem.a)) {
+                                item.querySelector('.answer-label').classList.add('correct-glow');
+                            }
+                        });
+                        setTimeout(next, 2500);
+                    }, 800);
+                }
+            };
+        }
+
+        function createSmokeEffect(x, y) {
+            playSound('smoke');
+            const colors = ["#a855f7", "#38bdf8", "#4ade80", "#fbbf24", "#f472b6"];
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    const p = document.createElement('div');
+                    p.className = 'smoke-particle';
+                    const size = 30 + Math.random() * 50;
+                    p.style.width = p.style.height = size + 'px';
+                    p.style.left = (x - 30 + Math.random() * 60) + 'px';
+                    p.style.top = (y - 10) + 'px';
+                    p.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    p.style.boxShadow = `0 0 30px ${p.style.background}`;
+                    document.body.appendChild(p);
+                    setTimeout(() => p.remove(), 2500);
+                }, i * 40);
+            }
+        }
+
+        function createExplosion(x, y) {
+            playSound('boom');
+            const exp = document.createElement('div');
+            exp.className = 'explosion';
+            exp.style.left = x + 'px'; exp.style.top = y + 'px';
+            document.body.appendChild(exp);
+            setTimeout(() => exp.remove(), 600);
+        }
+
+        function showResult(win) {
+            const p = document.getElementById('result-popup');
+            p.className = 'animate-pop';
+            if (win) {
+                score++; document.getElementById('score').innerText = score;
+                p.innerText = "HOÀN HẢO!"; p.style.color = "#4ade80";
+            } else {
+                p.innerText = "LỖI PHÉP!"; p.style.color = "#f87171";
+            }
+            setTimeout(() => { p.className = ''; }, 1500);
+        }
+
+        function renderMathContent(text, element, isDisplay = false) {
+            const clean = text.replace(/```json/g, "").replace(/```/g, "").trim();
+            if (/\$|\\\(|\\\[/.test(clean)) {
+                element.innerHTML = clean;
+                renderMathInElement(element, { delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}], throwOnError: false });
+            } else {
+                if (/[àáạ]/.test(clean)) element.innerText = clean;
+                else { try { katex.render(clean, element, { throwOnError: false, displayMode: isDisplay }); } catch(e) { element.innerText = clean; } }
+            }
+        }
+
+        function autoAdjustFontSize(el) {
+            const base = 2.8;
+            el.style.fontSize = (base * userFontSizeScale) + 'rem';
+            requestAnimationFrame(() => {
+                let s = base * userFontSizeScale;
+                while ((el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth) && s > 1.0) {
+                    s -= 0.1; el.style.fontSize = s + 'rem';
+                }
+            });
+        }
+
+        function changeFontSize(d) {
+            userFontSizeScale += d;
+            if (userFontSizeScale < 0.5) userFontSizeScale = 0.5;
+            if (userFontSizeScale > 2.5) userFontSizeScale = 2.5;
+            autoAdjustFontSize(document.getElementById('question-display'));
+            document.querySelectorAll('.answer-label').forEach(l => l.style.fontSize = (1.6 * userFontSizeScale) + 'rem');
+        }
+
+        function downloadSampleFile() {
+            const sample = [{"q":"Có bao nhiêu cách chọn 2 quả từ 5 quả táo khác nhau?","a":"$C_5^2 = 10$","opts":["$10$","$20$","$5$","$25$"]}];
+            const blob = new Blob([JSON.stringify(sample, null, 2)], {type: "application/json"});
+            const url = URL.createObjectURL(blob), a = document.createElement('a');
+            a.href = url; a.download = "mau_nguyen_lieu.json"; a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function generatePrompt() {
+            const t = document.getElementById('p-topic').value || "Xác suất & Tổ hợp lớp 11";
+            const c = document.getElementById('p-count').value || 10;
+            document.getElementById('p-result').value = `Tạo bộ đề trắc nghiệm JSON mảng chủ đề ${t}, ${c} câu. Định dạng: [{"q":"Câu hỏi ($ cho toán)","a":"đáp án đúng khớp opts","opts":["đúng","sai1","sai2","sai3"]}]. Trả về duy nhất JSON ARRAY.`;
+        }
+        function copyPrompt() { 
+            const el = document.getElementById('p-result');
+            el.select(); document.execCommand('copy');
+            document.getElementById('copy-btn').innerText = '✅ ĐÃ SAO CHÉP'; 
+        }
+
+        function goHome() { 
+            document.getElementById('start-modal').style.display = 'flex'; 
+            document.getElementById('summary-modal').style.display = 'none';
+            document.getElementById('name-modal').style.display = 'none';
+            document.getElementById('intro-modal').style.display = 'none';
+            isShooting = false; 
+        }
+
+        function showGameOver() {
+            document.getElementById('summary-modal').style.display = 'flex';
+            document.getElementById('sum-player-name').innerText = playerName;
+            document.getElementById('sum-name').innerText = currentLessonName;
+            document.getElementById('sum-total').innerText = loadedQuestions.length;
+            document.getElementById('sum-score').innerText = score;
+            const pct = Math.round((score / loadedQuestions.length) * 100);
+            document.getElementById('sum-percent').innerText = pct + "%";
+            document.getElementById('rank-title').innerText = pct >= 80 ? "PHÙ THỦY TỐI THƯỢNG" : (pct >= 50 ? "NHÀ GIẢ KIM" : "TẬP SỰ");
+        }
+
+        
+    function downloadSampleExcel() {
+        const ws = XLSX.utils.aoa_to_sheet([
+            ["Câu hỏi", "Đáp án A", "Đáp án B", "Đáp án C", "Đáp án D", "Cột đúng (1-4)"],
+            ["Câu hỏi mẫu: 1 + 1 bằng mấy?", "1", "2", "3", "4", 2]
+        ]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Câu Hỏi");
+        XLSX.writeFile(wb, "Mau_Cau_Hoi.xlsx");
+    }
+    
+    window.onload = renderTree;
+    </script>
+</body>
+</html>

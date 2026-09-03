@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radar Sweeper - Dò Mìn Không Gian</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- KaTeX Core -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #020617;
+            overflow: hidden;
+            margin: 0;
+            user-select: none;
+            height: 100vh;
+        }
+
+        .radar-bg {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: #020617;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Lưới Radar Không gian */
+        .radar-grid {
+            position: absolute;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(16, 185, 129, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(16, 185, 129, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            background-position: center center;
+            z-index: 0;
+        }
+
+        /* Vòng tròn Radar */
+        .radar-circles {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 800px; height: 800px;
+            border-radius: 50%;
+            border: 2px solid rgba(16, 185, 129, 0.2);
+            z-index: 1;
+            display: flex;
+            justify-content: center; align-items: center;
+        }
+        .radar-circles::before {
+            content: '';
+            width: 500px; height: 500px;
+            border-radius: 50%;
+            border: 2px solid rgba(16, 185, 129, 0.3);
+            position: absolute;
+        }
+        .radar-circles::after {
+            content: '';
+            width: 200px; height: 200px;
+            border-radius: 50%;
+            border: 2px solid rgba(16, 185, 129, 0.4);
+            position: absolute;
+        }
+
+        /* Tia quét Radar */
+        .radar-sweep {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 800px; height: 800px;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, transparent 70%, rgba(16, 185, 129, 0.1) 90%, rgba(16, 185, 129, 0.5) 100%);
+            z-index: 2;
+            animation: spin 4s linear infinite;
+        }
+        @keyframes spin { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        /* Tàu vũ trụ trung tâm */
+        .spaceship-center {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px; height: 80px;
+            z-index: 15;
+            filter: drop-shadow(0 0 15px rgba(14, 165, 233, 0.8));
+        }
+
+        /* Bảng câu hỏi Hologram */
+        .hologram-panel { position: relative; margin-top: 12vh; width: 95vw; max-width: 95vw; background: rgba(2, 6, 23, 0.85); border: 2px solid #0ea5e9; border-radius: 16px; padding: 30px; z-index: 50; box-shadow: 0 0 30px rgba(14, 165, 233, 0.5), inset 0 0 20px rgba(14, 165, 233, 0.3); backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; min-height: 35vh; }
+        .hologram-panel::before, .hologram-panel::after {
+            content: ''; position: absolute; width: 30px; height: 30px; border: 2px solid #38bdf8;
+        }
+        .hologram-panel::before { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+        .hologram-panel::after { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+
+        .question-text {
+            font-size: 2.8rem;
+            color: #38bdf8;
+            text-align: center;
+            font-weight: 700;
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+
+        /* Thanh Cảnh báo va chạm */
+        .proximity-bar-container {
+            position: absolute;
+            top: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 12px;
+            background: rgba(2, 6, 23, 0.8);
+            border: 1px solid #334155;
+            border-radius: 10px;
+            z-index: 40;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        .proximity-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #10b981 0%, #eab308 50%, #ef4444 100%);
+            transform-origin: left;
+            /* Transition set by JS */
+        }
+        .proximity-warning {
+            position: absolute;
+            top: -25px; left: 50%; transform: translateX(-50%);
+            color: #ef4444; font-family: 'Orbitron', sans-serif; font-size: 14px; font-weight: bold;
+            text-shadow: 0 0 5px #ef4444;
+            opacity: 0;
+        }
+        .warning-flash .proximity-warning { animation: flash 0.5s infinite; }
+        @keyframes flash { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* Vùng Mục tiêu (Đáp án) */
+        .options-zone { display: flex; gap: 1vw; z-index: 50; justify-content: space-between; align-items: flex-end; width: 98vw; padding-bottom: 2vh; }
+
+        .target-node { background: rgba(2, 6, 23, 0.9); border: 2px solid #10b981; border-radius: 12px; padding: 15px 15px; width: 24%; max-width: 24%; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 0 15px rgba(16, 185, 129, 0.5); transition: all 0.2s; position: relative; overflow: hidden; min-height: 120px; }
+        .target-node::before {
+            content: 'TARGET LOCK';
+            position: absolute; top: 2px; left: 50%; transform: translateX(-50%);
+            font-size: 10px; color: #10b981; font-family: 'Orbitron', sans-serif; opacity: 0.5;
+        }
+
+        .target-node:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.6);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .answer-label { font-size: 2rem; font-weight: 700; color: #a7f3d0; text-align: center; line-height: 1.2; margin-top: 15px; transition: all 0.3s ease; width: 100%; display: flex; align-items: center; justify-content: center; }
+
+        /* HIỆU ỨNG ĐÚNG/SAI */
+        .correct-warp {
+            background: rgba(16, 185, 129, 0.3) !important;
+            border-color: #34d399 !important;
+            box-shadow: 0 0 40px #10b981 !important;
+            transform: scale(1.05);
+        }
+        .correct-warp .answer-label { color: #fff; text-shadow: 0 0 10px #34d399; }
+
+        .wrong-hit {
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+            background: rgba(239, 68, 68, 0.2) !important;
+            border-color: #f87171 !important;
+            box-shadow: 0 0 20px #ef4444 !important;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(4px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-8px, 0, 0); }
+            40%, 60% { transform: translate3d(8px, 0, 0); }
+        }
+
+        /* HUD */
+        .stats-hud {
+            position: absolute;
+            top: 15px;
+            width: 95%;
+            display: flex;
+            justify-content: space-between;
+            color: white;
+            z-index: 50;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .stat-card {
+            background: rgba(2, 6, 23, 0.8);
+            padding: 8px 20px;
+            border: 1px solid #38bdf8;
+            border-radius: 6px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 0 10px rgba(14, 165, 233, 0.3);
+        }
+
+        .btn-size {
+            width: 30px; height: 30px; background: #0ea5e9; color: #020617; border-radius: 4px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold;
+        }
+        .btn-size:hover { background: #38bdf8; box-shadow: 0 0 10px #38bdf8; }
+
+        /* Modals */
+        #start-modal, #prompt-modal, #summary-modal, #guide-modal, #name-modal, #intro-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            color: #e2e8f0;
+            backdrop-filter: blur(5px);
+        }
+
+        #summary-modal { display: none; z-index: 2000; }
+        #prompt-modal { display: none; z-index: 1500; }
+        #guide-modal { display: none; z-index: 1600; }
+        #intro-modal { display: none; z-index: 1150; }
+        #name-modal { display: none; z-index: 1100; }
+
+        .modal-box {
+            background: #0f172a;
+            padding: 40px;
+            border-radius: 16px;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+            border: 2px solid #0ea5e9;
+            box-shadow: 0 0 40px rgba(14, 165, 233, 0.4);
+            position: relative;
+        }
+        .modal-box::before {
+            content: ''; position: absolute; top: -2px; left: 20px; right: 20px; height: 2px; background: #38bdf8;
+        }
+
+        .grade-folder { background: rgba(14, 165, 233, 0.1); margin-bottom: 8px; border-radius: 8px; overflow: hidden; border: 1px solid #0ea5e9; }
+        .grade-header { padding: 15px; cursor: pointer; color: #38bdf8; font-weight: bold; background: rgba(2, 6, 23, 0.8); font-family: 'Orbitron', sans-serif;}
+        .grade-content { display: none; }
+        .grade-folder.open .grade-content { display: block; }
+        
+        .btn-sci {
+            background: rgba(14, 165, 233, 0.2);
+            color: #38bdf8;
+            padding: 15px 35px;
+            border-radius: 8px;
+            font-weight: 900;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            transition: all 0.2s;
+            border: 1px solid #0ea5e9;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .btn-sci:hover { background: #0ea5e9; color: #020617; box-shadow: 0 0 20px #0ea5e9; }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #0ea5e9; border-radius: 3px; }
+
+        #result-popup {
+            position: fixed;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 6rem;
+            font-weight: 900;
+            font-family: 'Orbitron', sans-serif;
+            z-index: 200;
+            pointer-events: none;
+            opacity: 0;
+            text-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+
+        .animate-pop { animation: popResult 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes popResult {
+            0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+            20% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+            80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -60%) scale(0.8); opacity: 0; }
+        }
+
+        .screen-shake { animation: scShake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes scShake {
+            0%, 100% { transform: translate3d(0, 0, 0); }
+            10%, 30%, 50%, 70%, 90% { transform: translate3d(-10px, 5px, 0); }
+            20%, 40%, 60%, 80% { transform: translate3d(10px, -5px, 0); }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+    <!-- MÀN HÌNH BẮT ĐẦU -->
+    <div id="start-modal">
+        <h1 class="text-6xl md:text-7xl font-black text-sky-400 mb-2 font-[Orbitron]" style="text-shadow: 0 0 20px rgba(56,189,248,0.5);">RADAR SWEEPER</h1>
+        <p class="text-xl text-sky-200 mb-8 tracking-widest uppercase font-bold">Dò Mìn Không Gian Oxyz</p>
+        
+        <div class="flex flex-col md:flex-row gap-8 w-11/12 max-w-6xl h-[70vh] bg-slate-900/90 p-10 rounded-2xl border border-sky-500 shadow-[0_0_30px_rgba(14,165,233,0.2)]">
+            <div class="flex-1 flex flex-col items-start">
+                <div class="flex justify-between w-full mb-6 items-center">
+                    <h2 class="text-xl font-black text-sky-400 font-[Orbitron]">🛰️ NẠP TỌA ĐỘ</h2>
+                    <div class="flex gap-2">
+                        <button onclick="openGuideModal()" class="bg-slate-800 hover:bg-slate-700 text-xs px-4 py-2 rounded-md font-bold transition-all border border-slate-600 text-sky-300">HƯỚNG DẪN</button>
+                        <button onclick="openPromptModal()" class="bg-indigo-900 hover:bg-indigo-800 text-xs px-4 py-2 rounded-md font-bold transition-all border border-indigo-500 text-indigo-200 shadow-[0_0_15px_rgba(55,48,163,0.5)]">TẠO LỆNH AI</button>
+                    </div>
+                </div>
+
+                <div class="mb-6 w-full text-left bg-slate-800 p-4 rounded-xl border border-slate-700">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-sm text-slate-400 font-bold">Bản đồ sao (.json)</span>
+                        <button onclick="downloadSampleFile()" class="text-sky-400 hover:text-sky-300 text-xs font-bold underline">Tải File Mẫu</button>
+                    </div>
+                    <input type="file" id="file-upload" accept=".json, .xlsx, .xls" class="w-full text-sm text-slate-400 file:bg-sky-900 file:border-0 file:rounded-md file:px-4 file:py-2 file:text-sky-200 file:font-bold cursor-pointer hover:file:bg-sky-800">
+                </div>
+
+                <input type="text" id="bank-name" placeholder="Tên khu vực (VD: Tọa độ điểm...)" class="w-full bg-slate-950 border border-slate-700 p-4 rounded-xl mb-4 focus:border-sky-500 outline-none text-white text-lg font-bold">
+                <select id="bank-grade" class="w-full bg-slate-950 border border-slate-700 p-4 rounded-xl mb-8 text-white outline-none text-lg font-bold">
+                    <option selected value="12">Khối 12</option><option value="11">Khối 11</option><option value="10">Khối 10</option>
+                </select>
+                <div class="flex gap-4 w-full mt-auto">
+                    <button onclick="prepareStart(true)" class="btn-sci flex-1">LƯU & QUÉT</button>
+                    <button onclick="prepareStart(false)" class="flex-1 border border-sky-500/50 text-sky-300 rounded-xl font-bold hover:bg-sky-900/30 transition-all uppercase tracking-wider">Khởi động ngay</button>
+                </div>
+            </div>
+
+            <div class="flex-1 flex flex-col items-start border-l border-slate-700 pl-8 overflow-hidden">
+                <h2 class="text-xl font-black text-sky-400 mb-6 font-[Orbitron]">📂 LỊCH SỬ BAY</h2>
+                <div id="tree-container" class="flex-1 overflow-y-auto w-full pr-4 text-lg custom-scrollbar font-bold"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH GIỚI THIỆU TRÒ CHƠI -->
+    <div id="intro-modal">
+        <div class="modal-box">
+            <h2 class="text-3xl font-black text-sky-400 mb-6 font-[Orbitron]">HỆ THỐNG RADAR KÍCH HOẠT</h2>
+            <div class="text-lg text-slate-300 leading-relaxed space-y-4 text-justify px-4 font-bold">
+                <p>Thuyền trưởng, tàu của chúng ta đang tiến vào Vành đai Thiên thạch Vô hình. Mắt thường không thể nhìn thấy chúng!</p>
+                <p>Chỉ có <span class="text-sky-400 font-black">Radar Toán Học Oxyz</span> mới có thể quét ra tọa độ an toàn để thực hiện bước nhảy không gian.</p>
+                <p class="text-red-400 font-black italic text-center text-xl mt-4">Chú ý thanh Cảnh báo! Nếu không tìm ra tọa độ trước khi thiên thạch đâm trúng, lá chắn sẽ bị tổn hại nghiêm trọng!</p>
+            </div>
+            <button onclick="proceedToName()" class="w-full btn-sci mt-10">KẾT NỐI HỆ THỐNG</button>
+        </div>
+    </div>
+
+    <!-- NHẬP TÊN MODAL -->
+    <div id="name-modal">
+        <div class="modal-box">
+            <h2 class="text-3xl font-black text-sky-400 mb-6 font-[Orbitron]">ĐĂNG NHẬP THUYỀN TRƯỞNG</h2>
+            <p class="text-lg text-slate-400 mb-6 font-bold">Xác nhận ID Thuyền trưởng để hệ thống lưu lại nhật ký chuyến bay.</p>
+            <input type="text" id="player-name-input" placeholder="Mã định danh..." class="w-full bg-slate-900 border border-sky-500/50 p-4 rounded-xl mb-8 focus:border-sky-400 outline-none text-sky-200 text-center text-2xl uppercase tracking-widest font-black font-[Orbitron]">
+            <button onclick="confirmNameAndStart()" class="w-full btn-sci">PHÓNG TÀU</button>
+        </div>
+    </div>
+
+    <!-- HƯỚNG DẪN MODAL -->
+    <div id="guide-modal">
+        <div class="modal-box text-left">
+            <h2 class="text-3xl font-black text-sky-400 mb-6 text-center font-[Orbitron]">HƯỚNG DẪN ĐIỀU HƯỚNG</h2>
+            <ul class="space-y-4 text-lg text-slate-300 font-bold">
+                <li class="flex items-start gap-3"><span class="text-sky-400 font-black">1.</span> Đọc dữ liệu không gian hiển thị trên màn hình Hologram.</li>
+                <li class="flex items-start gap-3"><span class="text-sky-400 font-black">2.</span> Nhấp chọn Tọa độ/Vector chính xác phía dưới để tàu thực hiện Warp.</li>
+                <li class="flex items-start gap-3"><span class="text-sky-400 font-black">3.</span> Dùng nút TẠM DỪNG hoặc +10S trên góc màn hình nếu cần thêm thời gian tính toán.</li>
+                <li class="flex items-start gap-3"><span class="text-red-400 font-black">4.</span> CẢNH BÁO: Hết giờ hoặc chọn sai tọa độ sẽ khiến tàu đâm vào thiên thạch!</li>
+            </ul>
+            <button onclick="closeGuideModal()" class="w-full btn-sci mt-8">ĐÃ RÕ</button>
+        </div>
+    </div>
+
+    <!-- PROMPT MODAL -->
+    <div id="prompt-modal">
+        <div class="modal-box w-11/12 max-w-4xl text-left border-indigo-500 shadow-[0_0_30px_rgba(79,70,229,0.3)]">
+            <button onclick="closePromptModal()" class="absolute top-4 right-6 text-slate-400 hover:text-red-400 text-3xl font-black">&times;</button>
+            <h2 class="text-2xl font-black text-indigo-400 mb-6 text-center font-[Orbitron]">AI PROMPT GENERATOR</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 font-bold">
+                <div>
+                    <label class="block text-xs font-black text-slate-400 mb-1 uppercase">Chủ đề bài học</label>
+                    <input type="text" id="p-topic" placeholder="VD: Phương trình mặt phẳng Oxyz..." class="w-full bg-slate-900 px-4 py-3 rounded border border-slate-700 focus:border-indigo-400 outline-none text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-black text-slate-400 mb-1 uppercase">Số lượng câu</label>
+                    <input type="number" id="p-count" value="10" class="w-full bg-slate-900 px-4 py-3 rounded border border-slate-700 focus:border-indigo-400 outline-none text-white">
+                </div>
+            </div>
+
+            <button onclick="generatePrompt()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-lg font-black text-lg mb-6 transition-all uppercase tracking-wider">Tạo Câu Lệnh Cho AI</button>
+
+            <label class="block text-xs font-black text-emerald-400 mb-2 uppercase">Kết quả (Copy gửi ChatGPT/Gemini):</label>
+            <textarea id="p-result" readonly class="w-full h-40 bg-black/50 text-emerald-300 p-4 rounded-lg border border-slate-700 font-mono text-sm resize-none outline-none custom-scrollbar mb-4 font-bold"></textarea>
+            
+            <button onclick="copyPrompt()" id="copy-btn" class="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-lg font-black transition-all">📋 SAO CHÉP LỆNH</button>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH TỔNG KẾT -->
+    <div id="summary-modal">
+        <div class="modal-box w-full max-w-lg">
+            <div id="rank-title" class="text-2xl text-sky-400 font-black mb-2 uppercase tracking-widest font-[Orbitron]">THIÊN TÀI KHÔNG GIAN</div>
+            <h2 class="text-3xl font-bold text-white mb-6 border-b border-slate-700 pb-4 font-[Orbitron]">CHUYẾN BAY KẾT THÚC</h2>
+            <div class="space-y-4 text-lg mb-8 text-left bg-black/40 p-6 rounded-xl border border-slate-700 font-bold">
+                <p class="text-slate-300">Thuyền trưởng: <span id="sum-player-name" class="font-black text-white uppercase">GUESTS</span></p>
+                <p class="text-slate-300">Tọa độ mục tiêu: <span id="sum-name" class="font-black text-sky-400">N/A</span></p>
+                <div class="flex justify-between items-center mt-2">
+                    <span class="text-slate-300">Bước nhảy an toàn:</span>
+                    <span id="sum-score" class="text-green-400 font-black text-2xl">0</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-300">Va chạm mìn:</span>
+                    <span id="sum-miss" class="text-red-400 font-black text-2xl">0</span>
+                </div>
+                <div class="pt-4 border-t border-slate-700 text-center mt-4">
+                    <p class="text-xs text-slate-400 uppercase tracking-widest mb-1">Tỷ Lệ Sống Sót</p>
+                    <p id="sum-percent" class="text-5xl font-black text-sky-400 font-[Orbitron]">0%</p>
+                </div>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="startPlay()" class="btn-sci flex-1 text-sm py-3 px-0">BAY LẠI</button>
+                <button onclick="goHome()" class="flex-1 bg-slate-800 rounded-lg font-bold text-sm py-3 hover:bg-slate-700 text-white transition-colors border border-slate-600 uppercase tracking-wider">Đóng Radar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GIAO DIỆN CHÍNH -->
+    <div class="radar-bg">
+        <div class="radar-grid"></div>
+        <div class="radar-circles"></div>
+        <div class="radar-sweep"></div>
+        
+        <!-- Tàu vũ trụ -->
+        <div class="spaceship-center" id="player-ship">
+            <svg viewBox="0 0 100 100" style="transform: rotate(-45deg);">
+                <polygon points="50,10 90,90 50,75 10,90" fill="#0ea5e9" stroke="#38bdf8" stroke-width="2"/>
+                <polygon points="50,30 70,80 50,70 30,80" fill="#0284c7"/>
+                <circle cx="50" cy="55" r="8" fill="#a5f3fc"/>
+                <!-- Động cơ -->
+                <polygon points="40,78 60,78 50,95" fill="#facc15" id="engine-flame">
+                    <animate attributeName="opacity" values="0.5;1;0.5" dur="0.2s" repeatCount="indefinite"/>
+                </polygon>
+            </svg>
+        </div>
+
+        <div class="proximity-bar-container">
+            <div class="proximity-warning" id="prox-warn">CẢNH BÁO VA CHẠM!</div>
+            <div class="proximity-bar" id="prox-bar"></div>
+        </div>
+
+        <div class="stats-hud">
+            <div class="flex gap-3">
+                <button onclick="goHome()" class="stat-card hover:bg-slate-700 transition-colors cursor-pointer border-sky-500/50 text-slate-300 font-bold uppercase tracking-wider">Thoát</button>
+                <div class="stat-card border-sky-500/50">
+                    <div class="flex gap-2">
+                        <div class="btn-size" onclick="changeFontSize(-0.1)">-</div>
+                        <div class="btn-size" onclick="changeFontSize(0.1)">+</div>
+                    </div>
+                </div>
+                <button id="pause-btn" onclick="togglePause()" class="stat-card hover:bg-slate-700 transition-colors cursor-pointer border-sky-500/50 text-sky-400 font-bold w-32 justify-center">⏸ DỪNG</button>
+                <button onclick="addTime()" class="stat-card hover:bg-slate-700 transition-colors cursor-pointer border-sky-500/50 text-emerald-400 font-bold">⏳ +10S</button>
+            </div>
+            <div class="flex gap-3 text-right">
+                <div class="stat-card text-sky-200 border-sky-500/50 font-bold" id="hud-player-name">USER</div>
+                <div class="stat-card text-sky-400 font-bold border-sky-500/50">JUMP: <span id="q-num" class="ml-2 text-white">1</span></div>
+                <div class="stat-card text-emerald-400 border-emerald-500/50 bg-emerald-900/30 font-bold">SAFE: <span id="score" class="ml-2 text-white">0</span></div>
+            </div>
+        </div>
+
+        <div class="hologram-panel" id="q-panel">
+            <div id="question-display" class="question-text"></div>
+        </div>
+        
+        <div class="options-zone" id="options-container"></div>
+    </div>
+
+    <div id="result-popup"></div>
+
+    <script>
+
+    function parseExcelToJSON(file, callback) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = e.target.result;
+                const wb = XLSX.read(data, { type: 'binary' });
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+                
+                let questions = [];
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row || row.length < 6) continue;
+                    if (String(row[0]).toLowerCase().includes('câu hỏi') || String(row[1]).toLowerCase().includes('đáp án')) continue;
+                    
+                    
+                        questions.push({
+                            q: String(row[0]),
+                            opts: [String(row[1]), String(row[2]), String(row[3]), String(row[4])],
+                            a: String(row[parseInt(row[5], 10)])
+                        });
+                        
+                }
+                callback(null, questions);
+            } catch (error) {
+                callback(error, null);
+            }
+        };
+        reader.readAsBinaryString(file);
+    }
+    
+
+        let score = 0, qCount = 0, currentProblem = null, isAnimating = false;
+        let loadedQuestions = [], currentQuestionIndex = 0, currentLessonName = "";
+        let userFontSizeScale = 1.0;
+        let playerName = "Ẩn danh";
+        
+        // Timer
+        let proxAnim = null;
+        let isPaused = false;
+        const TIME_MS = 30000; // 30s
+        
+        const STORAGE_KEY = 'radar_sweeper_banks';
+
+        let audioCtx = null;
+        function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        
+        function playSound(type) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            if (type === 'warp') {
+                // Sci-fi warp sound
+                osc.type = 'sine'; osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1500, audioCtx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+            } else if (type === 'explosion') {
+                // Explosion sound
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.5);
+                gain.gain.setValueAtTime(0.8, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+            } else if (type === 'ping') {
+                // Radar ping
+                osc.type = 'sine'; osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+            }
+            osc.connect(gain); gain.connect(audioCtx.destination);
+        }
+
+        function getBanks() { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+        function saveBanks(b) { localStorage.setItem(STORAGE_KEY, JSON.stringify(b)); }
+
+        function renderTree() {
+            const container = document.getElementById('tree-container'), b = getBanks();
+            container.innerHTML = '';
+            const g = { 10: [], 11: [], 12: [] };
+            for (const id in b) g[b[id].grade]?.push(b[id]);
+            [12, 11, 10].forEach(grade => {
+                if (!g[grade].length) return;
+                const folder = document.createElement('div');
+                folder.className = 'grade-folder';
+                folder.innerHTML = `<div class="grade-header" onclick="this.parentElement.classList.toggle('open')">🛰️ Khối ${grade} (${g[grade].length} bản đồ) 🔽</div><div class="grade-content p-2"></div>`;
+                const content = folder.querySelector('.grade-content');
+                g[grade].forEach(item => {
+                    const row = document.createElement('div');
+                    row.className = 'flex justify-between items-center p-3 mb-1 bg-slate-800 rounded-lg hover:bg-sky-900/40 cursor-pointer text-slate-200 transition-colors border border-slate-700';
+                    row.innerHTML = `<span class="flex-1 truncate" onclick="playBank('${item.id}')">🌐 ${item.name}</span><span class="text-red-400 font-bold px-3 hover:scale-150 transition-transform" onclick="delBank('${item.id}', event)">×</span>`;
+                    content.appendChild(row);
+                });
+                container.appendChild(folder);
+            });
+        }
+
+        function delBank(id, e) { e.stopPropagation(); if(confirm("Xóa bản đồ sao này?")){ const b = getBanks(); delete b[id]; saveBanks(b); renderTree(); } }
+        
+        function playBank(id) { 
+            const b = getBanks(); 
+            if(b[id]) { 
+                loadedQuestions = b[id].questions; 
+                currentLessonName = b[id].name; 
+                document.getElementById('intro-modal').style.display = 'flex';
+            } 
+        }
+
+        function proceedToName() { 
+            document.getElementById('intro-modal').style.display = 'none';
+            document.getElementById('name-modal').style.display = 'flex'; 
+        }
+
+        function openGuideModal() { document.getElementById('guide-modal').style.display = 'flex'; }
+        function closeGuideModal() { document.getElementById('guide-modal').style.display = 'none'; }
+        function openPromptModal() { document.getElementById('prompt-modal').style.display = 'flex'; }
+        function closePromptModal() { document.getElementById('prompt-modal').style.display = 'none'; }
+
+        function prepareStart(shouldSave) {
+            initAudio();
+            const f = document.getElementById('file-upload').files[0];
+            if (!f && shouldSave) return alert("Chọn file JSON!");
+            
+            if (f) {
+                if (f.name.endsWith('.xlsx') || f.name.endsWith('.xls')) {
+                parseExcelToJSON(f, function(err, parsedData) {
+                    if (err) { alert('Lỗi đọc Excel!'); return; }
+                    const e = { target: { result: JSON.stringify(parsedData) } };
+                    try {
+                        let raw = e.target.result.replace(/(?<!\\)\\([a-zA-Z{}%$])/g, '\\\\$1');
+                        const parsed = JSON.parse(raw);
+                        const name = document.getElementById('bank-name').value || 'Công thức mới';
+                        if (shouldSave || save) {
+                            const b = getBanksFromLocal ? getBanksFromLocal() : getBanks(); 
+                            const id = 'bank_' + Date.now();
+                            b[id] = { id, name, grade: document.getElementById('bank-grade').value, questions: parsed };
+                            saveBanksToLocal ? saveBanksToLocal(b) : saveBanks(b); renderTree();
+                        }
+                        loadedQuestions = parsed; 
+                        if (typeof currentLessonName !== 'undefined') currentLessonName = name;
+                        if (typeof campaignName !== 'undefined') campaignName = name;
+                        if (typeof openIntroModal === 'function') openIntroModal();
+                        else startPlay();
+                    } catch(err) { alert("Lỗi nạp file Excel!"); }
+                });
+                return;
+            }
+            const r = new FileReader();
+            r.onload = (e) => {
+                    try {
+                        let raw = e.target.result.replace(/(?<!\\)\\([a-zA-Z{}%$])/g, '\\\\$1');
+                        const parsed = JSON.parse(raw);
+                        const name = document.getElementById('bank-name').value || 'Bản đồ Oxyz';
+                        if (shouldSave) {
+                            const b = getBanks(), id = 'rs_'+Date.now();
+                            b[id] = { id, name, grade: document.getElementById('bank-grade').value, questions: parsed };
+                            saveBanks(b); renderTree();
+                        }
+                        loadedQuestions = parsed; currentLessonName = name;
+                        document.getElementById('intro-modal').style.display = 'flex';
+                    } catch(err) { alert("Lỗi đọc dữ liệu radar (JSON sai)!"); }
+                };
+                r.readAsText(f);
+            }
+        }
+
+        function confirmNameAndStart() {
+            const input = document.getElementById('player-name-input').value.trim();
+            playerName = input || "Thuyền trưởng";
+            document.getElementById('hud-player-name').innerText = playerName;
+            document.getElementById('name-modal').style.display = 'none';
+            startPlay();
+        }
+
+        // --- TIMER LOGIC ---
+        function resetTimer() {
+            if (proxAnim) proxAnim.cancel();
+            const bar = document.getElementById('prox-bar');
+            bar.style.transform = 'scaleX(1)';
+            document.getElementById('prox-warn').parentElement.classList.remove('warning-flash');
+            
+            isPaused = false;
+            const pauseBtn = document.getElementById('pause-btn');
+            if (pauseBtn) {
+                pauseBtn.innerText = '⏸ DỪNG';
+                pauseBtn.classList.replace('text-red-400', 'text-sky-400');
+            }
+        }
+
+        function startTimer() {
+            const bar = document.getElementById('prox-bar');
+            proxAnim = bar.animate([
+                { transform: 'scaleX(1)' },
+                { transform: 'scaleX(0)' }
+            ], {
+                duration: TIME_MS,
+                fill: 'forwards'
+            });
+            
+            // Check for warning flash
+            const checkWarning = setInterval(() => {
+                if(!proxAnim || isAnimating) { clearInterval(checkWarning); return; }
+                const remaining = TIME_MS - proxAnim.currentTime;
+                if(remaining < 5000 && !isPaused) {
+                    document.getElementById('prox-warn').parentElement.classList.add('warning-flash');
+                    if(Math.random() < 0.1) playSound('ping'); // Annoying beep
+                } else {
+                    document.getElementById('prox-warn').parentElement.classList.remove('warning-flash');
+                }
+            }, 100);
+
+            proxAnim.onfinish = () => {
+                clearInterval(checkWarning);
+                if (!isAnimating && !isPaused) handleTimeout();
+            };
+        }
+
+        function togglePause() {
+            if (!proxAnim) return;
+            const pauseBtn = document.getElementById('pause-btn');
+            if (isPaused) {
+                proxAnim.play();
+                isPaused = false;
+                pauseBtn.innerText = '⏸ DỪNG';
+                pauseBtn.classList.replace('text-red-400', 'text-sky-400');
+            } else {
+                proxAnim.pause();
+                isPaused = true;
+                pauseBtn.innerText = '▶ TIẾP TỤC';
+                pauseBtn.classList.replace('text-sky-400', 'text-red-400');
+            }
+        }
+
+        function addTime() {
+            if (!proxAnim) return;
+            proxAnim.currentTime = Math.max(0, proxAnim.currentTime - 10000);
+            playSound('ping');
+            document.getElementById('prox-warn').parentElement.classList.remove('warning-flash');
+        }
+
+        function handleTimeout() {
+            if (isAnimating) return;
+            isAnimating = true;
+            playSound('explosion');
+            
+            document.body.classList.add('screen-shake');
+            setTimeout(() => document.body.classList.remove('screen-shake'), 500);
+            
+            // Tàu chớp đỏ
+            const ship = document.getElementById('player-ship');
+            ship.style.filter = 'drop-shadow(0 0 20px red) hue-rotate(150deg)';
+            setTimeout(() => { ship.style.filter = 'drop-shadow(0 0 15px rgba(14, 165, 233, 0.8))'; }, 1000);
+
+            showResult(false, "VA CHẠM!");
+            highlightCorrectAnswer();
+            setTimeout(next, 2500);
+        }
+        // -------------------------------
+
+        function startPlay() {
+            currentQuestionIndex = 0; score = 0; qCount = 0;
+            document.getElementById('score').innerText = 0;
+            document.getElementById('start-modal').style.display = 'none';
+            document.getElementById('summary-modal').style.display = 'none';
+            
+            // Hiển thị tàu vũ trụ
+            document.getElementById('player-ship').style.display = 'block';
+            next();
+        }
+
+        function next() {
+            if (currentQuestionIndex >= loadedQuestions.length) return showGameOver();
+            isAnimating = false; qCount++;
+            document.getElementById('q-num').innerText = qCount;
+            currentProblem = loadedQuestions[currentQuestionIndex++];
+            
+            resetTimer();
+            setTimeout(startTimer, 100);
+
+            const qEl = document.getElementById('question-display');
+            renderMathContent(currentProblem.q, qEl, true);
+            autoAdjustFontSize(qEl);
+
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            
+            [...currentProblem.opts].sort(() => Math.random() - 0.5).forEach((opt) => {
+                const item = document.createElement('div');
+                item.className = 'target-node';
+                item.setAttribute('data-ans-raw', opt); 
+                
+                item.innerHTML = `<div class="answer-label"></div>`;
+                const label = item.querySelector('.answer-label');
+                label.innerHTML = opt;
+                renderMathInElement(label, { delimiters: [{left:'$', right:'$', display:false}], throwOnError: false });
+                label.style.fontSize = (1.6 * userFontSizeScale) + 'rem';
+                item.onclick = () => selectTarget(opt, item);
+                container.appendChild(item);
+            });
+        }
+
+        function normalize(str) {
+            if (!str) return "";
+            return str.toString().replace(/\\/g, "").replace(/\s/g, "").replace(/\$/g, "").trim();
+        }
+
+        function highlightCorrectAnswer() {
+            const items = document.querySelectorAll('.target-node');
+            items.forEach(item => {
+                if(normalize(item.getAttribute('data-ans-raw')) === normalize(currentProblem.a)) {
+                    item.classList.add('correct-warp');
+                }
+            });
+        }
+
+        function selectTarget(ans, el) {
+            if (isAnimating || isPaused) return; isAnimating = true;
+            if (proxAnim) proxAnim.pause(); 
+            
+            const correct = normalize(ans) === normalize(currentProblem.a);
+            
+            const ship = document.getElementById('player-ship');
+            const shipRect = ship.getBoundingClientRect();
+            const targetRect = el.getBoundingClientRect();
+            
+            const tx = targetRect.left + targetRect.width/2 - shipRect.width/2;
+            const ty = targetRect.top - shipRect.height; // Phía trên ô đáp án một chút
+
+            if (correct) {
+                playSound('warp');
+                // Xoay tàu hướng về mục tiêu
+                const angle = Math.atan2(ty - shipRect.top, tx - shipRect.left) * (180 / Math.PI) + 45; // +45 vì SVG gốc nghiêng
+                ship.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+                
+                el.classList.add('correct-warp');
+
+                ship.animate([
+                    { transform: `translate(0,0) rotate(${angle}deg) scale(1)`, filter: 'drop-shadow(0 0 15px cyan)' },
+                    { transform: `translate(${(tx - shipRect.left)/2}px, ${(ty - shipRect.top)/2}px) rotate(${angle}deg) scale(0.2)`, filter: 'drop-shadow(0 0 50px white)', offset: 0.5 },
+                    { transform: `translate(${tx - shipRect.left}px, ${ty - shipRect.top}px) rotate(0deg) scale(1)`, filter: 'drop-shadow(0 0 15px cyan)' }
+                ], { duration: 600, easing: 'ease-in-out' }).onfinish = () => {
+                    ship.style.transform = `translate(-50%, -50%)`; // Reset position for next round (handled by fixed center)
+                    showResult(true, "WARP OK!");
+                    setTimeout(next, 1500);
+                };
+            } else {
+                playSound('explosion');
+                document.body.classList.add('screen-shake');
+                setTimeout(() => document.body.classList.remove('screen-shake'), 500);
+                
+                el.classList.add('wrong-hit');
+                ship.style.filter = 'drop-shadow(0 0 20px red) hue-rotate(150deg)';
+                setTimeout(() => { ship.style.filter = 'drop-shadow(0 0 15px rgba(14, 165, 233, 0.8))'; }, 1000);
+                
+                showResult(false, "LỖI TỌA ĐỘ!");
+                highlightCorrectAnswer();
+                setTimeout(next, 2500);
+            }
+        }
+
+        function showResult(win, text) {
+            const p = document.getElementById('result-popup');
+            p.className = 'animate-pop';
+            p.innerText = text;
+            if (win) {
+                score++; document.getElementById('score').innerText = score;
+                p.style.color = "#34d399";
+            } else {
+                p.style.color = "#ef4444";
+            }
+            setTimeout(() => { p.className = ''; }, 1800);
+        }
+
+        function renderMathContent(text, element, isDisplay = false) {
+            const clean = text.replace(/```json/g, "").replace(/```/g, "").trim();
+            if (/\$|\\\(|\\\[/.test(clean)) {
+                element.innerHTML = clean;
+                renderMathInElement(element, { delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}], throwOnError: false });
+            } else {
+                if (/[àáạ]/.test(clean)) element.innerText = clean;
+                else { try { katex.render(clean, element, { throwOnError: false, displayMode: isDisplay }); } catch(e) { element.innerText = clean; } }
+            }
+        }
+
+        function autoAdjustFontSize(el) {
+            const base = 2.8;
+            el.style.fontSize = (base * userFontSizeScale) + 'rem';
+            requestAnimationFrame(() => {
+                let s = base * userFontSizeScale;
+                while ((el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth) && s > 1.0) {
+                    s -= 0.1; el.style.fontSize = s + 'rem';
+                }
+            });
+        }
+
+        function changeFontSize(d) {
+            userFontSizeScale += d;
+            if (userFontSizeScale < 0.5) userFontSizeScale = 0.5;
+            if (userFontSizeScale > 2.5) userFontSizeScale = 2.5;
+            autoAdjustFontSize(document.getElementById('question-display'));
+            document.querySelectorAll('.answer-label').forEach(l => l.style.fontSize = (1.6 * userFontSizeScale) + 'rem');
+        }
+
+        function downloadSampleFile() {
+            const sample = [
+                {"q":"Mặt cầu $(S): (x-1)^2 + (y+2)^2 + z^2 = 9$ có tâm là?","a":"$(1; -2; 0)$","opts":["$(1; -2; 0)$","$(-1; 2; 0)$","$(1; 2; 0)$","$(-1; -2; 0)$"]},
+                {"q":"Vectơ pháp tuyến của mặt phẳng $(P): 2x - y + 3z - 5 = 0$ là?","a":"$\\vec{n} = (2; -1; 3)$","opts":["$\\vec{n} = (2; -1; 3)$","$\\vec{n} = (2; 1; 3)$","$\\vec{n} = (-1; 3; -5)$","$\\vec{n} = (2; -1; -5)$"]}
+            ];
+            const blob = new Blob([JSON.stringify(sample, null, 2)], {type: "application/json"});
+            const url = URL.createObjectURL(blob), a = document.createElement('a');
+            a.href = url; a.download = "mau_toado_oxyz.json"; a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function generatePrompt() {
+            const t = document.getElementById('p-topic').value || "Hình học Oxyz lớp 12";
+            const c = document.getElementById('p-count').value || 10;
+            document.getElementById('p-result').value = `Bạn là chuyên gia Toán học. Tạo đề thi JSON mảng chủ đề ${t}, ${c} câu. Định dạng: [{"q":"Câu hỏi ($ cho toán)","a":"đáp án đúng khớp 100% opts","opts":["đúng","sai1","sai2","sai3"]}]. Trả về duy nhất JSON ARRAY.`;
+        }
+        function copyPrompt() { 
+            const el = document.getElementById('p-result');
+            el.select(); document.execCommand('copy');
+            document.getElementById('copy-btn').innerText = '✅ ĐÃ SAO CHÉP'; 
+        }
+
+        function goHome() { 
+            if (proxAnim) proxAnim.cancel();
+            document.getElementById('player-ship').style.display = 'none';
+            document.getElementById('start-modal').style.display = 'flex'; 
+            document.getElementById('summary-modal').style.display = 'none';
+            document.getElementById('name-modal').style.display = 'none';
+            document.getElementById('intro-modal').style.display = 'none';
+            isAnimating = false; 
+        }
+
+        function showGameOver() {
+            if (proxAnim) proxAnim.cancel();
+            document.getElementById('player-ship').style.display = 'none';
+            document.getElementById('summary-modal').style.display = 'flex';
+            document.getElementById('sum-player-name').innerText = playerName;
+            document.getElementById('sum-name').innerText = currentLessonName;
+            
+            document.getElementById('sum-score').innerText = score;
+            document.getElementById('sum-miss').innerText = loadedQuestions.length - score;
+            const pct = Math.round((score / loadedQuestions.length) * 100);
+            document.getElementById('sum-percent').innerText = pct + "%";
+            document.getElementById('rank-title').innerText = pct >= 80 ? "ĐÔ ĐỐC TỐI CAO" : (pct >= 50 ? "THIÊN TÀI KHÔNG GIAN" : "LÍNH MỚI");
+        }
+
+        
+    function downloadSampleExcel() {
+        const ws = XLSX.utils.aoa_to_sheet([
+            ["Câu hỏi", "Đáp án A", "Đáp án B", "Đáp án C", "Đáp án D", "Cột đúng (1-4)"],
+            ["Câu hỏi mẫu: 1 + 1 bằng mấy?", "1", "2", "3", "4", 2]
+        ]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Câu Hỏi");
+        XLSX.writeFile(wb, "Mau_Cau_Hoi.xlsx");
+    }
+    
+    window.onload = renderTree;
+    </script>
+</body>
+</html>

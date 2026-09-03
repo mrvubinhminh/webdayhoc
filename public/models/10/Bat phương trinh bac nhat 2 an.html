@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Khám phá Bất phương trình bậc nhất hai ẩn - Toán 10</title>
+    <!-- Cài đặt Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script>
+        window.MathJax = {
+            options: { enableMenu: false },
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                packages: {'[+]': ['color']}
+            },
+            loader: {load: ['[tex]/color']},
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f8fafc; 
+            color: #334155; 
+            margin: 0;
+            overflow: hidden; 
+            user-select: none;
+        }
+        
+        .app-container { display: flex; flex-direction: column; height: 100vh; width: 100vw; }
+        .main-content { display: flex; flex: 1; overflow: hidden; }
+
+        .sidebar {
+            width: 420px;
+            background-color: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 10;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.02);
+            padding: 1.25rem;
+            /* Cho phép cuộn menu */
+            touch-action: pan-y; 
+        }
+
+        .canvas-area {
+            flex: 1;
+            position: relative;
+            background-color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            /* Chặn cuộn trên Canvas để kéo thả mượt */
+            touch-action: none; 
+        }
+
+        .bottom-panel {
+            min-height: 130px;
+            background-color: #ffffff;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            padding: 1rem 1.5rem;
+            z-index: 10;
+            gap: 1.5rem;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.02);
+            align-items: stretch;
+            justify-content: space-between;
+        }
+
+        .menu-btn {
+            background-color: #f8fafc;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.4rem;
+        }
+        .menu-btn:hover { background-color: #e2e8f0; }
+        .menu-btn.active { 
+            background-color: #eff6ff; 
+            border-color: #bfdbfe; 
+            color: #1d4ed8; 
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1);
+        }
+        .menu-icon {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 28px; height: 28px; background-color: #94a3b8; color: white;
+            border-radius: 6px; font-size: 0.8rem; flex-shrink: 0;
+        }
+        .menu-btn.active .menu-icon { background-color: #3b82f6; }
+
+        .discovery-box {
+            display: none; background-color: #fffbeb; border: 1px solid #fde68a;
+            border-radius: 0.75rem; padding: 1.25rem; margin-top: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .discovery-box.active { display: flex; flex-direction: column; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .draggable-point { cursor: grab; }
+        .draggable-point:active { cursor: grabbing; }
+        
+        .math-text { font-family: 'JetBrains Mono', monospace; }
+        
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none; width: 100%; background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 20px; width: 20px;
+            border-radius: 50%; background: #2563eb; cursor: pointer;
+            margin-top: -8px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 6px; cursor: pointer;
+            background: #cbd5e1; border-radius: 3px;
+        }
+
+        /* Utils */
+        .color-true { color: #16a34a; }
+        .color-false { color: #dc2626; }
+        .color-blue { color: #2563eb; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-20">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm border border-blue-200">
+                    BPT
+                </div>
+                <h1 class="text-base font-bold text-slate-700 uppercase tracking-wide">Khám phá Bất Phương Trình Bậc Nhất Hai Ẩn</h1>
+            </div>
+            <button id="btnFullscreen" class="flex items-center gap-2 text-slate-500 hover:text-blue-600 px-3 py-1.5 rounded-md text-sm border border-slate-300 hover:border-blue-300 hover:bg-blue-50 transition font-medium">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                <span id="txtFullscreen">Toàn màn hình</span>
+            </button>
+        </header>
+
+        <div class="main-content">
+            <aside class="sidebar">
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Hoạt động Khám phá</div>
+                
+                <div class="flex flex-col gap-1" id="menuGroup">
+                    <button class="menu-btn active" data-mode="0"><span class="menu-icon">0</span> Khởi động: Kế hoạch sản xuất</button>
+                    <button class="menu-btn" data-mode="1"><span class="menu-icon">1</span> Điểm nào là nghiệm?</button>
+                    <button class="menu-btn" data-mode="2"><span class="menu-icon">2</span> Biểu diễn đường biên</button>
+                    <button class="menu-btn" data-mode="3"><span class="menu-icon">3</span> Khám phá Miền nghiệm</button>
+                    <button class="menu-btn" data-mode="4"><span class="menu-icon">4</span> Quy tắc Điểm thử</button>
+                    <button class="menu-btn" data-mode="5"><span class="menu-icon">5</span> Phân biệt dấu (≤, <, ≥, >)</button>
+                    <button class="menu-btn" data-mode="6"><span class="menu-icon">6</span> Hệ bất phương trình</button>
+                    <button class="menu-btn" data-mode="7"><span class="menu-icon">7</span> Tối ưu hóa (Quy hoạch tuyến tính)</button>
+                </div>
+
+                <!-- Mode 0 -->
+                <div id="q-mode-0" class="discovery-box active">
+                    <div class="text-sm font-bold text-blue-700 mb-2">Bài toán lập kế hoạch</div>
+                    <p class="text-sm text-slate-700 mb-2">Sản xuất 2 loại sản phẩm A và B.<br>
+                        - SP A (gọi là $x$) cần 2 giờ lao động.<br>
+                        - SP B (gọi là $y$) cần 3 giờ lao động.<br>
+                        Tổng thời gian có tối đa 24 giờ.
+                    </p>
+                    <ul class="text-sm text-slate-700 space-y-1 list-disc pl-4 mb-2">
+                        <li>Kéo điểm M(x;y) để chọn số lượng SP.</li>
+                        <li>Có bao nhiêu cặp (x;y) phù hợp?</li>
+                    </ul>
+                </div>
+
+                <!-- Mode 1 -->
+                <div id="q-mode-1" class="discovery-box">
+                    <div class="text-sm font-bold text-blue-700 mb-2">Khám phá nghiệm</div>
+                    <p class="text-sm text-slate-700 mb-2">Xét bất phương trình: $2x + 3y \le 24$</p>
+                    <ul class="text-sm text-slate-700 space-y-1 list-disc pl-4">
+                        <li>Di chuyển điểm M khắp mặt phẳng.</li>
+                        <li>Khi M có màu XANH LÁ, nó có phải là nghiệm không? Tại sao?</li>
+                        <li><b>Nhận xét:</b> Có vô số nghiệm! Không thể viết liệt kê như phương trình một ẩn.</li>
+                    </ul>
+                </div>
+
+                <!-- Mode 2 -->
+                <div id="q-mode-2" class="discovery-box">
+                    <div class="text-sm font-bold text-blue-700 mb-2">Đường biên của miền nghiệm</div>
+                    <p class="text-sm text-slate-700 mb-2">Vẽ đường thẳng (d): $2x + 3y = 24$</p>
+                    <ul class="text-sm text-slate-700 space-y-1 list-disc pl-4">
+                        <li>Đường thẳng này chia mặt phẳng thành mấy phần?</li>
+                        <li>Kéo điểm M thử nằm trên đường thẳng. M có là nghiệm của BPT $2x+3y \le 24$ không?</li>
+                    </ul>
+                </div>
+
+                <!-- Mode 3 -->
+                <div id="q-mode-3" class="discovery-box">
+                    <div class="text-sm font-bold text-blue-700 mb-2">Khám phá miền nghiệm</div>
+                    <ul class="text-sm text-slate-700 space-y-1 list-disc pl-4">
+                        <li>Tất cả các điểm làm cho M có màu xanh lá (nghiệm) tập trung ở phía nào của đường thẳng (d)?</li>
+                        <li><b>Nhận xét:</b> Tập hợp tất cả các nghiệm tạo thành một <b>nửa mặt phẳng</b>. Ta gọi là miền nghiệm.</li>
+                    </ul>
+                </div>
+
+                <!-- Mode 4 -->
+                <div id="q-mode-4" class="discovery-box">
+                    <div class="text-sm font-bold text-blue-700 mb-2">Quy tắc Điểm thử</div>
+                    <p class="text-sm text-slate-700 mb-2">Làm sao biết tô màu nửa mặt phẳng nào mà không cần kéo điểm M dò dẫm?</p>
+                    <ul class="text-sm text-slate-700 space-y-1 list-disc pl-4">
+                        <li>Bấm nút <b>"Thử điểm O(0;0)"</b> bên dưới.</li>
+                        <li>Gốc tọa độ O có là nghiệm không? Suy ra ta lấy nửa mặt phẳng chứa O hay không chứa O?</li>
+                    </ul>
+                    <button id="btnTestPoint" class="mt-3 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-bold py-1.5 px-3 rounded text-sm transition">Thử điểm O(0;0)</button>
+                </div>
+
+                <!-- Mode 5 -->
+                <div id="q-mode-5" class="discovery-box">
+                    <div class="text-sm font-bold text-blue-700 mb-2">Phân biệt dấu BPT</div>
+                    <p class="text-sm text-slate-700 mb-2">Thay đổi dấu BPT và quan sát đường biên $2x+3y = 24$:</p>
+                    <select id="selSign" class="w-full p-2 border rounded border-blue-300 bg-white text-sm outline-none mt-1 mb-2">
+                        <option value="le">2x + 3y ≤ 24</option>
+                        <option value="lt">2x + 3y < 24</option>
+                        <option value="ge">2x + 3y ≥ 24</option>
+                        <option value="gt">2x + 3y > 24</option>
+                    </select>
+                    <ul class="text-sm text-slate-700 space-y-1 list-disc pl-4">
+                        <li>Khi nào đường biên là <b>nét liền</b> (có lấy biên)?</li>
+                        <li>Khi nào đường biên là <b>nét đứt</b> (không lấy biên)?</li>
+                    </ul>
+                </div>
+
+                <!-- Mode 6 -->
+                <div id="q-mode-6" class="discovery-box">
+                    <div class="text-sm font-bold text-blue-700 mb-2">Hệ bất phương trình</div>
+                    <p class="text-sm text-slate-700 mb-2">Xét hệ:</p>
+                    <div class="bg-white p-2 rounded border text-sm math-text mb-2 text-center">
+                        $\begin{cases} x + y \le 6 \\ x \ge 1 \\ y \ge 0 \end{cases}$
+                    </div>
+                    <ul class="text-sm text-slate-700 space-y-1 list-disc pl-4">
+                        <li>Miền nghiệm của hệ là gì?</li>
+                        <li>Di chuyển M vào vùng đậm nhất (Giao của 3 miền).</li>
+                    </ul>
+                </div>
+
+                <!-- Mode 7 -->
+                <div id="q-mode-7" class="discovery-box">
+                    <div class="text-sm font-bold text-blue-700 mb-2">Tối ưu hóa (Hàm Mục Tiêu)</div>
+                    <p class="text-sm text-slate-700 mb-1">Với miền nghiệm đa giác của hệ trước. Tìm GTLN của hàm Lợi nhuận:</p>
+                    <p class="font-bold text-center text-blue-700 mb-2">$F = 3x + 2y$</p>
+                    <label class="text-sm font-bold block mb-1">Kéo thanh trượt thay đổi $F$:</label>
+                    <input type="range" id="sliderF" min="0" max="25" step="1" value="0" class="w-full mb-2">
+                    <ul class="text-sm text-slate-700 space-y-1 list-disc pl-4">
+                        <li>Quan sát đường thẳng màu đỏ tịnh tiến.</li>
+                        <li>Đường thẳng trượt ra khỏi miền nghiệm tại đỉnh nào? Đó chính là điểm tối ưu!</li>
+                    </ul>
+                </div>
+
+                <div class="mt-auto pt-4 pb-2 text-center text-xs text-slate-400">
+                    Dùng chuột/cảm ứng để kéo điểm M.
+                </div>
+            </aside>
+
+            <main class="canvas-area" id="canvas-container">
+                <svg id="math-svg" width="100%" height="100%" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet" style="z-index: 1;">
+                    <defs>
+                        <!-- Định nghĩa pattern lưới (1 đơn vị = 30px) -->
+                        <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse" x="500" y="500">
+                            <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#e2e8f0" stroke-width="1"/>
+                        </pattern>
+                        <!-- Arrow head -->
+                        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569" />
+                        </marker>
+                    </defs>
+
+                    <!-- Lớp nền và Lưới -->
+                    <rect width="100%" height="100%" fill="url(#grid)" />
+                    
+                    <!-- Các vùng tô màu (Miền nghiệm) -->
+                    <g id="layer-regions"></g>
+                    
+                    <!-- Lớp Trục toạ độ -->
+                    <g id="layer-axes">
+                        <!-- Trục X -->
+                        <line x1="0" y1="500" x2="980" y2="500" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+                        <text x="970" y="480" fill="#475569" font-weight="bold" font-style="italic" font-size="16">x</text>
+                        <!-- Trục Y -->
+                        <line x1="300" y1="700" x2="300" y2="20" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+                        <text x="315" y="30" fill="#475569" font-weight="bold" font-style="italic" font-size="16">y</text>
+                        <!-- Gốc O -->
+                        <text x="280" y="520" fill="#475569" font-weight="bold" font-style="italic" font-size="16">O</text>
+                        <circle cx="300" cy="500" r="4" fill="#475569"/>
+                    </g>
+
+                    <!-- Lớp chia vạch toạ độ -->
+                    <g id="layer-ticks"></g>
+
+                    <!-- Lớp đường thẳng (Đường biên) -->
+                    <g id="layer-lines"></g>
+
+                    <!-- Lớp Điểm tương tác (M) -->
+                    <g id="layer-points"></g>
+                </svg>
+            </main>
+        </div>
+
+        <footer class="bottom-panel">
+            <!-- Tọa độ M -->
+            <div class="flex flex-col gap-2 min-w-[200px] justify-center bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <div class="text-sm font-bold text-slate-500 uppercase">Tọa độ điểm thử</div>
+                <div class="text-2xl font-bold math-text text-blue-700" id="val-M">$M(0 ; 0)$</div>
+            </div>
+
+            <!-- Box Công thức trung tâm -->
+            <div class="flex-1 bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-center items-center shadow-sm relative overflow-hidden">
+                <div class="text-xs font-bold text-slate-400 absolute top-2 left-3 uppercase" id="panel-formula-title">Kiểm tra điều kiện</div>
+                <button id="btnToggleResult" class="absolute top-2 right-3 px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded shadow-sm hover:bg-blue-700 transition hidden z-20 cursor-pointer">Hiện kết luận</button>
+                <div id="dynamic-formula" class="text-xl mt-4 w-full text-center overflow-x-auto min-h-[60px] flex items-center justify-center">
+                    <!-- MathJax -->
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // --- HỆ TỌA ĐỘ VÀ THAM SỐ ---
+        const originX = 300; 
+        const originY = 500;
+        const scale = 30; // 1 đơn vị = 30px
+        
+        let currentMode = 0;
+        let isResultVisible = false;
+        
+        // Trạng thái điểm M
+        let M = { x: 4, y: 2 }; // Toạ độ toán học
+        let draggingPoint = false;
+
+        // Trạng thái Animation điểm O
+        let showTestPulse = false;
+
+        // Tham số Bài 5 (Dấu)
+        let ineqSign = 'le'; // le, lt, ge, gt
+
+        // Tham số Bài 7 (F)
+        let F_val = 0;
+
+        // --- DOM Elements ---
+        const svg = document.getElementById('math-svg');
+        const layers = {
+            regions: document.getElementById('layer-regions'),
+            ticks: document.getElementById('layer-ticks'),
+            lines: document.getElementById('layer-lines'),
+            points: document.getElementById('layer-points')
+        };
+        const dynamicFormula = document.getElementById('dynamic-formula');
+
+        // --- HÀM CHUYỂN ĐỔI TOẠ ĐỘ ---
+        function toScreenX(mathX) { return originX + mathX * scale; }
+        function toScreenY(mathY) { return originY - mathY * scale; }
+        function toMathX(screenX) { return (screenX - originX) / scale; }
+        function toMathY(screenY) { return (originY - screenY) / scale; }
+
+        // --- VẼ LƯỚI & TRỤC ---
+        function drawTicks() {
+            layers.ticks.innerHTML = '';
+            // Vẽ các số trên trục X (từ -8 đến +22)
+            for(let i = -8; i <= 22; i++) {
+                if(i !== 0 && i % 2 === 0) { // Vẽ số chẵn cho đỡ rối
+                    let sx = toScreenX(i);
+                    layers.ticks.innerHTML += `<line x1="${sx}" y1="${originY-3}" x2="${sx}" y2="${originY+3}" stroke="#475569" stroke-width="1.5"/>`;
+                    layers.ticks.innerHTML += `<text x="${sx}" y="${originY+18}" fill="#64748b" font-size="12" text-anchor="middle">${i}</text>`;
+                }
+            }
+            // Vẽ các số trên trục Y (từ -5 đến +15)
+            for(let i = -5; i <= 15; i++) {
+                if(i !== 0 && i % 2 === 0) {
+                    let sy = toScreenY(i);
+                    layers.ticks.innerHTML += `<line x1="${originX-3}" y1="${sy}" x2="${originX+3}" y2="${sy}" stroke="#475569" stroke-width="1.5"/>`;
+                    layers.ticks.innerHTML += `<text x="${originX-12}" y="${sy+4}" fill="#64748b" font-size="12" text-anchor="end">${i}</text>`;
+                }
+            }
+        }
+
+        // Khởi tạo 1 lần
+        drawTicks();
+
+        // --- HÀM VẼ TOÀN BỘ KHUNG CẢNH ---
+        function updateSVG() {
+            layers.regions.innerHTML = '';
+            layers.lines.innerHTML = '';
+            layers.points.innerHTML = '';
+
+            let isMSatisfied = false;
+            let valZ = 2*M.x + 3*M.y;
+
+            // --- VẼ ĐỒ HOẠ THEO TỪNG HOẠT ĐỘNG ---
+            if (currentMode >= 0 && currentMode <= 5) {
+                // BPT: 2x + 3y <= 24 (đi qua (12,0) và (0,8))
+                
+                // 1. Tô miền nghiệm
+                if (currentMode === 3 || currentMode === 5 || (currentMode === 4 && isResultVisible)) {
+                    // Vẽ Polygon rất lớn chứa phần 2x+3y <= 24
+                    // Toạ độ màn hình: Đi qua (toScreenX(12), toScreenY(0)) và (toScreenX(0), toScreenY(8))
+                    // Miền nghiệm là phía bên trái/dưới.
+                    let opacity = (currentMode === 4 && !isResultVisible) ? 0 : 0.15; 
+                    if(currentMode===4 && showTestPulse) opacity = 0.15; // Hiệu ứng lóe lên
+
+                    let pathD = "";
+                    if (ineqSign === 'le' || ineqSign === 'lt') {
+                        // 2x + 3y <= 24 -> Miền dưới
+                        pathD = `M ${toScreenX(-10)} ${toScreenY((24 - 2*-10)/3)} L ${toScreenX(25)} ${toScreenY((24 - 2*25)/3)} L ${toScreenX(25)} ${toScreenY(-10)} L ${toScreenX(-10)} ${toScreenY(-10)} Z`;
+                    } else {
+                        // 2x + 3y >= 24 -> Miền trên
+                        pathD = `M ${toScreenX(-10)} ${toScreenY((24 - 2*-10)/3)} L ${toScreenX(25)} ${toScreenY((24 - 2*25)/3)} L ${toScreenX(25)} ${toScreenY(20)} L ${toScreenX(-10)} ${toScreenY(20)} Z`;
+                    }
+                    layers.regions.innerHTML += `<path d="${pathD}" fill="#3b82f6" fill-opacity="${opacity}" />`;
+                }
+
+                // Vẽ đường biên 2x + 3y = 24
+                if (currentMode >= 2) {
+                    let dash = (ineqSign === 'lt' || ineqSign === 'gt') ? "10,10" : "";
+                    layers.lines.innerHTML += `<line x1="${toScreenX(-5)}" y1="${toScreenY((24 - 2*-5)/3)}" x2="${toScreenX(20)}" y2="${toScreenY((24 - 2*20)/3)}" stroke="#2563eb" stroke-width="3" stroke-dasharray="${dash}"/>`;
+                    layers.lines.innerHTML += `<text x="${toScreenX(13)}" y="${toScreenY(0) - 10}" fill="#2563eb" font-weight="bold" font-size="14" transform="rotate(-33 ${toScreenX(13)} ${toScreenY(0)})">2x + 3y = 24</text>`;
+                }
+
+                // Hiệu ứng Test Pulse tại O
+                if (currentMode === 4 && showTestPulse) {
+                    layers.regions.innerHTML += `
+                        <circle cx="${originX}" cy="${originY}" r="0" fill="none" stroke="#2563eb" stroke-width="3">
+                            <animate attributeName="r" from="0" to="100" dur="1s" fill="freeze" />
+                            <animate attributeName="opacity" from="1" to="0" dur="1s" fill="freeze" />
+                        </circle>
+                    `;
+                }
+
+                // Tính đúng/sai của M
+                if (ineqSign === 'le') isMSatisfied = (valZ <= 24.01);
+                else if (ineqSign === 'lt') isMSatisfied = (valZ < 23.99);
+                else if (ineqSign === 'ge') isMSatisfied = (valZ >= 23.99);
+                else if (ineqSign === 'gt') isMSatisfied = (valZ > 24.01);
+            }
+            else if (currentMode === 6 || currentMode === 7) {
+                // Hệ BPT: x+y <= 6; x >= 1; y >= 0
+                // Đỉnh của đa giác miền nghiệm: A(1,5), B(6,0), C(1,0)
+                layers.regions.innerHTML += `
+                    <path d="M ${toScreenX(1)} ${toScreenY(5)} L ${toScreenX(6)} ${toScreenY(0)} L ${toScreenX(1)} ${toScreenY(0)} Z" fill="#9333ea" fill-opacity="0.2" stroke="#9333ea" stroke-width="2"/>
+                `;
+                
+                // Vẽ các đường biên (Nét liền vì lấy dấu =. Sửa lại toạ độ cho chuẩn xác)
+                layers.lines.innerHTML += `<line x1="${toScreenX(1)}" y1="${toScreenY(-6)}" x2="${toScreenX(1)}" y2="${toScreenY(16)}" stroke="#475569" stroke-width="1.5"/>`; // Đường x = 1
+                layers.lines.innerHTML += `<line x1="${toScreenX(-8)}" y1="${toScreenY(0)}" x2="${toScreenX(24)}" y2="${toScreenY(0)}" stroke="#475569" stroke-width="1.5"/>`; // Đường y = 0
+                layers.lines.innerHTML += `<line x1="${toScreenX(-4)}" y1="${toScreenY(10)}" x2="${toScreenX(12)}" y2="${toScreenY(-6)}" stroke="#475569" stroke-width="1.5"/>`; // Đường x + y = 6
+
+                if (currentMode === 7) {
+                    // Tối ưu hóa F = 3x + 2y
+                    // y = (F - 3x)/2
+                    let fx1 = -2, fy1 = (F_val - 3*fx1)/2;
+                    let fx2 = 10, fy2 = (F_val - 3*fx2)/2;
+                    layers.lines.innerHTML += `<line x1="${toScreenX(fx1)}" y1="${toScreenY(fy1)}" x2="${toScreenX(fx2)}" y2="${toScreenY(fy2)}" stroke="#dc2626" stroke-width="3"/>`;
+                    // Nhãn F
+                    let lx = 3, ly = (F_val - 3*lx)/2;
+                    layers.lines.innerHTML += `<rect x="${toScreenX(lx)-40}" y="${toScreenY(ly)-30}" width="80" height="25" fill="#fee2e2" rx="4"/>`;
+                    layers.lines.innerHTML += `<text x="${toScreenX(lx)}" y="${toScreenY(ly)-12}" fill="#dc2626" font-weight="bold" font-size="14" text-anchor="middle">F = ${F_val}</text>`;
+                }
+
+                // M thoả mãn nếu nằm trong đa giác
+                isMSatisfied = (M.x + M.y <= 6.01) && (M.x >= 0.99) && (M.y >= -0.01);
+            }
+
+            // --- VẼ ĐIỂM M ---
+            // Ẩn M ở Mode 4 và 7 cho đỡ vướng
+            if (currentMode !== 4 && currentMode !== 7) {
+                let mColor = isMSatisfied ? "#16a34a" : "#dc2626"; // Xanh (Đúng), Đỏ (Sai)
+                if (currentMode === 0 && (M.x < 0 || M.y < 0)) mColor = "#dc2626"; // Chặn số lượng âm
+
+                layers.points.innerHTML += `
+                    <circle cx="${toScreenX(M.x)}" cy="${toScreenY(M.y)}" r="25" fill="transparent" class="draggable-point" />
+                    <circle cx="${toScreenX(M.x)}" cy="${toScreenY(M.y)}" r="7" fill="${mColor}" stroke="#fff" stroke-width="2" pointer-events="none"/>
+                    <text x="${toScreenX(M.x) + 12}" y="${toScreenY(M.y) - 12}" fill="${mColor}" font-weight="bold" font-size="20" pointer-events="none">M</text>
+                `;
+            }
+
+            // --- CẬP NHẬT GIAO DIỆN TEXT ---
+            document.getElementById('val-M').innerHTML = `$M(${M.x} ; ${M.y})$`;
+            updateFormulas(isMSatisfied);
+        }
+
+        // --- CẬP NHẬT BẢNG CÔNG THỨC ---
+        function updateFormulas(isMSatisfied) {
+            let formulaStr = "";
+            document.getElementById('btnToggleResult').classList.add('hidden'); // Ẩn mặc định
+
+            if (currentMode >= 0 && currentMode <= 5) {
+                let z = 2*M.x + 3*M.y;
+                let colorClass = isMSatisfied ? "color-true" : "color-false";
+                let icon = isMSatisfied ? "✓ THỎA MÃN" : "✗ KHÔNG THỎA";
+                if (currentMode === 0 && (M.x < 0 || M.y < 0)) { colorClass = "color-false"; icon = "✗ SỐ LƯỢNG ÂM"; }
+
+                if (currentMode === 4) {
+                    document.getElementById('panel-formula-title').textContent = "PHÉP THỬ ĐIỂM";
+                    document.getElementById('btnToggleResult').classList.remove('hidden');
+                    
+                    if (isResultVisible) {
+                        formulaStr = `$$O(0;0) \\Rightarrow 2(0) + 3(0) = 0 \\le 24 \\text{ (ĐÚNG)}$$ 
+                                    $$\\color{#2563eb}{\\Rightarrow \\text{Lấy nửa mặt phẳng chứa điểm O}}$$`;
+                    } else {
+                        formulaStr = `Thay tọa độ $O(0;0)$ vào $2x + 3y \\le 24$ ta được điều gì?`;
+                    }
+                } else if (currentMode === 5) {
+                    document.getElementById('panel-formula-title').textContent = "ĐƯỜNG BIÊN LÀ NÉT ĐỨT HAY LIỀN?";
+                    let signStr = ineqSign === 'le' ? '\\le' : (ineqSign === 'lt' ? '<' : (ineqSign === 'ge' ? '\\ge' : '>'));
+                    formulaStr = `$$2(${M.x}) + 3(${M.y}) = ${z} \\quad ${signStr} \\quad 24$$
+                                  $$\\text{Kết quả: } \\color{${isMSatisfied ? '#16a34a' : '#dc2626'}}{\\textbf{${icon}}}$$`;
+                } else {
+                    document.getElementById('panel-formula-title').textContent = "BẤT PHƯƠNG TRÌNH: $2x + 3y \\le 24$";
+                    formulaStr = `$$2(${M.x}) + 3(${M.y}) = ${z}$$
+                                  $$\\text{Kết quả: } \\color{${isMSatisfied ? '#16a34a' : '#dc2626'}}{\\textbf{${icon}}}$$`;
+                }
+            } 
+            else if (currentMode === 6) {
+                document.getElementById('panel-formula-title').textContent = "KIỂM TRA HỆ BẤT PHƯƠNG TRÌNH";
+                let icon = isMSatisfied ? "✓ THUỘC MIỀN NGHIỆM" : "✗ NGOÀI MIỀN NGHIỆM";
+                
+                // Kiểm tra riêng rẽ từng phương trình
+                let check1 = (M.x + M.y <= 6) ? '\\le 6 \\; (\\color{#16a34a}{\\text{Đ}})' : '\\color{#dc2626}{> 6 \\; (\\text{S})}';
+                let check2 = (M.x >= 1) ? '\\ge 1 \\; (\\color{#16a34a}{\\text{Đ}})' : '\\color{#dc2626}{< 1 \\; (\\text{S})}';
+                let check3 = (M.y >= 0) ? '\\ge 0 \\; (\\color{#16a34a}{\\text{Đ}})' : '\\color{#dc2626}{< 0 \\; (\\text{S})}';
+                
+                formulaStr = `$$ \\begin{cases} 
+                    x + y = ${Math.round((M.x + M.y)*10)/10} ${check1} \\\\ 
+                    x = ${M.x} ${check2} \\\\ 
+                    y = ${M.y} ${check3} 
+                \\end{cases} 
+                \\Rightarrow \\color{${isMSatisfied ? '#9333ea' : '#dc2626'}}{\\textbf{${icon}}} $$`;
+            }
+            else if (currentMode === 7) {
+                document.getElementById('panel-formula-title').textContent = "HÀM MỤC TIÊU $F = 3x + 2y$";
+                formulaStr = `$$F = ${F_val}$$
+                            $$\\text{Đường thẳng } 3x + 2y = ${F_val} \\text{ đang trượt}$$`;
+            }
+
+            dynamicFormula.innerHTML = formulaStr;
+            
+            // Render MathJax
+            if(window.MathJax && window.mathJaxLoaded) {
+                MathJax.typesetPromise([
+                    document.getElementById('val-M'), 
+                    document.getElementById('dynamic-formula'),
+                    document.querySelectorAll('.discovery-box.active')[0] // Render math trong box
+                ]).catch((err) => console.log('MathJax error: ', err));
+            }
+        }
+
+        // --- ĐIỀU CHỈNH HOẠT ĐỘNG ---
+        function setMode(mode) {
+            currentMode = parseInt(mode);
+            isResultVisible = false;
+            showTestPulse = false;
+
+            // Reset trạng thái Nút chốt
+            let btn = document.getElementById('btnToggleResult');
+            btn.textContent = "Hiện kết luận";
+            btn.classList.replace('bg-slate-500', 'bg-blue-600');
+            btn.classList.replace('hover:bg-slate-600', 'hover:bg-blue-700');
+
+            // Cập nhật UI Menu
+            document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector(`.menu-btn[data-mode="${mode}"]`).classList.add('active');
+            
+            document.querySelectorAll('.discovery-box').forEach(b => b.classList.remove('active'));
+            let dbox = document.getElementById(`q-mode-${mode}`);
+            if(dbox) dbox.classList.add('active');
+
+            // Set vị trí mặc định cho M tuỳ bài
+            if (currentMode === 0) { M = { x: 5, y: 2 }; } // Số dương
+            else if (currentMode === 6) { M = { x: 3, y: 2 }; } // Nằm trong tam giác
+            else { M = { x: -3, y: 5 }; } // Nằm ngoài cho đa dạng
+
+            updateSVG();
+        }
+
+        document.querySelectorAll('.menu-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => setMode(e.currentTarget.dataset.mode));
+        });
+
+        document.getElementById('btnToggleResult').addEventListener('click', (e) => {
+            isResultVisible = !isResultVisible;
+            let btn = e.currentTarget;
+            if (isResultVisible) {
+                btn.textContent = "Ẩn kết luận";
+                btn.classList.replace('bg-blue-600', 'bg-slate-500');
+                btn.classList.replace('hover:bg-blue-700', 'hover:bg-slate-600');
+            } else {
+                btn.textContent = "Hiện kết luận";
+                btn.classList.replace('bg-slate-500', 'bg-blue-600');
+                btn.classList.replace('hover:bg-slate-600', 'hover:bg-blue-700');
+            }
+            updateSVG();
+        });
+
+        // Nút Thử điểm O
+        document.getElementById('btnTestPoint').addEventListener('click', () => {
+            showTestPulse = true;
+            updateSVG();
+            // Tự động bật kết luận sau 1s
+            setTimeout(() => {
+                isResultVisible = true;
+                showTestPulse = false;
+                let btn = document.getElementById('btnToggleResult');
+                btn.textContent = "Ẩn kết luận";
+                btn.classList.replace('bg-blue-600', 'bg-slate-500');
+                btn.classList.replace('hover:bg-blue-700', 'hover:bg-slate-600');
+                updateSVG();
+            }, 1000);
+        });
+
+        // Dropdown đổi Dấu
+        document.getElementById('selSign').addEventListener('change', (e) => {
+            ineqSign = e.target.value;
+            updateSVG();
+        });
+
+        // Slider F
+        document.getElementById('sliderF').addEventListener('input', (e) => {
+            F_val = e.target.value;
+            updateSVG();
+        });
+
+        // --- MOUSE & TOUCH DRAG (Snap to Grid) ---
+        function getMouseMathPos(e) {
+            let clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            let clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            const pt = svg.createSVGPoint();
+            pt.x = clientX; pt.y = clientY;
+            const svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
+            // Trả về toạ độ toán học, làm tròn đến 0.5 đơn vị
+            return {
+                x: Math.round(toMathX(svgP.x) * 2) / 2,
+                y: Math.round(toMathY(svgP.y) * 2) / 2
+            };
+        }
+
+        function startDrag(e) {
+            if (e.target.classList.contains('draggable-point')) {
+                draggingPoint = true;
+                e.preventDefault();
+            }
+        }
+
+        function drag(e) {
+            if (!draggingPoint) return;
+            e.preventDefault();
+            let pos = getMouseMathPos(e);
+            
+            // Giới hạn không cho điểm chạy quá xa khỏi khung nhìn
+            pos.x = Math.max(-10, Math.min(25, pos.x));
+            pos.y = Math.max(-7, Math.min(18, pos.y));
+            
+            M.x = pos.x;
+            M.y = pos.y;
+            updateSVG();
+        }
+
+        function endDrag() { draggingPoint = false; }
+
+        svg.addEventListener('mousedown', startDrag);
+        window.addEventListener('mousemove', drag);
+        window.addEventListener('mouseup', endDrag);
+
+        svg.addEventListener('touchstart', startDrag, {passive: false});
+        window.addEventListener('touchmove', drag, {passive: false});
+        window.addEventListener('touchend', endDrag);
+
+        // --- FULLSCREEN ---
+        const btnFullscreen = document.getElementById('btnFullscreen');
+        btnFullscreen.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                document.getElementById('txtFullscreen').textContent = 'Thu nhỏ';
+            } else {
+                document.getElementById('txtFullscreen').textContent = 'Toàn màn hình';
+            }
+        });
+
+        // INIT
+        window.onload = () => { 
+            setTimeout(() => { setMode(0); }, 500); 
+        };
+    </script>
+</body>
+</html>
