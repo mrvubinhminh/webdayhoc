@@ -88,7 +88,7 @@ const ToolsMenu = () => {
                 className="glass-card p-3 rounded-xl flex flex-row items-center gap-4 cursor-pointer group hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all duration-300 border border-blue-500/10 hover:border-blue-500/50 bg-slate-900/60"
               >
                 <div className={`w-12 h-12 shrink-0 rounded-lg flex items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-700 text-white shadow-md group-hover:scale-110 transition-transform`}>
-                  getIcon(idx)
+                  {getIcon(idx)}
                 </div>
                 <h3 className="text-sm font-semibold text-gray-300 group-hover:text-blue-400 transition-colors leading-snug line-clamp-2 text-left flex-1">
                   {model.title}
