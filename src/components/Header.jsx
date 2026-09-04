@@ -11,7 +11,7 @@ const Header = () => {
             <img src="https://i.ibb.co/wZRKCnpw/10a9a7ae1ede.png" alt="Logo" className="w-10 h-10 object-contain drop-shadow-lg" />
           </div>
           <h1 className="text-xl font-bold tracking-wide text-white hidden sm:block drop-shadow-md">
-            TRỢ LÝ GIÁO VIÊN TOÁN THPT
+            CÔNG NGHỆ SỐ DẠY HỌC ĐỔI MỚI
           </h1>
         </Link>
         

@@ -15,6 +15,7 @@ import ToolsMenu from './pages/ToolsMenu';
 import ToolIframeWrapper from './pages/ToolIframeWrapper';
 import StudentsMenu from './pages/StudentsMenu';
 import StudentIframeWrapper from './pages/StudentIframeWrapper';
+import Sunflowers from './components/Sunflowers';
 
 const AppContent = () => {
   const location = useLocation();
@@ -25,10 +26,14 @@ const AppContent = () => {
       {/* Background with simple grid pattern */}
       {!isGameRoute && (
         <>
-          <div className="fixed inset-0 z-[-1] bg-[#0b0f19] bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+          {/* Base blue background */}
+          <div className="fixed inset-0 z-[-1] bg-[#0c4a6e] bg-[linear-gradient(to_right,#ffffff12_1px,transparent_1px),linear-gradient(to_bottom,#ffffff12_1px,transparent_1px)] bg-[size:24px_24px]"></div>
           
-          {/* Top ambient glow */}
-          <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[80%] h-[300px] bg-blue-500/20 rounded-[100%] blur-[120px] pointer-events-none z-[-1]"></div>
+          {/* Top ambient glow (lighter blue/yellow) */}
+          <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[80%] h-[300px] bg-blue-400/30 rounded-[100%] blur-[120px] pointer-events-none z-[-1]"></div>
+
+          {/* Animated Sunflowers Background */}
+          <Sunflowers />
 
           <Header />
         </>
