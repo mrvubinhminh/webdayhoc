@@ -1,0 +1,1574 @@
+<title>Máy Tính Thầy Vũ Tiến Lực</title>
+<style>
+:root{
+  --bg:#eef1f5; --ink:#1b1f24; --sub:#5b6572; --card:#ffffff; --line:#d7dce2;
+  --device:#2b2f36; --device2:#20232a; --screen:#dfe6d8; --screen2:#e7edda;
+  --screen-ink:#1c2a1c; --key-fn:#3a3f47; --key-fn-ink:#eef1f0;
+  --key-num:#454b54; --key-num-ink:#ffffff; --key-op:#57616e; --key-op-ink:#ffffff;
+  --shift:#e08a2b; --alpha:#2e9e6b; --del:#c94f4f; --ac:#c94f4f;
+  --accent:#3b82f6; --focus:#3b82f6; --shadow:0 10px 30px rgba(0,0,0,.18);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#14161a; --ink:#eef1f5; --sub:#a3acb8; --card:#1c1f25; --line:#2b3038;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#14161a; --ink:#eef1f5; --sub:#a3acb8; --card:#1c1f25; --line:#2b3038;
+}
+*{box-sizing:border-box;}
+body{background:var(--bg);color:var(--ink);font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;}
+.wrap{max-width:1180px;margin:0 auto;padding:22px 16px 60px;}
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.top h1{font-size:17px;margin:0;font-weight:700;}
+.top p{margin:2px 0 0;color:var(--sub);font-size:12.5px;}
+.layout{display:grid;grid-template-columns:minmax(340px,470px) 1fr;gap:22px;align-items:start;}
+@media (max-width:880px){.layout{grid-template-columns:1fr;}}
+
+/* ---- device ---- */
+.device{background:linear-gradient(180deg,var(--device),var(--device2));border-radius:22px;padding:16px 16px 20px;box-shadow:var(--shadow);}
+.brand-row{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#aab0bb;font-size:11px;padding:2px 6px 10px;letter-spacing:.04em;flex-wrap:wrap;}
+.brand-row b{color:#e7eaef;font-weight:700;}
+.screen{background:linear-gradient(180deg,var(--screen2),var(--screen));border-radius:10px;padding:10px 12px;color:var(--screen-ink);min-height:190px;display:flex;flex-direction:column;box-shadow:inset 0 2px 8px rgba(0,0,0,.25);}
+.status-row{display:flex;align-items:center;justify-content:space-between;font-size:10.5px;font-weight:700;color:#39492f;opacity:.85;margin-bottom:4px;}
+.status-row .chips{display:flex;gap:6px;flex-wrap:wrap;}
+.chip{border:1px solid rgba(30,40,20,.35);border-radius:5px;padding:1px 5px;cursor:pointer;user-select:none;background:rgba(255,255,255,.15);}
+.chip.on{background:#39492f;color:#eef3e4;border-color:#39492f;}
+.status-row .icons{display:flex;gap:8px;font-size:12px;opacity:.8;}
+.status-row .icons span{cursor:pointer;padding:0 2px;}
+.exprline{flex:1;min-height:56px;display:flex;align-items:center;overflow-x:auto;font-size:23px;line-height:1.3;padding:6px 2px;font-family:"Cambria Math","Times New Roman",serif;}
+.exprline::-webkit-scrollbar{height:0;}
+.resultline{text-align:right;font-size:26px;font-weight:600;min-height:32px;padding:2px 2px 4px;border-top:1px dashed rgba(30,40,20,.25);word-break:break-all;}
+.hintline{font-size:11.5px;color:#4b5a40;opacity:.8;padding:2px 2px 0;display:flex;justify-content:space-between;gap:6px;align-items:center;}
+.hintline .solvebtn{border:1px solid rgba(30,40,20,.35);border-radius:6px;padding:1px 6px;cursor:pointer;background:rgba(255,255,255,.2);white-space:nowrap;}
+
+/* natural-display nodes */
+.mrow{display:inline-flex;align-items:center;white-space:nowrap;}
+.mfrac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 2px;font-size:.85em;}
+.mfrac .num,.mfrac .den{padding:0 3px;min-width:10px;min-height:1.1em;display:inline-flex;}
+.mfrac .bar{width:100%;border-top:1.5px solid var(--screen-ink);margin:1px 0;}
+.msqrt{display:inline-flex;align-items:flex-start;margin:0 1px;}
+.msqrt .rad{font-size:1.05em;padding-right:1px;}
+.msqrt .body{border-top:1.5px solid var(--screen-ink);padding:0 3px 0 2px;min-width:8px;min-height:1em;}
+.mnroot{display:inline-flex;align-items:flex-end;margin:0 1px;}
+.mnroot .idx{font-size:.6em;min-width:6px;padding-bottom:.6em;}
+.mpow{display:inline-flex;align-items:flex-start;margin:0 1px;}
+.mpow .exp{font-size:.65em;min-width:6px;transform:translateY(-.3em);}
+.mlog{display:inline-flex;align-items:flex-end;margin:0 1px;}
+.mlog .base{font-size:.6em;min-width:5px;}
+.mempty{display:inline-block;min-width:9px;min-height:1em;border-bottom:1px dotted rgba(30,40,20,.5);}
+.caret{display:inline-block;width:1px;background:#1c2a1c;animation:blink 1s steps(1) infinite;margin:0 -.5px;align-self:stretch;}
+@keyframes blink{50%{opacity:0;}}
+.mvar{font-style:italic;}
+
+/* history */
+.histpanel{margin-top:10px;}
+.histpanel h3{font-size:12px;color:var(--sub);margin:0 0 6px;font-weight:600;}
+.histlist{display:flex;flex-direction:column;gap:4px;max-height:150px;overflow-y:auto;}
+.histitem{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:12.5px;cursor:pointer;display:flex;justify-content:space-between;gap:8px;}
+.histitem:hover{border-color:var(--accent);}
+.histitem .e{color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.histitem .r{font-weight:700;white-space:nowrap;}
+
+/* ---- keypad ---- */
+.padwrap{margin-top:14px;}
+.ctrlcluster{display:grid;grid-template-columns:minmax(0,64px) minmax(0,64px) minmax(96px,1fr) minmax(0,64px) minmax(0,64px);gap:6px;align-items:center;margin-bottom:8px;}
+.ctrlcluster .key{padding-left:1px;padding-right:1px;font-size:12px;}
+.dpad{position:relative;width:112px;height:112px;margin:0 auto;border-radius:50%;background:#181b20;box-shadow:inset 0 2px 6px rgba(0,0,0,.5);}
+.dpad button{position:absolute;background:#33383f;color:#dfe3e8;border:none;font-size:13px;cursor:pointer;}
+.dpad button:hover{background:#3d434c;}
+.dpad .up{top:2px;left:38px;width:36px;height:34px;border-radius:16px 16px 4px 4px;}
+.dpad .down{bottom:2px;left:38px;width:36px;height:34px;border-radius:4px 4px 16px 16px;}
+.dpad .left{left:2px;top:38px;width:34px;height:36px;border-radius:16px 4px 4px 16px;}
+.dpad .right{right:2px;top:38px;width:34px;height:36px;border-radius:4px 16px 16px 4px;}
+.dpad .ok{left:38px;top:38px;width:36px;height:36px;border-radius:50%;background:#454b54;font-size:10px;}
+
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;}
+.grid.tools{grid-template-columns:repeat(6,1fr);margin-bottom:8px;}
+.key{position:relative;border:none;border-radius:9px;padding:9px 2px 6px;cursor:pointer;color:var(--key-fn-ink);background:var(--key-fn);font-size:13.5px;font-weight:600;min-height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15;transition:transform .05s;}
+.key:active{transform:scale(.94);}
+.key .shiftlbl{position:absolute;top:1px;left:5px;font-size:8.5px;color:var(--shift);font-weight:700;}
+.key .alphalbl{position:absolute;top:1px;right:5px;font-size:8.5px;color:var(--alpha);font-weight:700;}
+.key.num{background:var(--key-num);color:var(--key-num-ink);font-size:16px;}
+.key.op{background:var(--key-op);color:var(--key-op-ink);font-size:16px;}
+.key.shift{background:var(--shift);color:#2a1600;}
+.key.alpha{background:var(--alpha);color:#062018;}
+.key.del{background:var(--del);color:#fff;}
+.key.ac{background:var(--ac);color:#fff;}
+.key.wide{grid-column:span 2;}
+.key.on{outline:2px solid #fff;}
+.key.ghost{background:#2f333a;}
+.spacer{visibility:hidden;}
+
+.numblock{margin-top:10px;display:grid;grid-template-columns:repeat(5,1fr);gap:7px;}
+
+/* modal */
+.modalbg{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:50;padding:16px;}
+.modalbg.show{display:flex;}
+.modal{background:var(--card);color:var(--ink);border-radius:14px;padding:18px;max-width:480px;width:100%;max-height:82vh;overflow-y:auto;box-shadow:var(--shadow);}
+.modal h2{margin:0 0 4px;font-size:16px;}
+.modal p.desc{color:var(--sub);font-size:12.5px;margin:0 0 12px;}
+.modal .row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+.modal .row label{font-size:12.5px;color:var(--sub);display:block;margin-bottom:3px;}
+.modal input,.modal select{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 9px;color:var(--ink);font-size:14px;width:100%;}
+.modal .grid-choice{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+.modal .choice{border:1px solid var(--line);border-radius:10px;padding:10px;cursor:pointer;font-size:13px;background:var(--bg);}
+.modal .choice:hover{border-color:var(--accent);}
+.modal .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;}
+.btn{border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;}
+.btn.primary{background:var(--accent);color:#fff;}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);}
+.steplist{display:flex;flex-direction:column;gap:8px;margin:10px 0;}
+.stepitem{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;}
+.stepitem b{display:block;font-size:11px;color:var(--sub);margin-bottom:3px;font-weight:600;}
+.matgrid{display:inline-grid;gap:4px;margin:6px 0;}
+.matgrid input{width:56px;text-align:center;padding:5px;}
+.const-list,.conv-list{display:flex;flex-direction:column;gap:4px;max-height:340px;overflow-y:auto;}
+.const-item,.conv-item{display:flex;justify-content:space-between;gap:8px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;cursor:pointer;font-size:12.5px;}
+.const-item:hover,.conv-item:hover{border-color:var(--accent);}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#20232a;color:#eef1f5;padding:9px 16px;border-radius:8px;font-size:13px;z-index:80;opacity:0;pointer-events:none;transition:opacity .2s;box-shadow:var(--shadow);}
+.toast.show{opacity:1;}
+.footer-note{margin-top:16px;color:var(--sub);font-size:11.5px;line-height:1.6;}
+.footer-note a{color:var(--accent);}
+@media (max-width:420px){
+  .wrap{padding:16px 8px 40px;}
+  .dpad{width:96px;height:96px;}
+  .dpad .up,.dpad .down{left:31px;width:32px;}
+  .dpad .left,.dpad .right{top:31px;height:32px;}
+  .dpad .ok{left:31px;top:31px;width:32px;height:32px;}
+  .grid,.grid.tools,.numblock{gap:5px;}
+  .key{font-size:12px;padding:7px 1px 5px;min-height:38px;}
+  .key.num{font-size:14px;}
+  .exprline{font-size:19px;}
+  .resultline{font-size:21px;}
+  .brand-row{font-size:10px;}
+  .brand-row span{display:none;}
+}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>Máy Tính Thầy Vũ Tiến Lực — Natural Display</h1>
+      <p>Nhập biểu thức tự nhiên, giải phương trình từng bước, số phức, phân số, ma trận.</p>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div>
+      <div class="device">
+        <div class="brand-row"><b>Máy Tính Thầy Vũ Tiến Lực</b><span>NATURAL DISPLAY</span></div>
+        <div class="screen">
+          <div class="status-row">
+            <div class="chips">
+              <span class="chip" id="chipAngle" title="Đơn vị góc">DEG</span>
+              <span class="chip" id="chipFrac" title="Hiển thị phân số/thập phân">FRAC</span>
+              <span class="chip" id="chipNorm" title="Định dạng số">NORM</span>
+              <span class="chip" id="chipMode" title="Chế độ tính">COMP</span>
+            </div>
+            <div class="icons">
+              <span id="btnUndo" title="Hoàn tác">↺</span>
+              <span id="btnRedo" title="Làm lại">↻</span>
+            </div>
+          </div>
+          <div class="exprline" id="exprline"></div>
+          <div class="resultline" id="resultline">0</div>
+          <div class="hintline">
+            <span id="hintText">Sẵn sàng</span>
+            <span class="solvebtn" id="btnStepMode">Giải từng bước ▾</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="padwrap">
+        <div class="ctrlcluster">
+          <button class="key shift" id="k-shift">SHIFT</button>
+          <button class="key alpha" id="k-alpha">ALPHA</button>
+          <div class="dpad">
+            <button class="up" data-k="up">▲</button>
+            <button class="down" data-k="down">▼</button>
+            <button class="left" data-k="left">◀</button>
+            <button class="right" data-k="right">▶</button>
+            <button class="ok" data-k="ok">OK</button>
+          </div>
+          <button class="key" id="k-menu">MENU</button>
+          <button class="key" id="k-settings">⚙</button>
+        </div>
+
+        <div class="grid tools">
+          <button class="key" id="k-optn">OPTN<span class="shiftlbl">CONV</span></button>
+          <button class="key" id="k-calc">CALC</button>
+          <button class="key" id="k-solve">SOLVE<span class="shiftlbl">=</span></button>
+          <button class="key" id="k-deriv">d/dx<span class="shiftlbl">∫dx</span></button>
+          <button class="key" id="k-sum">Σ▪<span class="shiftlbl">Π▪</span></button>
+          <button class="key" id="k-matrix">MATRIX</button>
+        </div>
+
+        <div class="grid">
+          <button class="key" data-frac>a b/c<span class="shiftlbl">d/c</span></button>
+          <button class="key" data-sd>S⇔D</button>
+          <button class="key" data-pow3>x³<span class="shiftlbl">∛▪</span></button>
+          <button class="key" data-nroot>ˣ√▪<span class="shiftlbl">▪√▪</span></button>
+          <button class="key" data-powinv>x⁻¹<span class="shiftlbl">x!</span></button>
+          <button class="key" data-mod>mod<span class="shiftlbl">Abs</span></button>
+
+          <button class="key" data-sqrt>√▪<span class="shiftlbl">∛▪</span></button>
+          <button class="key" data-pow2>x²<span class="shiftlbl">√▪</span></button>
+          <button class="key" data-powxy>xʸ<span class="shiftlbl">ʸ√x</span></button>
+          <button class="key" data-log>log▫<span class="shiftlbl">10ˣ</span></button>
+          <button class="key" data-ln>ln<span class="shiftlbl">eˣ</span></button>
+          <button class="key" data-fact>x!<span class="shiftlbl">nCr</span></button>
+
+          <button class="key" data-fn="sin">sin<span class="shiftlbl">sin⁻¹</span></button>
+          <button class="key" data-fn="cos">cos<span class="shiftlbl">cos⁻¹</span></button>
+          <button class="key" data-fn="tan">tan<span class="shiftlbl">tan⁻¹</span></button>
+          <button class="key" data-fn="asin">sin⁻¹</button>
+          <button class="key" data-fn="acos">cos⁻¹</button>
+          <button class="key" data-fn="atan">tan⁻¹</button>
+
+          <button class="key" data-ch="(">(</button>
+          <button class="key" data-ch=")">)</button>
+          <button class="key" data-ch=",">,</button>
+          <button class="key" data-sto>STO</button>
+          <button class="key" data-rcl>RCL</button>
+          <button class="key" data-ch="i">i</button>
+
+          <button class="key" data-mplus>M+</button>
+          <button class="key" data-mminus>M-</button>
+          <button class="key" data-fn2="permutations">nPr</button>
+          <button class="key" data-fn2="combinations">nCr</button>
+          <button class="key" data-fn2="gcd">GCD</button>
+          <button class="key" data-fn2="lcm">LCM</button>
+
+          <button class="key" data-const>CONST</button>
+          <button class="key" data-conv>CONV</button>
+          <button class="key" data-ran>Ran#<span class="shiftlbl">RanInt#</span></button>
+          <button class="key" data-fn1="ceil">Ceil<span class="shiftlbl">Floor</span></button>
+          <button class="key" data-ch="π">π</button>
+          <button class="key" data-ch="e">e</button>
+
+          <button class="key" data-var="X">X</button>
+          <button class="key" data-var="Y">Y</button>
+          <button class="key" data-ans>Ans</button>
+          <button class="key" data-preans>PreAns</button>
+          <button class="key" data-ins>INS</button>
+          <button class="key" data-clrv>CLRv</button>
+        </div>
+
+        <div class="numblock">
+          <button class="key num" data-ch="7">7</button>
+          <button class="key num" data-ch="8">8</button>
+          <button class="key num" data-ch="9">9</button>
+          <button class="key del" data-del>DEL</button>
+          <button class="key ac" data-ac>AC</button>
+
+          <button class="key num" data-ch="4">4</button>
+          <button class="key num" data-ch="5">5</button>
+          <button class="key num" data-ch="6">6</button>
+          <button class="key op" data-ch="×">×</button>
+          <button class="key op" data-ch="÷">÷</button>
+
+          <button class="key num" data-ch="1">1</button>
+          <button class="key num" data-ch="2">2</button>
+          <button class="key num" data-ch="3">3</button>
+          <button class="key op" data-ch="+">+</button>
+          <button class="key op" data-ch="-">−</button>
+
+          <button class="key num" data-ch="0">0</button>
+          <button class="key num" data-ch=".">.</button>
+          <button class="key" data-exp>×10ˣ</button>
+          <button class="key" data-neg>(-)</button>
+          <button class="key op" id="k-eq" style="background:var(--accent);">=</button>
+        </div>
+      </div>
+
+      <div class="footer-note">
+        Tham khảo kiểu dáng &amp; bố cục phím từ máy tính khoa học natural‑display nói chung; mã nguồn tự viết,
+        dùng thư viện tính toán mở <a href="https://mathjs.org" target="_blank" rel="noopener">math.js</a> (MIT license) để tính số học chính xác, số phức, phân số và ma trận.
+      </div>
+    </div>
+
+    <div>
+      <div class="histpanel">
+        <h3>Lịch sử tính toán</h3>
+        <div class="histlist" id="histlist"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modalbg" id="modalbg"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/15.2.0/math.min.js"></script>
+<script>
+(function(){
+'use strict';
+const math = window.math;
+const mathFrac = math.create(math.all);
+mathFrac.config({number:'Fraction'});
+
+/* ================= Natural-display editor: tree + cursor zipper ================= */
+let uid=1;
+function mkArr(){const a=[];a.__id='a'+(uid++);return a;}
+function newTemplate(t){
+  const node={t,id:'n'+(uid++)};
+  if(t==='frac'){node.num=mkArr();node.den=mkArr();node.fields=['num','den'];}
+  else if(t==='sqrt'){node.body=mkArr();node.fields=['body'];}
+  else if(t==='nroot'){node.n=mkArr();node.body=mkArr();node.fields=['n','body'];}
+  else if(t==='pow'){node.base=mkArr();node.exp=mkArr();node.fields=['base','exp'];}
+  else if(t==='logb'){node.base=mkArr();node.body=mkArr();node.fields=['base','body'];}
+  else if(t==='deriv'){node.body=mkArr();node.at=mkArr();node.fields=['body','at'];}
+  else if(t==='integ'){node.body=mkArr();node.lo=mkArr();node.hi=mkArr();node.fields=['lo','hi','body'];}
+  else if(t==='sum'||t==='prod'){node.body=mkArr();node.lo=mkArr();node.hi=mkArr();node.fields=['lo','hi','body'];}
+  return node;
+}
+function tagArrays(arr){
+  arr.__id='a'+(uid++);
+  for(const node of arr){ if(node.fields){ for(const f of node.fields) tagArrays(node[f]); } }
+}
+
+function createEditor(){
+  const root=mkArr();
+  let cursor={arr:root,i:0};
+  const parentInfo=new Map();
+  function reindex(){
+    parentInfo.clear();
+    (function walk(arr){
+      for(let k=0;k<arr.length;k++){
+        const node=arr[k];
+        if(node.fields){
+          for(const f of node.fields){
+            parentInfo.set(node[f].__id,{parentArr:arr,index:k,field:f,node});
+            walk(node[f]);
+          }
+        }
+      }
+    })(root);
+  }
+  reindex();
+  function insert(ch,opts){ const n={t:'n',v:ch}; if(opts&&opts.isVar)n.var=true; cursor.arr.splice(cursor.i,0,n); cursor.i++; }
+  function insertText(s){ for(const c of s) insert(c); }
+  function insertTemplate(type,presetFields){
+    const node=newTemplate(type);
+    if(presetFields){ for(const k in presetFields){ node[k].push({t:'n',v:presetFields[k]}); } }
+    cursor.arr.splice(cursor.i,0,node); cursor.i++;
+    reindex();
+    let ff=node.fields[0];
+    if(presetFields){
+      for(const f of node.fields){ if(!presetFields[f]){ ff=f; break; } }
+    }
+    cursor={arr:node[ff],i:0};
+  }
+  function insertPowFixedBase(baseStr){
+    const node=newTemplate('pow');
+    node.base.push({t:'n',v:baseStr});
+    cursor.arr.splice(cursor.i,0,node); cursor.i++;
+    reindex();
+    cursor={arr:node.exp,i:0};
+  }
+  function insertPow(fixedExp){
+    let baseArr=mkArr();
+    if(cursor.i>0){
+      const prev=cursor.arr[cursor.i-1];
+      if(!(prev.t==='n'&&/[0-9.]/.test(prev.v))){
+        if(prev.t==='n'&&prev.v===')'){
+          let depth=0,j=cursor.i-1;
+          for(;j>=0;j--){ const nd=cursor.arr[j];
+            if(nd.t==='n'&&nd.v===')')depth++;
+            else if(nd.t==='n'&&nd.v==='('){depth--; if(depth===0)break;}
+          }
+          const taken=cursor.arr.splice(j,cursor.i-j); cursor.i=j; baseArr.push(...taken);
+        } else {
+          const taken=cursor.arr.splice(cursor.i-1,1); cursor.i--; baseArr.push(...taken);
+        }
+      } else {
+        let j=cursor.i-1;
+        while(j>=0&&cursor.arr[j].t==='n'&&/[0-9.]/.test(cursor.arr[j].v)) j--;
+        j++;
+        const taken=cursor.arr.splice(j,cursor.i-j); cursor.i=j; baseArr.push(...taken);
+      }
+    }
+    const node=newTemplate('pow');
+    node.base=baseArr; node.fields=['base','exp'];
+    cursor.arr.splice(cursor.i,0,node); cursor.i++;
+    reindex();
+    if(fixedExp!==undefined){ node.exp.push({t:'n',v:fixedExp}); reindex(); }
+    else cursor={arr:node.exp,i:0};
+  }
+  function backspace(){
+    if(cursor.i>0){ cursor.arr.splice(cursor.i-1,1); cursor.i--; reindex(); return; }
+    const info=parentInfo.get(cursor.arr.__id);
+    if(!info) return;
+    cursor={arr:info.parentArr,i:info.index};
+  }
+  function moveRight(){
+    if(cursor.i<cursor.arr.length){
+      const node=cursor.arr[cursor.i];
+      if(node.fields){ const f=node.fields[0]; cursor={arr:node[f],i:0}; }
+      else cursor.i++;
+      return;
+    }
+    const info=parentInfo.get(cursor.arr.__id);
+    if(!info) return;
+    const fi=info.node.fields.indexOf(info.field);
+    if(fi<info.node.fields.length-1){ const nf=info.node.fields[fi+1]; cursor={arr:info.node[nf],i:0}; }
+    else cursor={arr:info.parentArr,i:info.index+1};
+  }
+  function moveLeft(){
+    if(cursor.i>0){
+      const node=cursor.arr[cursor.i-1];
+      if(node.fields){ const f=node.fields[node.fields.length-1]; cursor={arr:node[f],i:node[f].length}; }
+      else cursor.i--;
+      return;
+    }
+    const info=parentInfo.get(cursor.arr.__id);
+    if(!info) return;
+    const fi=info.node.fields.indexOf(info.field);
+    if(fi>0){ const pf=info.node.fields[fi-1]; cursor={arr:info.node[pf],i:info.node[pf].length}; }
+    else cursor={arr:info.parentArr,i:info.index};
+  }
+  function moveVert(dir){
+    const info=parentInfo.get(cursor.arr.__id);
+    if(!info) return;
+    const node=info.node;
+    if(node.t==='frac'){
+      const target=info.field==='num'?'den':'num';
+      if((dir<0&&info.field==='den')||(dir>0&&info.field==='num')) cursor={arr:node[target],i:0};
+    } else if(node.t==='nroot'){
+      const target=info.field==='n'?'body':'n';
+      cursor={arr:node[target],i:0};
+    }
+  }
+  function serializeArr(arr){
+    let s='';
+    for(const node of arr){
+      if(node.t==='n') s+=node.v;
+      else if(node.t==='frac') s+=`((${serializeArr(node.num)||'0'})/(${serializeArr(node.den)||'1'}))`;
+      else if(node.t==='sqrt') s+=`sqrt(${serializeArr(node.body)||'0'})`;
+      else if(node.t==='nroot') s+=`nthRoot(${serializeArr(node.body)||'0'},${serializeArr(node.n)||'2'})`;
+      else if(node.t==='pow') s+=`((${serializeArr(node.base)||'0'})^(${serializeArr(node.exp)||'0'}))`;
+      else if(node.t==='logb') s+=`log(${serializeArr(node.body)||'0'},${serializeArr(node.base)||'10'})`;
+      else if(node.t==='deriv') s+=`@@DERIV(${serializeArr(node.body)||'0'};${serializeArr(node.at)||'0'})@@`;
+      else if(node.t==='integ') s+=`@@INTEG(${serializeArr(node.body)||'0'};${serializeArr(node.lo)||'0'};${serializeArr(node.hi)||'1'})@@`;
+      else if(node.t==='sum') s+=`@@SUM(${serializeArr(node.body)||'0'};${serializeArr(node.lo)||'1'};${serializeArr(node.hi)||'1'})@@`;
+      else if(node.t==='prod') s+=`@@PROD(${serializeArr(node.body)||'0'};${serializeArr(node.lo)||'1'};${serializeArr(node.hi)||'1'})@@`;
+    }
+    return s;
+  }
+  function serializeDisplayArr(arr){
+    let s='';
+    for(const node of arr){
+      if(node.t==='n') s+=node.v;
+      else if(node.t==='frac') s+=`(${serializeDisplayArr(node.num)}/${serializeDisplayArr(node.den)})`;
+      else if(node.t==='sqrt') s+=`√(${serializeDisplayArr(node.body)})`;
+      else if(node.t==='nroot') s+=`${serializeDisplayArr(node.n)}√(${serializeDisplayArr(node.body)})`;
+      else if(node.t==='pow') s+=`${serializeDisplayArr(node.base)}^(${serializeDisplayArr(node.exp)})`;
+      else if(node.t==='logb') s+=`log_${serializeDisplayArr(node.base)}(${serializeDisplayArr(node.body)})`;
+      else if(node.t==='deriv') s+=`d/dx(${serializeDisplayArr(node.body)})|X=${serializeDisplayArr(node.at)}`;
+      else if(node.t==='integ') s+=`∫[${serializeDisplayArr(node.lo)},${serializeDisplayArr(node.hi)}](${serializeDisplayArr(node.body)})dX`;
+      else if(node.t==='sum') s+=`Σ(X=${serializeDisplayArr(node.lo)}→${serializeDisplayArr(node.hi)})(${serializeDisplayArr(node.body)})`;
+      else if(node.t==='prod') s+=`Π(X=${serializeDisplayArr(node.lo)}→${serializeDisplayArr(node.hi)})(${serializeDisplayArr(node.body)})`;
+    }
+    return s;
+  }
+  function usedVars(){
+    const set=new Set();
+    (function walk(arr){ for(const n of arr){ if(n.t==='n'&&n.var) set.add(n.v); if(n.fields){ for(const f of n.fields) walk(n[f]); } } })(root);
+    return [...set];
+  }
+  return {
+    get cursor(){return cursor;}, get root(){return root;},
+    insert,insertText,insertTemplate,insertPow,insertPowFixedBase,backspace,moveRight,moveLeft,moveVert,
+    serialize:()=>serializeArr(root),
+    serializeDisplay:()=>serializeDisplayArr(root),
+    usedVars,
+    reindex,
+    isEmpty:()=>root.length===0,
+    clear:()=>{root.length=0;cursor={arr:root,i:0};reindex();},
+    setCursor:(a,i)=>{cursor={arr:a,i};},
+    loadRoot:(plain)=>{
+      const cloned=JSON.parse(JSON.stringify(plain));
+      tagArrays(cloned);
+      root.length=0; root.push(...cloned);
+      cursor={arr:root,i:root.length};
+      reindex();
+    },
+    snapshot:()=>JSON.parse(JSON.stringify(root)),
+  };
+}
+
+const ed = createEditor();
+
+/* ================= App state ================= */
+let angleMode='DEG', fracAuto=true, normMode='NORM', calcMode='COMP';
+let shiftOn=false, alphaOn=false;
+let stoArm=false, rcbArm=false;
+let memory={A:0,B:0,C:0,D:0,E:0,F:0,X:0,Y:0,M:0};
+let ans=0, preAns=0;
+let history=[];
+let undoStack=[], redoStack=[];
+let justEvaluated=false;
+let lastResult=null;
+let lastShowDecimal=false;
+
+const $=(sel)=>document.querySelector(sel);
+const exprline=$('#exprline'), resultline=$('#resultline'), hintText=$('#hintText');
+const modalbg=$('#modalbg'), modalEl=$('#modal'), toastEl=$('#toast');
+
+function toast(msg){ toastEl.textContent=msg; toastEl.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>toastEl.classList.remove('show'),1900); }
+
+function openModal(title, bodyHtml, mount){
+  modalEl.innerHTML=`<h2>${title}</h2>${bodyHtml}`;
+  modalbg.classList.add('show');
+  if(mount) mount(modalEl);
+}
+function closeModal(){ modalbg.classList.remove('show'); modalEl.innerHTML=''; }
+modalbg.addEventListener('click',(e)=>{ if(e.target===modalbg) closeModal(); });
+
+/* ================= Rendering ================= */
+function caretEl(){ const c=document.createElement('span'); c.className='caret'; return c; }
+function emptyBox(){ const b=document.createElement('span'); b.className='mempty'; return b; }
+
+function renderArr(arr,isRoot){
+  const cur=ed.cursor;
+  const row=document.createElement('span'); row.className='mrow';
+  if(arr.length===0){
+    if(arr===cur.arr) row.appendChild(caretEl());
+    if(!isRoot) row.appendChild(emptyBox());
+    return row;
+  }
+  for(let k=0;k<=arr.length;k++){
+    if(arr===cur.arr && cur.i===k) row.appendChild(caretEl());
+    if(k<arr.length){
+      const leaf=renderNode(arr[k]);
+      attachClick(leaf, arr, k);
+      row.appendChild(leaf);
+    }
+  }
+  return row;
+}
+function attachClick(el,arr,k){
+  el.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    const rect=el.getBoundingClientRect();
+    const before=(e.clientX-rect.left) < rect.width/2;
+    ed.setCursor(arr, before?k:k+1);
+    renderAll();
+  });
+}
+function renderNode(node){
+  if(node.t==='n'){
+    const s=document.createElement('span');
+    s.textContent=node.v;
+    if(node.var) s.className='mvar';
+    return s;
+  }
+  if(node.t==='frac'){
+    const w=document.createElement('span'); w.className='mfrac';
+    const num=document.createElement('span'); num.className='num'; num.appendChild(renderArr(node.num));
+    const bar=document.createElement('span'); bar.className='bar';
+    const den=document.createElement('span'); den.className='den'; den.appendChild(renderArr(node.den));
+    w.append(num,bar,den); return w;
+  }
+  if(node.t==='sqrt'){
+    const w=document.createElement('span'); w.className='msqrt';
+    const rad=document.createElement('span'); rad.className='rad'; rad.textContent='√';
+    const body=document.createElement('span'); body.className='body'; body.appendChild(renderArr(node.body));
+    w.append(rad,body); return w;
+  }
+  if(node.t==='nroot'){
+    const w=document.createElement('span'); w.className='mnroot';
+    const idx=document.createElement('span'); idx.className='idx'; idx.appendChild(renderArr(node.n));
+    const rad=document.createElement('span'); rad.className='rad'; rad.textContent='√';
+    const body=document.createElement('span'); body.className='body'; body.appendChild(renderArr(node.body));
+    w.append(idx,rad,body); return w;
+  }
+  if(node.t==='pow'){
+    const w=document.createElement('span'); w.className='mpow';
+    const base=document.createElement('span'); base.appendChild(renderArr(node.base));
+    const exp=document.createElement('span'); exp.className='exp'; exp.appendChild(renderArr(node.exp));
+    w.append(base,exp); return w;
+  }
+  if(node.t==='logb'){
+    const w=document.createElement('span'); w.className='mlog';
+    const lbl=document.createElement('span'); lbl.textContent='log';
+    const base=document.createElement('span'); base.className='base'; base.appendChild(renderArr(node.base));
+    w.append(lbl,base,'(',renderArr(node.body),')'); return w;
+  }
+  if(node.t==='deriv'){
+    const w=document.createElement('span');
+    w.append('d/dx(', renderArr(node.body), ')|ₓ₌', renderArr(node.at)); return w;
+  }
+  if(node.t==='integ'){
+    const w=document.createElement('span');
+    w.append('∫[', renderArr(node.lo), ',', renderArr(node.hi), '](', renderArr(node.body), ')dX'); return w;
+  }
+  if(node.t==='sum'||node.t==='prod'){
+    const w=document.createElement('span');
+    const sym=node.t==='sum'?'Σ':'Π';
+    w.append(sym+'(X=', renderArr(node.lo), '→', renderArr(node.hi), ')(', renderArr(node.body), ')');
+    return w;
+  }
+  const s=document.createElement('span'); return s;
+}
+function renderAll(){
+  exprline.innerHTML='';
+  if(ed.isEmpty()){
+    const ph=document.createElement('span');
+    ph.style.color='#5c6a52'; ph.style.fontSize='15px';
+    ph.textContent='Nhập biểu thức: x²−3x+1=0, log(100)−√2 …';
+    exprline.appendChild(ph);
+  } else {
+    exprline.appendChild(renderArr(ed.root,true));
+  }
+  exprline.scrollLeft=exprline.scrollWidth;
+  updateChips();
+}
+exprline.addEventListener('click',()=>{ ed.setCursor(ed.root, ed.root.length); renderAll(); });
+
+function updateChips(){
+  $('#chipAngle').textContent=angleMode;
+  $('#chipFrac').textContent=fracAuto?'FRAC':'DEC'; $('#chipFrac').classList.toggle('on',fracAuto);
+  $('#chipNorm').textContent=normMode;
+  $('#chipMode').textContent=calcMode;
+}
+
+/* ================= Undo / mutate wrapper ================= */
+function mutate(fn){
+  undoStack.push(ed.snapshot());
+  if(undoStack.length>60) undoStack.shift();
+  redoStack.length=0;
+  fn();
+  renderAll();
+}
+$('#btnUndo').addEventListener('click',()=>{
+  if(!undoStack.length) return;
+  redoStack.push(ed.snapshot());
+  ed.loadRoot(undoStack.pop());
+  renderAll();
+});
+$('#btnRedo').addEventListener('click',()=>{
+  if(!redoStack.length) return;
+  undoStack.push(ed.snapshot());
+  ed.loadRoot(redoStack.pop());
+  renderAll();
+});
+
+function beginIfNeeded(continuable){
+  if(justEvaluated){
+    undoStack.push(ed.snapshot()); if(undoStack.length>60) undoStack.shift(); redoStack.length=0;
+    ed.clear();
+    if(continuable) ed.insertText('Ans');
+    justEvaluated=false;
+  }
+}
+function handleChar(ch,opts){
+  mutate(()=>{ beginIfNeededInline(('+-×÷^,'.includes(ch))); ed.insert(ch,opts); });
+}
+function beginIfNeededInline(continuable){
+  if(justEvaluated){
+    ed.clear();
+    if(continuable) ed.insertText('Ans');
+    justEvaluated=false;
+  }
+}
+
+/* ================= Preprocess & evaluate ================= */
+function preprocess(raw){
+  return raw.split('×').join('*').split('÷').join('/').split('π').join('pi')
+    .split('∞').join('Infinity').split('%').join('/100');
+}
+function splitTopLevel(s,sep){
+  sep=sep||',';
+  let depth=0,parts=[],cur='';
+  for(const c of s){
+    if(c==='(') depth++;
+    if(c===')') depth--;
+    if(c===sep && depth===0){ parts.push(cur); cur=''; }
+    else cur+=c;
+  }
+  parts.push(cur);
+  return parts;
+}
+function topLevelEqIndex(s){
+  let depth=0;
+  for(let k=0;k<s.length;k++){
+    if(s[k]==='(') depth++;
+    else if(s[k]===')') depth--;
+    else if(s[k]==='=' && depth===0) return k;
+  }
+  return -1;
+}
+function isComplexLike(x){ return x && typeof x==='object' && x.type==='Complex'; }
+function buildScope(overrides){
+  const toRad=x=>angleMode==='DEG'?x*Math.PI/180:angleMode==='GRAD'?x*Math.PI/200:x;
+  const fromRad=x=>angleMode==='DEG'?x*180/Math.PI:angleMode==='GRAD'?x*200/Math.PI:x;
+  const scope={
+    sin:x=>isComplexLike(x)?math.sin(x):Math.sin(toRad(x)),
+    cos:x=>isComplexLike(x)?math.cos(x):Math.cos(toRad(x)),
+    tan:x=>isComplexLike(x)?math.tan(x):Math.tan(toRad(x)),
+    asin:x=>isComplexLike(x)?math.asin(x):fromRad(Math.asin(x)),
+    acos:x=>isComplexLike(x)?math.acos(x):fromRad(Math.acos(x)),
+    atan:x=>isComplexLike(x)?math.atan(x):fromRad(Math.atan(x)),
+    ln:x=>math.log(x),
+    RanInt:(a,b)=>{ a=Number(a); b=Number(b); return Math.floor(Math.random()*(b-a+1))+a; },
+    A:memory.A,B:memory.B,C:memory.C,D:memory.D,E:memory.E,F:memory.F,
+    X:memory.X,Y:memory.Y,M:memory.M,
+    Ans:ans, PreAns:preAns,
+  };
+  if(overrides) Object.assign(scope,overrides);
+  return scope;
+}
+function resolveSpecials(s,scope){
+  let guard=0;
+  const reDeriv=/@@DERIV\(((?:[^@]|@(?!@))*?);((?:[^@]|@(?!@))*?)\)@@/;
+  const reSum=/@@SUM\(((?:[^@]|@(?!@))*?);((?:[^@]|@(?!@))*?);((?:[^@]|@(?!@))*?)\)@@/;
+  const reProd=/@@PROD\(((?:[^@]|@(?!@))*?);((?:[^@]|@(?!@))*?);((?:[^@]|@(?!@))*?)\)@@/;
+  const reInteg=/@@INTEG\(((?:[^@]|@(?!@))*?);((?:[^@]|@(?!@))*?);((?:[^@]|@(?!@))*?)\)@@/;
+  while(/@@/.test(s) && guard++<25){
+    if(reInteg.test(s)){
+      s=s.replace(reInteg,(m,bodyExpr,loExpr,hiExpr)=>{
+        const lo=Number(math.evaluate(loExpr,scope)), hi=Number(math.evaluate(hiExpr,scope));
+        const N=400; const h=(hi-lo)/N;
+        const f=x=>Number(math.evaluate(bodyExpr,Object.assign({},scope,{X:x})));
+        let total=f(lo)+f(hi);
+        for(let k=1;k<N;k++) total += f(lo+k*h) * (k%2===0?2:4);
+        const integral = total*h/3;
+        return '('+integral+')';
+      });
+    } else if(reDeriv.test(s)){
+      s=s.replace(reDeriv,(m,bodyExpr,atExpr)=>{
+        const atVal=Number(math.evaluate(atExpr,scope));
+        const h=1e-6*(Math.abs(atVal)+1);
+        const f=x=>Number(math.evaluate(bodyExpr,Object.assign({},scope,{X:x})));
+        const d=(f(atVal+h)-f(atVal-h))/(2*h);
+        return '('+d+')';
+      });
+    } else if(reSum.test(s)){
+      s=s.replace(reSum,(m,bodyExpr,loExpr,hiExpr)=>{
+        const lo=Math.round(Number(math.evaluate(loExpr,scope)));
+        const hi=Math.round(Number(math.evaluate(hiExpr,scope)));
+        let total=0;
+        for(let x=lo;x<=hi;x++) total+=Number(math.evaluate(bodyExpr,Object.assign({},scope,{X:x})));
+        return '('+total+')';
+      });
+    } else if(reProd.test(s)){
+      s=s.replace(reProd,(m,bodyExpr,loExpr,hiExpr)=>{
+        const lo=Math.round(Number(math.evaluate(loExpr,scope)));
+        const hi=Math.round(Number(math.evaluate(hiExpr,scope)));
+        let total=1;
+        for(let x=lo;x<=hi;x++) total*=Number(math.evaluate(bodyExpr,Object.assign({},scope,{X:x})));
+        return '('+total+')';
+      });
+    } else break;
+  }
+  return s;
+}
+function angleUnitSuffix(){ return angleMode==='DEG'?'°':angleMode==='GRAD'?' grad':' rad'; }
+function humanizeError(e){
+  const m=(e&&e.message)||String(e);
+  if(/Undefined symbol/.test(m)) return 'Lỗi: ký hiệu không xác định';
+  if(/Unexpected/.test(m) || /Value expected/.test(m) || /Parenthesis/.test(m)) return 'Lỗi cú pháp (Syntax ERROR)';
+  if(/division/i.test(m) || /divide/i.test(m)) return 'Lỗi: chia cho 0';
+  return 'Math ERROR';
+}
+
+function generalEvaluate(raw){
+  if(!raw||!raw.trim()) return {error:'Biểu thức trống'};
+  let s=preprocess(raw);
+  const scope=buildScope();
+  try{ s=resolveSpecials(s,scope); }catch(e){ return {error:'Lỗi biểu thức đặc biệt (d/dx, Σ, Π)'}; }
+
+  const trimmed=s.trim();
+  let m;
+  if((m=/^Pol\((.*)\)$/s.exec(trimmed))){
+    try{
+      const parts=splitTopLevel(m[1]);
+      const x=Number(math.evaluate(parts[0],scope)), y=Number(math.evaluate(parts[1],scope));
+      const r=Math.hypot(x,y);
+      let th=Math.atan2(y,x);
+      th=angleMode==='DEG'?th*180/Math.PI:angleMode==='GRAD'?th*200/Math.PI:th;
+      memory.E=r; memory.F=th;
+      return {special:true, text:`r = ${fmtNum(r)}    θ = ${fmtNum(th)}${angleUnitSuffix()}`, value:r};
+    }catch(e){ return {error:'Lỗi Pol('} ; }
+  }
+  if((m=/^Rec\((.*)\)$/s.exec(trimmed))){
+    try{
+      const parts=splitTopLevel(m[1]);
+      const r=Number(math.evaluate(parts[0],scope));
+      const th=Number(math.evaluate(parts[1],scope));
+      const thr=angleMode==='DEG'?th*Math.PI/180:angleMode==='GRAD'?th*Math.PI/200:th;
+      const x=r*Math.cos(thr), y=r*Math.sin(thr);
+      memory.E=x; memory.F=y;
+      return {special:true, text:`x = ${fmtNum(x)}    y = ${fmtNum(y)}`, value:x};
+    }catch(e){ return {error:'Lỗi Rec('} ; }
+  }
+
+  if(fracAuto && calcMode!=='MATRIX'){
+    try{
+      const val=mathFrac.evaluate(s,Object.assign({},scope));
+      if(val && val.type==='Fraction') return {value:val, isFraction:true};
+      if(typeof val==='number') return {value:val};
+      if(val && val.type==='Complex') return {value:val, isComplex:true};
+      if(val && val.type==='Matrix') return {value:val, isMatrix:true};
+    }catch(e){ /* fall through */ }
+  }
+  try{
+    const val=math.evaluate(s,scope);
+    if(val && val.type==='Matrix') return {value:val, isMatrix:true};
+    if(val && val.type==='Complex') return {value:val, isComplex:true};
+    if(typeof val==='boolean') return {value:val?1:0};
+    if(val===undefined) return {error:'Biểu thức chưa đầy đủ'};
+    return {value:val};
+  }catch(e){ return {error:humanizeError(e)}; }
+}
+
+/* ================= Formatting ================= */
+function trimTrailingZeros(s){
+  if(s.indexOf('.')===-1) return s;
+  return s.replace(/0+$/,'').replace(/\.$/,'');
+}
+function fmtNum(x){
+  if(x===null||x===undefined) return 'Math ERROR';
+  x=Number(x);
+  if(Number.isNaN(x)) return 'Math ERROR';
+  if(!isFinite(x)) return x>0?'∞':'−∞';
+  if(x===0) return '0';
+  if(normMode==='NORM'){
+    if(Math.abs(x)>=1e10 || Math.abs(x)<1e-9){
+      return x.toExponential(6).replace('e+','×10^').replace('e-','×10^−');
+    }
+    const r=+x.toPrecision(10);
+    return trimTrailingZeros(String(r));
+  }
+  if(normMode.indexOf('FIX')===0){
+    const n=parseInt(normMode.slice(3),10);
+    return x.toFixed(n);
+  }
+  if(normMode.indexOf('SCI')===0){
+    const n=parseInt(normMode.slice(3),10);
+    return x.toExponential(n).replace('e+','×10^').replace('e-','×10^−');
+  }
+  return trimTrailingZeros(String(+x.toPrecision(10)));
+}
+function fmtComplex(c){
+  const re=c.re, im=c.im;
+  if(Math.abs(im)<1e-12) return fmtNum(re);
+  if(Math.abs(re)<1e-12) return (im>=0?'':'−')+fmtNum(Math.abs(im))+'i';
+  return fmtNum(re)+(im>=0?' + ':' − ')+fmtNum(Math.abs(im))+'i';
+}
+function fmtFraction(f,mixed){
+  try{
+    const str=f.toFraction(!!mixed);
+    return str;
+  }catch(e){ return fmtNum(f.valueOf()); }
+}
+function fmtMatrix(m){
+  const arr=m.toArray();
+  return arr.map(row=>{
+    if(Array.isArray(row)) return '[ '+row.map(v=>fmtNum(v)).join('  ')+' ]';
+    return fmtNum(row);
+  }).join('\n');
+}
+function formatResultObj(res){
+  if(res.isFraction){
+    if(lastShowDecimal) return fmtNum(res.value.valueOf());
+    return fmtFraction(res.value,false);
+  }
+  if(res.isComplex) return fmtComplex(res.value);
+  if(res.isMatrix) return fmtMatrix(res.value);
+  return fmtNum(res.value);
+}
+function extractNumericAns(res){
+  if(res.isFraction) return res.value.valueOf();
+  if(res.isComplex) return res.value.re;
+  if(res.isMatrix) return 0;
+  if(typeof res.value==='number') return res.value;
+  return Number(res.value)||0;
+}
+
+/* ================= Compute & history ================= */
+function computeAndShow(){
+  const raw=ed.serialize();
+  if(!raw.trim()){ resultline.textContent='0'; return; }
+  hintText.textContent='Đang tính…';
+  const res=generalEvaluate(raw);
+  if(res.error){
+    resultline.textContent=res.error;
+    hintText.textContent='Lỗi — kiểm tra lại biểu thức';
+    return;
+  }
+  lastShowDecimal=false;
+  lastResult=res;
+  const text = res.special ? res.text : formatResultObj(res);
+  resultline.textContent=text;
+  preAns=ans;
+  ans=extractNumericAns(res);
+  const disp=ed.serializeDisplay();
+  history.unshift({expr:disp, result:text, tree:ed.snapshot(), t:Date.now()});
+  if(history.length>60) history.length=60;
+  renderHistory();
+  saveState();
+  hintText.textContent='Sẵn sàng';
+  justEvaluated=true;
+}
+function renderHistory(){
+  const box=$('#histlist');
+  box.innerHTML='';
+  if(!history.length){ box.innerHTML='<div style="color:var(--sub);font-size:12px;">Chưa có phép tính nào.</div>'; return; }
+  for(const h of history){
+    const it=document.createElement('div'); it.className='histitem';
+    it.innerHTML=`<span class="e">${escapeHtml(h.expr)}</span><span class="r">${escapeHtml(h.result)}</span>`;
+    it.addEventListener('click',()=>{
+      if(!h.tree) return;
+      mutate(()=>{ ed.loadRoot(h.tree); });
+      justEvaluated=false;
+      toast('Đã nạp lại biểu thức');
+    });
+    box.appendChild(it);
+  }
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function saveState(){
+  try{
+    localStorage.setItem('calcapp_v1', JSON.stringify({memory,history:history.slice(0,60),angleMode,fracAuto,normMode,ans,preAns}));
+  }catch(e){}
+}
+function loadState(){
+  try{
+    const raw=localStorage.getItem('calcapp_v1');
+    if(!raw) return;
+    const s=JSON.parse(raw);
+    if(s.memory) Object.assign(memory,s.memory);
+    if(s.history) history=s.history;
+    if(s.angleMode) angleMode=s.angleMode;
+    if(typeof s.fracAuto==='boolean') fracAuto=s.fracAuto;
+    if(s.normMode) normMode=s.normMode;
+    if(typeof s.ans==='number') ans=s.ans;
+    if(typeof s.preAns==='number') preAns=s.preAns;
+  }catch(e){}
+}
+
+/* ================= SOLVE ================= */
+function fOf(exprF,x,scope){ return Number(math.evaluate(exprF,Object.assign({},scope,{X:x}))); }
+function fitPoly2(exprF,scope){
+  try{
+    const f0=fOf(exprF,0,scope), f1=fOf(exprF,1,scope), fm1=fOf(exprF,-1,scope), f2=fOf(exprF,2,scope);
+    if([f0,f1,fm1,f2].some(v=>!isFinite(v))) return null;
+    const c=f0, a=(f1+fm1)/2-f0, b=(f1-fm1)/2;
+    const pred2=a*4+b*2+c;
+    if(Math.abs(pred2-f2) > 1e-6*(Math.abs(f2)+1)) return null;
+    return {a:niceRound(a),b:niceRound(b),c:niceRound(c)};
+  }catch(e){ return null; }
+}
+function niceRound(x){ const r=Math.round(x*1e8)/1e8; return Object.is(r,-0)?0:r; }
+function newtonSolve(exprF,scope,x0){
+  let x=x0, steps=[];
+  for(let i=0;i<80;i++){
+    let fx; try{ fx=fOf(exprF,x,scope); }catch(e){ return {error:'Không tính được tại X='+fmtNum(x)}; }
+    if(!isFinite(fx)) return {error:'Biểu thức không xác định hoặc phân kỳ', steps};
+    steps.push({i,x,fx});
+    if(Math.abs(fx)<1e-10) return {x,steps};
+    const h=1e-6*(Math.abs(x)+1);
+    const dfx=(fOf(exprF,x+h,scope)-fOf(exprF,x-h,scope))/(2*h);
+    if(Math.abs(dfx)<1e-12) return {error:'Đạo hàm ≈ 0 tại điểm này — thử giá trị X ban đầu khác', steps};
+    const x1=x-fx/dfx;
+    if(!isFinite(x1)) return {error:'Không hội tụ — thử giá trị X ban đầu khác', steps};
+    if(Math.abs(x1-x)<1e-12){ steps.push({i:i+1,x:x1,fx:fOf(exprF,x1,scope)}); return {x:x1,steps}; }
+    x=x1;
+  }
+  return {x,steps,warn:'Đạt giới hạn số vòng lặp'};
+}
+function buildLinSteps(b,c){
+  const steps=[];
+  steps.push(`Phương trình bậc nhất: ${fmtNum(b)}X + ${fmtNum(c)} = 0`);
+  if(Math.abs(b)<1e-9){
+    if(Math.abs(c)<1e-9){ steps.push('0 = 0 đúng với mọi X'); return {steps, answer:'Vô số nghiệm (đúng với mọi X)'}; }
+    steps.push('0·X = '+fmtNum(-c)+' — vô lý'); return {steps, answer:'Vô nghiệm'};
+  }
+  steps.push(`X = −(${fmtNum(c)}) / ${fmtNum(b)}`);
+  const x=-c/b;
+  steps.push(`X = ${fmtNum(x)}`);
+  return {steps, answer:'X = '+fmtNum(x), roots:[x]};
+}
+function buildQuadSteps(a,b,c){
+  if(Math.abs(a)<1e-9) return buildLinSteps(b,c);
+  const steps=[];
+  steps.push(`Phương trình bậc hai: ${fmtNum(a)}X² + ${fmtNum(b)}X + ${fmtNum(c)} = 0`);
+  const D=b*b-4*a*c;
+  steps.push(`Δ = b² − 4ac = (${fmtNum(b)})² − 4·(${fmtNum(a)})·(${fmtNum(c)}) = ${fmtNum(D)}`);
+  if(D>1e-9){
+    const sq=Math.sqrt(D);
+    const x1=(-b+sq)/(2*a), x2=(-b-sq)/(2*a);
+    steps.push(`Δ > 0 ⇒ phương trình có hai nghiệm phân biệt`);
+    steps.push(`X₁ = (−b + √Δ) / 2a = (${fmtNum(-b)} + √${fmtNum(D)}) / ${fmtNum(2*a)} = ${fmtNum(x1)}`);
+    steps.push(`X₂ = (−b − √Δ) / 2a = ${fmtNum(x2)}`);
+    return {steps, answer:`X₁ = ${fmtNum(x1)},  X₂ = ${fmtNum(x2)}`, roots:[x1,x2]};
+  } else if(Math.abs(D)<=1e-9){
+    const x0=-b/(2*a);
+    steps.push('Δ = 0 ⇒ phương trình có nghiệm kép');
+    steps.push(`X = −b / 2a = ${fmtNum(-b)} / ${fmtNum(2*a)} = ${fmtNum(x0)}`);
+    return {steps, answer:'X = '+fmtNum(x0)+' (nghiệm kép)', roots:[x0]};
+  } else {
+    const re=-b/(2*a), im=Math.sqrt(-D)/(2*a);
+    steps.push('Δ < 0 ⇒ phương trình vô nghiệm thực, có hai nghiệm phức');
+    steps.push(`X = (−b ± i√|Δ|) / 2a = ${fmtNum(re)} ± ${fmtNum(Math.abs(im))}i`);
+    return {steps, answer:`X₁ = ${fmtNum(re)} + ${fmtNum(Math.abs(im))}i,  X₂ = ${fmtNum(re)} − ${fmtNum(Math.abs(im))}i`};
+  }
+}
+function runSolve(){
+  const raw=ed.serialize();
+  if(!raw.trim()){ toast('Chưa có biểu thức để giải'); return; }
+  const s=preprocess(raw);
+  let exprF, isEqn=false;
+  const eqIdx=topLevelEqIndex(s);
+  if(eqIdx>=0){ exprF=`(${s.slice(0,eqIdx)})-(${s.slice(eqIdx+1)})`; isEqn=true; }
+  else exprF=s;
+  if(!/X/.test(exprF)){ toast('Không tìm thấy biến X trong biểu thức (dùng phím X)'); return; }
+  openModal('SOLVE — Giải phương trình',
+    `<p class="desc">Giải theo X từ: <b>${escapeHtml(ed.serializeDisplay())}${isEqn?'':' = 0'}</b></p>
+     <div class="row"><div style="flex:1;"><label>Giá trị X ban đầu (dò nghiệm số)</label><input id="solveGuess" type="number" value="0" step="any"></div></div>
+     <div class="actions"><button class="btn ghost" id="solveCancel">Đóng</button><button class="btn primary" id="solveGo">Giải</button></div>
+     <div id="solveOut"></div>`,
+    (root)=>{
+      root.querySelector('#solveCancel').addEventListener('click',closeModal);
+      root.querySelector('#solveGo').addEventListener('click',()=>{
+        const guess=Number(root.querySelector('#solveGuess').value)||0;
+        const scope=buildScope();
+        const out=root.querySelector('#solveOut');
+        const fit=fitPoly2(exprF,scope);
+        let html='';
+        if(fit){
+          const r=buildQuadSteps(fit.a,fit.b,fit.c);
+          html+='<div class="steplist">'+r.steps.map((st,i)=>`<div class="stepitem"><b>Bước ${i+1}</b>${escapeHtml(st)}</div>`).join('')+'</div>';
+          html+=`<p style="font-weight:700;">Kết quả: ${escapeHtml(r.answer)}</p>`;
+          if(r.roots&&r.roots.length){
+            memory.X=r.roots[0];
+            html+=`<div class="actions"><button class="btn ghost" id="solveSaveX">Lưu X = ${fmtNum(r.roots[0])}</button></div>`;
+          }
+        } else {
+          const r=newtonSolve(exprF,scope,guess);
+          if(r.error){ html=`<p style="color:#c94f4f;">${escapeHtml(r.error)}</p>`; }
+          else {
+            html+='<div class="steplist">'+r.steps.slice(0,10).map((st,i)=>`<div class="stepitem"><b>Lặp ${i}</b>X = ${fmtNum(st.x)}, f(X) = ${fmtNum(st.fx)}</div>`).join('')+'</div>';
+            html+=`<p style="font-weight:700;">X ≈ ${fmtNum(r.x)}  (L−R = ${fmtNum(fOf(exprF,r.x,scope))})</p>`;
+            memory.X=r.x;
+            html+=`<div class="actions"><button class="btn ghost" id="solveSaveX">Lưu X = ${fmtNum(r.x)}</button></div>`;
+          }
+        }
+        out.innerHTML=html;
+        const sx=out.querySelector('#solveSaveX');
+        if(sx) sx.addEventListener('click',()=>{ toast('Đã lưu vào biến X'); saveState(); });
+      });
+    });
+}
+
+/* ================= CALC ================= */
+function runCalc(){
+  const raw=ed.serialize();
+  if(!raw.trim()){ toast('Chưa có biểu thức'); return; }
+  const vars=ed.usedVars();
+  if(!vars.length){ computeAndShow(); return; }
+  const rows=vars.map(v=>`<div class="row"><div style="flex:1;"><label>Giá trị cho ${v}</label><input class="calcvar" data-v="${v}" type="number" step="any" value="${memory[v]||0}"></div></div>`).join('');
+  openModal('CALC — Nhập giá trị biến',
+    `<p class="desc">Biểu thức có chứa biến: ${vars.join(', ')}</p>${rows}
+     <div class="actions"><button class="btn ghost" id="calcCancel">Hủy</button><button class="btn primary" id="calcGo">Tính</button></div>`,
+    (root)=>{
+      root.querySelector('#calcCancel').addEventListener('click',closeModal);
+      root.querySelector('#calcGo').addEventListener('click',()=>{
+        root.querySelectorAll('.calcvar').forEach(inp=>{ memory[inp.dataset.v]=Number(inp.value)||0; });
+        closeModal();
+        computeAndShow();
+      });
+    });
+}
+
+/* ================= Memory STO/RCL ================= */
+const VARLIST=['A','B','C','D','E','F','X','Y','M'];
+function openStoPicker(){
+  openModal('STO — Lưu vào biến',
+    `<p class="desc">Lưu kết quả hiện tại vào biến nào?</p>
+     <div class="grid-choice">${VARLIST.map(v=>`<div class="choice" data-v="${v}">${v} <small>(hiện: ${fmtNum(memory[v])})</small></div>`).join('')}</div>
+     <div class="actions"><button class="btn ghost" id="stoCancel">Hủy</button></div>`,
+    (root)=>{
+      root.querySelector('#stoCancel').addEventListener('click',closeModal);
+      root.querySelectorAll('[data-v]').forEach(el=>el.addEventListener('click',()=>{
+        const v=el.dataset.v;
+        const val = lastResult ? extractNumericAns(lastResult) : ans;
+        memory[v]=val;
+        toast(`Đã lưu ${fmtNum(val)} vào ${v}`);
+        saveState(); closeModal();
+      }));
+    });
+}
+function openRclPicker(){
+  openModal('RCL — Gọi biến',
+    `<p class="desc">Chèn biến nào vào biểu thức?</p>
+     <div class="grid-choice">${VARLIST.map(v=>`<div class="choice" data-v="${v}">${v} <small>= ${fmtNum(memory[v])}</small></div>`).join('')}</div>
+     <div class="actions"><button class="btn ghost" id="rclCancel">Hủy</button></div>`,
+    (root)=>{
+      root.querySelector('#rclCancel').addEventListener('click',closeModal);
+      root.querySelectorAll('[data-v]').forEach(el=>el.addEventListener('click',()=>{
+        const v=el.dataset.v;
+        mutate(()=>{ beginIfNeededInline(false); ed.insert(v,{isVar:true}); });
+        closeModal();
+      }));
+    });
+}
+
+/* ================= CONST / CONV ================= */
+const CONSTS=[
+  {label:'π — Pi',val:Math.PI}, {label:'e — số Euler',val:Math.E},
+  {label:'c — tốc độ ánh sáng (m/s)',val:299792458},
+  {label:'g — gia tốc trọng trường (m/s²)',val:9.80665},
+  {label:'G — hằng số hấp dẫn (N·m²/kg²)',val:6.674e-11},
+  {label:'h — hằng số Planck (J·s)',val:6.62607015e-34},
+  {label:'Nₐ — số Avogadro (1/mol)',val:6.02214076e23},
+  {label:'R — hằng số khí lý tưởng (J/mol·K)',val:8.314462618},
+  {label:'k — hằng số Boltzmann (J/K)',val:1.380649e-23},
+  {label:'e₀ — điện tích electron (C)',val:1.602176634e-19},
+  {label:'mₑ — khối lượng electron (kg)',val:9.1093837015e-31},
+  {label:'0°C (K)',val:273.15},
+];
+function openConstPanel(){
+  openModal('CONST — Hằng số',
+    `<div class="const-list">${CONSTS.map((c,i)=>`<div class="const-item" data-i="${i}"><span>${c.label}</span><b>${c.val}</b></div>`).join('')}</div>
+     <div class="actions"><button class="btn ghost" id="constCancel">Đóng</button></div>`,
+    (root)=>{
+      root.querySelector('#constCancel').addEventListener('click',closeModal);
+      root.querySelectorAll('[data-i]').forEach(el=>el.addEventListener('click',()=>{
+        const c=CONSTS[Number(el.dataset.i)];
+        mutate(()=>{ beginIfNeededInline(false); ed.insertText('('+c.val+')'); });
+        closeModal();
+      }));
+    });
+}
+const CONV_CATS={
+  'Độ dài (mét)':[['m',1],['km',1000],['cm',0.01],['mm',0.001],['inch',0.0254],['foot',0.3048],['mile',1609.344]],
+  'Khối lượng (kg)':[['kg',1],['g',0.001],['tấn',1000],['pound (lb)',0.45359237],['ounce (oz)',0.028349523]],
+  'Diện tích (m²)':[['m²',1],['km²',1e6],['ha',10000],['cm²',0.0001]],
+  'Thể tích (lít)':[['lít',1],['m³',1000],['mL',0.001],['gallon (US)',3.785411784]],
+  'Tốc độ (m/s)':[['m/s',1],['km/h',1/3.6],['mph',0.44704]],
+};
+function openConvPanel(){
+  const cats=Object.keys(CONV_CATS);
+  openModal('CONV — Đổi đơn vị',
+    `<div class="row"><div style="flex:1;"><label>Nhóm</label><select id="convCat">${cats.map(c=>`<option>${c}</option>`).join('')}</select></div></div>
+     <div class="row">
+       <div style="flex:1;"><label>Giá trị</label><input id="convVal" type="number" step="any" value="1"></div>
+       <div style="flex:1;"><label>Từ</label><select id="convFrom"></select></div>
+       <div style="flex:1;"><label>Sang</label><select id="convTo"></select></div>
+     </div>
+     <p id="convResult" style="font-weight:700;font-size:15px;"></p>
+     <div class="actions"><button class="btn ghost" id="convCancel">Đóng</button><button class="btn primary" id="convInsert">Chèn kết quả</button></div>`,
+    (root)=>{
+      const catSel=root.querySelector('#convCat'), fromSel=root.querySelector('#convFrom'), toSel=root.querySelector('#convTo');
+      function fillUnits(){
+        const units=CONV_CATS[catSel.value];
+        fromSel.innerHTML=units.map(u=>`<option value="${u[1]}">${u[0]}</option>`).join('');
+        toSel.innerHTML=units.map((u,i)=>`<option value="${u[1]}" ${i===1?'selected':''}>${u[0]}</option>`).join('');
+        recalc();
+      }
+      function recalc(){
+        const v=Number(root.querySelector('#convVal').value)||0;
+        const f=Number(fromSel.value), t=Number(toSel.value);
+        const out=v*f/t;
+        root.querySelector('#convResult').textContent=`= ${fmtNum(out)}`;
+      }
+      catSel.addEventListener('change',fillUnits);
+      fromSel.addEventListener('change',recalc); toSel.addEventListener('change',recalc);
+      root.querySelector('#convVal').addEventListener('input',recalc);
+      fillUnits();
+      root.querySelector('#convCancel').addEventListener('click',closeModal);
+      root.querySelector('#convInsert').addEventListener('click',()=>{
+        const v=Number(root.querySelector('#convVal').value)||0;
+        const f=Number(fromSel.value), t=Number(toSel.value);
+        const out=v*f/t;
+        mutate(()=>{ beginIfNeededInline(false); ed.insertText('('+out+')'); });
+        closeModal();
+      });
+    });
+}
+
+/* ================= MATRIX ================= */
+function matGridHtml(id,rows,cols){
+  let html=`<div class="matgrid" id="${id}" style="grid-template-columns:repeat(${cols},1fr);">`;
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) html+=`<input data-r="${r}" data-c="${c}" type="number" step="any" value="0">`;
+  html+='</div>';
+  return html;
+}
+function readMat(root,id,rows,cols){
+  const arr=[]; for(let r=0;r<rows;r++){ arr.push([]); for(let c=0;c<cols;c++) arr[r].push(0); }
+  root.querySelectorAll(`#${id} input`).forEach(inp=>{ arr[+inp.dataset.r][+inp.dataset.c]=Number(inp.value)||0; });
+  return arr;
+}
+function openMatrixPanel(){
+  openModal('MATRIX — Ma trận',
+    `<div class="row">
+       <div><label>Số hàng A</label><input id="mArows" type="number" min="1" max="4" value="2" style="width:70px;"></div>
+       <div><label>Số cột A</label><input id="mAcols" type="number" min="1" max="4" value="2" style="width:70px;"></div>
+       <div><label>Số hàng B</label><input id="mBrows" type="number" min="1" max="4" value="2" style="width:70px;"></div>
+       <div><label>Số cột B</label><input id="mBcols" type="number" min="1" max="4" value="2" style="width:70px;"></div>
+     </div>
+     <div class="row"><button class="btn ghost" id="mBuild">Tạo bảng nhập</button></div>
+     <div id="mBody"></div>`,
+    (root)=>{
+      function build(){
+        const ar=Math.min(4,Math.max(1,+root.querySelector('#mArows').value||2));
+        const ac=Math.min(4,Math.max(1,+root.querySelector('#mAcols').value||2));
+        const br=Math.min(4,Math.max(1,+root.querySelector('#mBrows').value||2));
+        const bc=Math.min(4,Math.max(1,+root.querySelector('#mBcols').value||2));
+        root.querySelector('#mBody').innerHTML=`
+          <p class="desc">Ma trận A (${ar}×${ac})</p>${matGridHtml('matA',ar,ac)}
+          <p class="desc">Ma trận B (${br}×${bc})</p>${matGridHtml('matB',br,bc)}
+          <div class="row" style="margin-top:8px;">
+            <button class="btn primary" data-op="add">A + B</button>
+            <button class="btn primary" data-op="sub">A − B</button>
+            <button class="btn primary" data-op="mul">A × B</button>
+            <button class="btn primary" data-op="det">det(A)</button>
+            <button class="btn primary" data-op="inv">A⁻¹</button>
+            <button class="btn primary" data-op="trn">Trn(A)</button>
+          </div>
+          <div id="matOut" style="margin-top:10px;white-space:pre-wrap;font-family:monospace;font-size:13px;"></div>
+          <div class="actions"><button class="btn ghost" id="matClose">Đóng</button></div>`;
+        root.querySelector('#matClose').addEventListener('click',closeModal);
+        root.querySelectorAll('[data-op]').forEach(btn=>btn.addEventListener('click',()=>{
+          const A=readMat(root,'matA',ar,ac), B=readMat(root,'matB',br,bc);
+          const out=root.querySelector('#matOut');
+          try{
+            let R;
+            const op=btn.dataset.op;
+            if(op==='add') R=math.add(math.matrix(A),math.matrix(B));
+            else if(op==='sub') R=math.subtract(math.matrix(A),math.matrix(B));
+            else if(op==='mul') R=math.multiply(math.matrix(A),math.matrix(B));
+            else if(op==='det'){ out.textContent='det(A) = '+fmtNum(math.det(math.matrix(A))); return; }
+            else if(op==='inv') R=math.inv(math.matrix(A));
+            else if(op==='trn') R=math.transpose(math.matrix(A));
+            out.textContent=fmtMatrix(R);
+          }catch(e){ out.textContent='Lỗi: '+(e.message||'không thể tính (kiểm tra kích thước ma trận)'); }
+        }));
+      }
+      root.querySelector('#mBuild').addEventListener('click',build);
+      build();
+    });
+}
+
+/* ================= MENU (mode + EQN) ================= */
+function openMenu(){
+  openModal('MENU',
+    `<div class="grid-choice">
+       <div class="choice" data-mode="COMP">COMP<br><small>Tính toán thường</small></div>
+       <div class="choice" data-mode="CMPLX">CMPLX<br><small>Số phức</small></div>
+       <div class="choice" id="menuMatrix">MATRIX<br><small>Ma trận</small></div>
+       <div class="choice" id="menuEqn">EQN<br><small>Giải PT theo hệ số</small></div>
+     </div>
+     <div class="actions"><button class="btn ghost" id="menuClose">Đóng</button></div>`,
+    (root)=>{
+      root.querySelector('#menuClose').addEventListener('click',closeModal);
+      root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{
+        calcMode=el.dataset.mode; updateChips(); toast('Chế độ: '+calcMode); closeModal();
+      }));
+      root.querySelector('#menuMatrix').addEventListener('click',()=>{ calcMode='MATRIX'; updateChips(); openMatrixPanel(); });
+      root.querySelector('#menuEqn').addEventListener('click', openEqnPanel);
+    });
+}
+function openEqnPanel(){
+  openModal('Giải phương trình theo hệ số',
+    `<div class="grid-choice">
+       <div class="choice" data-t="lin1">aX + b = 0<br><small>Bậc nhất 1 ẩn</small></div>
+       <div class="choice" data-t="quad1">aX² + bX + c = 0<br><small>Bậc hai 1 ẩn</small></div>
+       <div class="choice" data-t="lin2">Hệ 2 ẩn<br><small>a₁x+b₁y=c₁; a₂x+b₂y=c₂</small></div>
+       <div class="choice" data-t="lin3">Hệ 3 ẩn<br><small>3 phương trình, 3 ẩn</small></div>
+     </div>
+     <div id="eqnBody"></div>`,
+    (root)=>{
+      root.querySelectorAll('[data-t]').forEach(el=>el.addEventListener('click',()=>renderEqnForm(root,el.dataset.t)));
+    });
+}
+function coefRow(labels,ids,vals){
+  return `<div class="row">${labels.map((l,i)=>`<div style="flex:1;"><label>${l}</label><input id="${ids[i]}" type="number" step="any" value="${vals?vals[i]:0}"></div>`).join('')}</div>`;
+}
+function renderEqnForm(root,type){
+  const body=root.querySelector('#eqnBody');
+  let html='';
+  if(type==='lin1') html=coefRow(['a','b'],['ca','cb'],[1,-2]);
+  else if(type==='quad1') html=coefRow(['a','b','c'],['ca','cb','cc'],[1,-3,2]);
+  else if(type==='lin2') html=coefRow(['a₁','b₁','c₁'],['a1','b1','c1'],[1,1,3])+coefRow(['a₂','b₂','c₂'],['a2','b2','c2'],[1,-1,1]);
+  else if(type==='lin3') html=coefRow(['a₁','b₁','c₁','d₁'],['a1','b1','c1','d1'],[1,1,1,6])+coefRow(['a₂','b₂','c₂','d₂'],['a2','b2','c2','d2'],[2,-1,1,3])+coefRow(['a₃','b₃','c₃','d₃'],['a3','b3','c3','d3'],[1,2,-1,2]);
+  html+='<div class="actions"><button class="btn primary" id="eqnSolve">Giải</button></div><div id="eqnOut"></div>';
+  body.innerHTML=html;
+  body.querySelector('#eqnSolve').addEventListener('click',()=>{
+    const g=(id)=>Number(body.querySelector('#'+id).value)||0;
+    let out='';
+    if(type==='lin1'){ const r=buildLinSteps(g('ca'),g('cb')); out=stepsHtml(r); }
+    else if(type==='quad1'){ const r=buildQuadSteps(g('ca'),g('cb'),g('cc')); out=stepsHtml(r); }
+    else if(type==='lin2'){ out=solveLin2(g('a1'),g('b1'),g('c1'),g('a2'),g('b2'),g('c2')); }
+    else if(type==='lin3'){ out=solveLin3(g('a1'),g('b1'),g('c1'),g('d1'),g('a2'),g('b2'),g('c2'),g('d2'),g('a3'),g('b3'),g('c3'),g('d3')); }
+    body.querySelector('#eqnOut').innerHTML=out;
+  });
+}
+function stepsHtml(r){
+  return '<div class="steplist">'+r.steps.map((s,i)=>`<div class="stepitem"><b>Bước ${i+1}</b>${escapeHtml(s)}</div>`).join('')+`</div><p style="font-weight:700;">Kết quả: ${escapeHtml(r.answer)}</p>`;
+}
+function solveLin2(a1,b1,c1,a2,b2,c2){
+  const D=a1*b2-a2*b1, Dx=c1*b2-c2*b1, Dy=a1*c2-a2*c1;
+  const steps=[`D = a₁b₂ − a₂b₁ = (${a1})(${b2}) − (${a2})(${b1}) = ${fmtNum(D)}`];
+  if(Math.abs(D)<1e-9){
+    if(Math.abs(Dx)<1e-9&&Math.abs(Dy)<1e-9) steps.push('D = Dx = Dy = 0 ⇒ hệ có vô số nghiệm hoặc hai phương trình trùng nhau');
+    else steps.push('D = 0 nhưng Dx≠0 hoặc Dy≠0 ⇒ hệ vô nghiệm');
+    return stepsHtml({steps,answer:Math.abs(Dx)<1e-9&&Math.abs(Dy)<1e-9?'Vô số nghiệm':'Vô nghiệm'});
+  }
+  steps.push(`Dx = c₁b₂ − c₂b₁ = ${fmtNum(Dx)},  Dy = a₁c₂ − a₂c₁ = ${fmtNum(Dy)}`);
+  const x=Dx/D,y=Dy/D;
+  steps.push(`x = Dx/D = ${fmtNum(x)},  y = Dy/D = ${fmtNum(y)}`);
+  return stepsHtml({steps,answer:`x = ${fmtNum(x)},  y = ${fmtNum(y)}`});
+}
+function solveLin3(a1,b1,c1,d1,a2,b2,c2,d2,a3,b3,c3,d3){
+  try{
+    const M=[[a1,b1,c1],[a2,b2,c2],[a3,b3,c3]];
+    const D=math.det(math.matrix(M));
+    const steps=[`D = det(A) = ${fmtNum(D)}`];
+    if(Math.abs(D)<1e-9){
+      return stepsHtml({steps:steps.concat(['D = 0 ⇒ hệ vô nghiệm hoặc vô số nghiệm (không giải được bằng Cramer)']),answer:'Không xác định (D=0)'});
+    }
+    const Mx=[[d1,b1,c1],[d2,b2,c2],[d3,b3,c3]];
+    const My=[[a1,d1,c1],[a2,d2,c2],[a3,d3,c3]];
+    const Mz=[[a1,b1,d1],[a2,b2,d2],[a3,b3,d3]];
+    const Dx=math.det(math.matrix(Mx)), Dy=math.det(math.matrix(My)), Dz=math.det(math.matrix(Mz));
+    const x=Dx/D,y=Dy/D,z=Dz/D;
+    steps.push(`Dx = ${fmtNum(Dx)}, Dy = ${fmtNum(Dy)}, Dz = ${fmtNum(Dz)}`);
+    steps.push(`x = Dx/D = ${fmtNum(x)},  y = Dy/D = ${fmtNum(y)},  z = Dz/D = ${fmtNum(z)}`);
+    return stepsHtml({steps,answer:`x = ${fmtNum(x)}, y = ${fmtNum(y)}, z = ${fmtNum(z)}`});
+  }catch(e){ return '<p style="color:#c94f4f;">Lỗi tính định thức.</p>'; }
+}
+
+/* ================= Settings ================= */
+function openSettings(){
+  openModal('Cài đặt',
+    `<div class="row"><div style="flex:1;"><label>Giao diện</label>
+       <select id="setTheme"><option value="system">Theo hệ thống</option><option value="light">Sáng</option><option value="dark">Tối</option></select></div></div>
+     <div class="row"><button class="btn ghost" id="setResetAll">Xóa toàn bộ bộ nhớ &amp; lịch sử</button></div>
+     <div class="actions"><button class="btn primary" id="setClose">Đóng</button></div>`,
+    (root)=>{
+      const sel=root.querySelector('#setTheme');
+      sel.value=document.documentElement.getAttribute('data-theme')||'system';
+      sel.addEventListener('change',()=>{
+        if(sel.value==='system') document.documentElement.removeAttribute('data-theme');
+        else document.documentElement.setAttribute('data-theme',sel.value);
+        try{ localStorage.setItem('calcapp_theme',sel.value); }catch(e){}
+      });
+      root.querySelector('#setResetAll').addEventListener('click',()=>{
+        memory={A:0,B:0,C:0,D:0,E:0,F:0,X:0,Y:0,M:0}; history=[]; ans=0; preAns=0;
+        renderHistory(); saveState(); toast('Đã xóa bộ nhớ và lịch sử');
+      });
+      root.querySelector('#setClose').addEventListener('click',closeModal);
+    });
+}
+
+/* ================= Overwrite/insert toggle ================= */
+let insertOverwrite=false;
+
+/* ================= Key wiring ================= */
+function doInsertChar(ch,opts){ handleChar(ch,opts); }
+function doInsertFuncOpen(name){
+  mutate(()=>{
+    beginIfNeededInline(false);
+    ed.insertText(name+'(');
+    ed.insertText(')');
+    for(let k=0;k<1;k++) ed.moveLeft();
+  });
+}
+function doInsertTemplate(type,preset){
+  mutate(()=>{ beginIfNeededInline(false); ed.insertTemplate(type,preset); });
+}
+function doInsertPow(fixed){
+  mutate(()=>{ beginIfNeededInline(false); ed.insertPow(fixed); });
+}
+
+document.querySelectorAll('[data-ch]').forEach(btn=>{
+  btn.addEventListener('click',()=>doInsertChar(btn.dataset.ch));
+});
+document.querySelectorAll('[data-var]').forEach(btn=>{
+  btn.addEventListener('click',()=>doInsertChar(btn.dataset.var,{isVar:true}));
+});
+document.querySelectorAll('[data-fn]').forEach(btn=>{
+  btn.addEventListener('click',()=>doInsertFuncOpen(btn.dataset.fn));
+});
+document.querySelectorAll('[data-fn1]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    if(btn.dataset.fn1==='ceil' && shiftConsume()){ doInsertFuncOpen('floor'); return; }
+    doInsertFuncOpen(btn.dataset.fn1);
+  });
+});
+document.querySelectorAll('[data-fn2]').forEach(btn=>{
+  btn.addEventListener('click',()=>doInsertFuncOpen(btn.dataset.fn2));
+});
+function shiftConsume(){ if(shiftOn){ shiftOn=false; $('#k-shift').classList.remove('on'); return true; } return false; }
+
+document.querySelector('[data-sqrt]').addEventListener('click',()=>{
+  if(shiftConsume()){ doInsertTemplate('nroot',{n:'3'}); return; }
+  doInsertTemplate('sqrt');
+});
+document.querySelector('[data-pow2]').addEventListener('click',()=>doInsertPow('2'));
+document.querySelector('[data-pow3]').addEventListener('click',()=>doInsertPow('3'));
+document.querySelector('[data-powinv]').addEventListener('click',()=>doInsertPow('-1'));
+document.querySelector('[data-powxy]').addEventListener('click',()=>doInsertPow());
+document.querySelector('[data-nroot]').addEventListener('click',()=>doInsertTemplate('nroot'));
+document.querySelector('[data-frac]').addEventListener('click',()=>doInsertTemplate('frac'));
+document.querySelector('[data-log]').addEventListener('click',()=>{
+  if(shiftConsume()){ mutate(()=>{ beginIfNeededInline(false); ed.insertPowFixedBase('10'); }); return; }
+  doInsertTemplate('logb',{base:'10'});
+});
+document.querySelector('[data-ln]').addEventListener('click',()=>{
+  if(shiftConsume()){ mutate(()=>{ beginIfNeededInline(false); ed.insertPowFixedBase('e'); }); return; }
+  doInsertFuncOpen('ln');
+});
+document.querySelector('[data-fact]').addEventListener('click',()=>doInsertChar('!'));
+document.querySelector('[data-mod]').addEventListener('click',()=>{
+  if(shiftConsume()){ doInsertFuncOpen('abs'); return; }
+  mutate(()=>{ beginIfNeededInline(false); ed.insertText(' mod '); });
+});
+document.querySelector('[data-sd]').addEventListener('click',()=>{
+  if(!lastResult || !lastResult.isFraction){ toast('Không có kết quả dạng phân số để đổi'); return; }
+  lastShowDecimal=!lastShowDecimal;
+  resultline.textContent=formatResultObj(lastResult);
+});
+document.querySelector('[data-exp]').addEventListener('click',()=>{
+  mutate(()=>{ beginIfNeededInline(false); ed.insertText('×'); ed.insertPowFixedBase('10'); });
+});
+document.querySelector('[data-neg]').addEventListener('click',()=>{
+  mutate(()=>{ beginIfNeededInline(true); ed.insert('-'); });
+});
+document.querySelector('[data-del]').addEventListener('click',()=>{
+  mutate(()=>{ if(justEvaluated){ ed.clear(); justEvaluated=false; } else ed.backspace(); });
+});
+document.querySelector('[data-ac]').addEventListener('click',()=>{
+  mutate(()=>{ ed.clear(); }); resultline.textContent='0'; hintText.textContent='Sẵn sàng'; justEvaluated=false;
+});
+document.querySelector('[data-sto]').addEventListener('click',openStoPicker);
+document.querySelector('[data-rcl]').addEventListener('click',openRclPicker);
+document.querySelector('[data-mplus]').addEventListener('click',()=>{ const v=lastResult?extractNumericAns(lastResult):ans; memory.M+=v; toast('M = '+fmtNum(memory.M)); saveState(); });
+document.querySelector('[data-mminus]').addEventListener('click',()=>{ const v=lastResult?extractNumericAns(lastResult):ans; memory.M-=v; toast('M = '+fmtNum(memory.M)); saveState(); });
+document.querySelector('[data-const]').addEventListener('click',openConstPanel);
+document.querySelector('[data-conv]').addEventListener('click',openConvPanel);
+document.querySelector('[data-ran]').addEventListener('click',()=>{
+  if(shiftConsume()){
+    mutate(()=>{ beginIfNeededInline(false); ed.insertText('RanInt(1,6)'); });
+    toast('Chỉnh lại khoảng (1,6) nếu cần rồi bấm =');
+    return;
+  }
+  const r=Math.random().toFixed(3);
+  mutate(()=>{ beginIfNeededInline(false); ed.insertText(String(r)); });
+});
+document.querySelector('[data-ans]').addEventListener('click',()=>{ mutate(()=>{ beginIfNeededInline(false); ed.insertText('Ans'); }); });
+document.querySelector('[data-preans]').addEventListener('click',()=>{ mutate(()=>{ beginIfNeededInline(false); ed.insertText('PreAns'); }); });
+document.querySelector('[data-ins]').addEventListener('click',(e)=>{ insertOverwrite=!insertOverwrite; e.target.classList.toggle('on',insertOverwrite); toast(insertOverwrite?'Chế độ ghi đè (INS)':'Chế độ chèn'); });
+document.querySelector('[data-clrv]').addEventListener('click',()=>{ memory={A:0,B:0,C:0,D:0,E:0,F:0,X:0,Y:0,M:0}; toast('Đã xóa toàn bộ biến nhớ'); saveState(); });
+
+$('#k-shift').addEventListener('click',()=>{ shiftOn=!shiftOn; alphaOn=false; $('#k-shift').classList.toggle('on',shiftOn); $('#k-alpha').classList.remove('on'); });
+$('#k-alpha').addEventListener('click',()=>{ alphaOn=!alphaOn; shiftOn=false; $('#k-alpha').classList.toggle('on',alphaOn); $('#k-shift').classList.remove('on'); });
+$('#k-menu').addEventListener('click',openMenu);
+$('#k-settings').addEventListener('click',openSettings);
+$('#k-optn').addEventListener('click',()=>{
+  if(shiftConsume()){ openConvPanel(); return; }
+  openModal('OPTN — Thêm hàm',
+    `<div class="grid-choice">
+       <div class="choice" data-ins="Pol(">Pol(x,y)<br><small>Đổi Đề‑các → cực</small></div>
+       <div class="choice" data-ins="Rec(">Rec(r,θ)<br><small>Đổi cực → Đề‑các</small></div>
+       <div class="choice" data-ins="floor(">⌊Floor⌋</div>
+       <div class="choice" data-ins="ceil(">⌈Ceil⌉</div>
+     </div>
+     <div class="actions"><button class="btn ghost" id="optnClose">Đóng</button></div>`,
+    (root)=>{
+      root.querySelector('#optnClose').addEventListener('click',closeModal);
+      root.querySelectorAll('[data-ins]').forEach(el=>el.addEventListener('click',()=>{
+        mutate(()=>{ beginIfNeededInline(false); ed.insertText(el.dataset.ins); ed.insertText(')'); ed.moveLeft(); });
+        closeModal();
+      }));
+    });
+});
+$('#k-calc').addEventListener('click',runCalc);
+$('#k-solve').addEventListener('click',()=>{
+  if(shiftOn){ shiftOn=false; $('#k-shift').classList.remove('on'); mutate(()=>{ beginIfNeededInline(false); ed.insert('='); }); return; }
+  runSolve();
+});
+$('#k-deriv').addEventListener('click',()=>{
+  if(shiftConsume()){ doInsertTemplate('integ'); return; }
+  doInsertTemplate('deriv');
+});
+$('#k-sum').addEventListener('click',()=>{
+  if(shiftOn){ shiftOn=false; $('#k-shift').classList.remove('on'); doInsertTemplate('prod'); return; }
+  doInsertTemplate('sum');
+});
+$('#k-matrix').addEventListener('click',()=>{ calcMode='MATRIX'; updateChips(); openMatrixPanel(); });
+$('#k-eq').addEventListener('click',computeAndShow);
+$('#btnStepMode').addEventListener('click',runSolve);
+
+document.querySelectorAll('.dpad [data-k]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const k=btn.dataset.k;
+    if(k==='left') { ed.moveLeft(); renderAll(); }
+    else if(k==='right'){ ed.moveRight(); renderAll(); }
+    else if(k==='up'){ ed.moveVert(-1); renderAll(); }
+    else if(k==='down'){ ed.moveVert(1); renderAll(); }
+    else if(k==='ok'){ computeAndShow(); }
+  });
+});
+
+/* status chips */
+$('#chipAngle').addEventListener('click',()=>{
+  angleMode = angleMode==='DEG'?'RAD':angleMode==='RAD'?'GRAD':'DEG';
+  updateChips(); saveState();
+});
+$('#chipFrac').addEventListener('click',()=>{ fracAuto=!fracAuto; updateChips(); saveState(); });
+$('#chipNorm').addEventListener('click',()=>{
+  const seq=['NORM','FIX2','FIX4','SCI3','SCI5'];
+  const idx=seq.indexOf(normMode);
+  normMode=seq[(idx+1)%seq.length];
+  updateChips(); saveState();
+});
+$('#chipMode').addEventListener('click',openMenu);
+
+/* keyboard passthrough */
+document.addEventListener('keydown',(e)=>{
+  const tag=document.activeElement&&document.activeElement.tagName;
+  if(tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA') return;
+  if(modalbg.classList.contains('show')) return;
+  const k=e.key;
+  if(/^[0-9.]$/.test(k)){ doInsertChar(k); e.preventDefault(); return; }
+  if(k==='+'){ doInsertChar('+'); e.preventDefault(); return; }
+  if(k==='-'){ doInsertChar('-'); e.preventDefault(); return; }
+  if(k==='*'){ doInsertChar('×'); e.preventDefault(); return; }
+  if(k==='/'){ doInsertChar('÷'); e.preventDefault(); return; }
+  if(k==='('||k===')'){ doInsertChar(k); e.preventDefault(); return; }
+  if(k===','){ doInsertChar(','); e.preventDefault(); return; }
+  if(k==='^'){ doInsertPow(); e.preventDefault(); return; }
+  if(k==='!'){ doInsertChar('!'); e.preventDefault(); return; }
+  if(k==='x'||k==='X'){ doInsertChar('X',{isVar:true}); e.preventDefault(); return; }
+  if(k==='Backspace'){ mutate(()=>{ if(justEvaluated){ ed.clear(); justEvaluated=false; } else ed.backspace(); }); e.preventDefault(); return; }
+  if(k==='Delete'){ mutate(()=>ed.clear()); resultline.textContent='0'; justEvaluated=false; e.preventDefault(); return; }
+  if(k==='ArrowLeft'){ ed.moveLeft(); renderAll(); e.preventDefault(); return; }
+  if(k==='ArrowRight'){ ed.moveRight(); renderAll(); e.preventDefault(); return; }
+  if(k==='ArrowUp'){ ed.moveVert(-1); renderAll(); e.preventDefault(); return; }
+  if(k==='ArrowDown'){ ed.moveVert(1); renderAll(); e.preventDefault(); return; }
+  if(k==='Enter'||k==='='){ computeAndShow(); e.preventDefault(); return; }
+});
+
+/* ================= Init ================= */
+function init(){
+  try{
+    const th=localStorage.getItem('calcapp_theme');
+    if(th && th!=='system') document.documentElement.setAttribute('data-theme',th);
+  }catch(e){}
+  loadState();
+  renderAll();
+  renderHistory();
+  resultline.textContent = ans ? fmtNum(ans) : '0';
+}
+init();
+
+})();
+</script>
+
