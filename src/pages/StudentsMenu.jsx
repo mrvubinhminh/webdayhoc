@@ -11,7 +11,8 @@ const StudentsMenu = () => {
   const studentPaths = Object.keys(files);
 
   const parsedStudents = studentPaths.map(path => {
-    const match = path.match(/\/public\/students\/(\d+)\/(.+)\.html$/);
+    // Allow alphanumeric characters for the category folder
+    const match = path.match(/\/public\/students\/([a-zA-Z0-9_-]+)\/(.+)\.html$/);
     if (!match) return null;
     
     const titleMatch = match[2].match(/^(\d+)[.\-_]?\s*(.*)/);
@@ -33,7 +34,15 @@ const StudentsMenu = () => {
     '10': parsedStudents.filter(m => m.grade === '10'),
     '11': parsedStudents.filter(m => m.grade === '11'),
     '12': parsedStudents.filter(m => m.grade === '12'),
+    'khac': parsedStudents.filter(m => m.grade === 'khac'),
   };
+
+  const tabs = [
+    { id: '10', label: 'Lớp 10' },
+    { id: '11', label: 'Lớp 11' },
+    { id: '12', label: 'Lớp 12' },
+    { id: 'khac', label: 'Tiện ích khác' }
+  ];
 
   const icons = [Box, Cuboid, Cylinder, Layers, Pyramid, LayoutGrid, CheckSquare];
   
@@ -62,18 +71,18 @@ const StudentsMenu = () => {
         </p>
 
         {/* Tabs */}
-        <div className="flex justify-center gap-4 mb-12">
-          {['10', '11', '12'].map(grade => (
+        <div className="flex flex-wrap justify-center gap-4 mb-12">
+          {tabs.map(tab => (
             <button
-              key={grade}
-              onClick={() => setActiveTab(grade)}
-              className={`px-8 py-3 rounded-xl font-bold text-lg transition-all ${
-                activeTab === grade 
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-6 sm:px-8 py-3 rounded-xl font-bold text-lg transition-all ${
+                activeTab === tab.id 
                   ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30' 
                   : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
               }`}
             >
-              Lớp {grade}
+              {tab.label}
             </button>
           ))}
         </div>

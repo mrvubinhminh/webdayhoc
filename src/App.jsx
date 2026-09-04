@@ -26,8 +26,8 @@ const AppContent = () => {
       {/* Background with simple grid pattern */}
       {!isGameRoute && (
         <>
-          {/* Base blue background */}
-          <div className="fixed inset-0 z-[-1] bg-[#0c4a6e] bg-[linear-gradient(to_right,#ffffff12_1px,transparent_1px),linear-gradient(to_bottom,#ffffff12_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+          {/* Base gradient background */}
+          <div className="fixed inset-0 z-[-1] bg-gradient-to-br from-[#0c4a6e] via-[#083344] to-[#020617] bg-[linear-gradient(to_right,#ffffff12_1px,transparent_1px),linear-gradient(to_bottom,#ffffff12_1px,transparent_1px)] bg-[size:24px_24px]"></div>
           
           {/* Top ambient glow (lighter blue/yellow) */}
           <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[80%] h-[300px] bg-blue-400/30 rounded-[100%] blur-[120px] pointer-events-none z-[-1]"></div>

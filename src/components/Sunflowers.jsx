@@ -6,7 +6,8 @@ const Sunflowers = () => {
   const flowers = Array.from({ length: 15 }).map((_, i) => {
     const size = Math.random() * 40 + 30; // 30-70px
     const left = Math.random() * 100;
-    const top = Math.random() * 100;
+    // Limit to bottom 1/3 of the screen (66% to 100%)
+    const top = Math.random() * 34 + 66;
     const delay = Math.random() * 5;
     const duration = Math.random() * 4 + 4;
     return { id: i, size, left, top, delay, duration };
