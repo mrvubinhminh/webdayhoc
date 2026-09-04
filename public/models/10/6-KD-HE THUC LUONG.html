@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Khởi động: Hệ thức lượng trong tam giác - Toán 10</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- MathJax -->
+    <script>
+        window.MathJax = {
+            options: { enableMenu: false },
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            margin: 0; overflow: hidden; 
+            user-select: none; touch-action: none; background-color: #f8fafc; 
+        }
+        .app-container { display: flex; flex-direction: column; height: 100vh; width: 100vw; background: white;}
+        .main-content { display: flex; flex: 1; overflow: hidden; }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 480px; background-color: #ffffff; border-right: 1px solid #e2e8f0;
+            display: flex; flex-direction: column; overflow-y: auto; z-index: 20;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.05); padding: 1.5rem; scroll-behavior: smooth;
+        }
+
+        /* Nautical Background (Biển & Bản đồ hàng hải) */
+        .canvas-area {
+            flex: 1; position: relative; display: flex; flex-direction: column;
+            overflow: hidden; 
+            background: radial-gradient(circle at center, #0ea5e9 0%, #0369a1 100%);
+        }
+
+        .nautical-grid {
+            position: absolute; inset: 0;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            opacity: 0.8;
+            pointer-events: none;
+        }
+
+        .activity-card {
+            background: white; border: 1px solid #e2e8f0; border-radius: 1rem;
+            padding: 1.25rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: all 0.4s ease; animation: slideIn 0.4s ease-out; margin-bottom: 1rem;
+        }
+        .activity-card.inactive { opacity: 0.35; pointer-events: none; filter: grayscale(80%); }
+        
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Sliders */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%;
+            background: #3b82f6; cursor: pointer; margin-top: -8px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); border: 2px solid white;
+        }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 8px; cursor: pointer; background: #cbd5e1; border-radius: 4px; }
+
+        .math-display { font-size: 1.15rem; overflow-x: auto; overflow-y: hidden; }
+        .hidden { display: none !important; }
+        
+        /* SVG Transitions for Smooth Geometry */
+        path, line, circle, text { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .ship-group { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        .glow-text {
+            text-shadow: 0 0 5px rgba(255,255,255,0.8), 0 0 10px rgba(255,255,255,0.5);
+        }
+
+        .compass {
+            position: absolute; top: 20px; right: 20px;
+            width: 80px; height: 80px; opacity: 0.8;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- HEADER -->
+        <header class="h-16 bg-white border-b-2 border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-30">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xl border border-blue-200">
+                    △
+                </div>
+                <h1 class="text-xl font-extrabold text-slate-800 uppercase tracking-wide">Khởi động: Hệ thức lượng trong tam giác</h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="toggleTeacherMode()" class="flex items-center gap-2 text-amber-800 bg-amber-50 hover:bg-amber-100 px-4 py-2 rounded-lg text-sm border border-amber-200 transition font-bold shadow-sm">
+                    🎓 Gợi ý sư phạm
+                </button>
+                <button onclick="runScript()" class="flex items-center gap-2 text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-4 py-2 rounded-lg text-sm border border-emerald-200 transition font-bold shadow-sm">
+                    ▶ Trình chiếu
+                </button>
+                <button onclick="resetModel()" class="flex items-center gap-2 text-slate-700 hover:text-slate-900 px-4 py-2 rounded-lg text-sm border border-slate-300 hover:bg-slate-50 transition font-bold shadow-sm">
+                    ↺ Đặt lại
+                </button>
+                <button id="btnFullscreen" class="flex items-center gap-2 text-slate-700 hover:text-blue-700 px-4 py-2 rounded-lg text-sm border border-slate-300 hover:bg-slate-50 transition font-bold shadow-sm">
+                    <span id="txtFullscreen">⛶ Toàn màn hình</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- SIDEBAR -->
+            <aside class="sidebar" id="sidebar">
+                <div class="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">Tiến trình Khám phá</div>
+                
+                <!-- HĐ 1: QUAN SÁT -->
+                <div class="activity-card" id="card-1">
+                    <h3 class="text-lg font-black text-blue-700 mb-3 flex items-center gap-2"><span>1. Quan sát Tình huống</span></h3>
+                    <p class="text-[15px] text-slate-700 mb-3 font-medium leading-relaxed">
+                        Tàu xuất phát từ cảng Vân Phong (A), đi hướng <b>Đông</b> vận tốc 20 km/h. <br>
+                        Sau 1 giờ (đến B), tàu đổi hướng <b>Đông Nam</b> đi thêm 0.5 giờ (đến C).
+                    </p>
+                    
+                    <div class="bg-blue-50 p-3 rounded-lg border border-blue-200 mb-4 font-semibold text-blue-900">
+                        AB = 20 km <br>
+                        BC = 10 km <br>
+                        Góc đổi hướng tạo góc trong $\widehat{B} = 135^\circ$
+                    </div>
+
+                    <div class="bg-amber-50 p-4 rounded-xl border border-amber-300 mb-4">
+                        <p class="font-bold text-amber-900 mb-2">🤔 Câu hỏi đặt ra:</p>
+                        <p class="text-[15px] text-amber-800 font-medium">
+                            Nếu cộng hai quãng đường: $20 + 10 = 30$ km. <br>
+                            Thì khoảng cách từ tàu đến cảng (đoạn AC) có phải là 30 km không?
+                        </p>
+                    </div>
+                    
+                    <div id="h1-ans" class="hidden bg-slate-100 p-3 rounded-lg border border-slate-300 text-slate-700 font-medium mb-4 animate-pulse">
+                        <b>Dự kiến:</b> Không. 30 km là tổng quãng đường đã đi. Khoảng cách thực tế là đường chim bay (đoạn AC), luôn nhỏ hơn 30 km (Bất đẳng thức tam giác).
+                    </div>
+                    
+                    <button id="btn-next-2" onclick="activateStep(2)" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition shadow-sm">
+                        Thử thay đổi hướng đi
+                    </button>
+                </div>
+
+                <!-- HĐ 2: DỰ ĐOÁN -->
+                <div class="activity-card hidden" id="card-2">
+                    <h3 class="text-lg font-black text-emerald-700 mb-3">2. Dự đoán & Trực quan</h3>
+                    <p class="text-[15px] text-slate-700 mb-4 font-medium leading-relaxed">
+                        Dùng thanh trượt để thay đổi góc $\widehat{B}$. Hãy quan sát sự thay đổi của khoảng cách AC.
+                    </p>
+                    
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4 shadow-inner">
+                        <label class="flex justify-between font-bold text-slate-700 mb-3">
+                            <span>Góc $\widehat{B}$:</span>
+                            <span class="text-emerald-600 text-xl"><span id="val-angle">135</span>°</span>
+                        </label>
+                        <input type="range" id="slider-angle" min="30" max="170" value="135" class="w-full">
+                        
+                        <div class="mt-4 pt-3 border-t border-slate-200 flex justify-between items-center">
+                            <span class="font-bold text-slate-600">Khoảng cách AC:</span>
+                            <span class="font-black text-2xl text-blue-700"><span id="val-dist">0.0</span> km</span>
+                        </div>
+                    </div>
+                    
+                    <button id="btn-next-3" onclick="activateStep(3)" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl transition shadow-sm">
+                        Khám phá công thức tính
+                    </button>
+                </div>
+
+                <!-- HĐ 3 & 4: KHÁM PHÁ & PYTHAGORE -->
+                <div class="activity-card hidden" id="card-3">
+                    <h3 class="text-lg font-black text-purple-700 mb-3">3. Tìm công cụ Toán học</h3>
+                    <p class="text-[15px] text-slate-700 mb-3 font-medium">
+                        Nếu biết 2 cạnh (20km, 10km) và góc xen giữa, làm sao tính được cạnh còn lại?
+                    </p>
+                    
+                    <div class="bg-purple-50 p-4 rounded-xl border border-purple-200 mb-4">
+                        <p class="font-bold text-purple-900 mb-2">Tình huống mở rộng:</p>
+                        <p class="text-sm text-purple-800 mb-3">Giả sử tàu đi Đông, rồi rẽ hướng Nam vuông góc ($\widehat{B} = 90^\circ$).</p>
+                        <button onclick="forceRightAngle()" class="bg-white border-2 border-purple-300 text-purple-700 font-bold px-4 py-2 rounded-lg hover:bg-purple-100 transition w-full shadow-sm">
+                            📐 Chuyển về góc $90^\circ$
+                        </button>
+                    </div>
+
+                    <div id="pythagoras-msg" class="hidden bg-emerald-50 p-4 rounded-xl border border-emerald-300 mb-4 text-sm font-medium text-emerald-900">
+                        Lúc này $\Delta ABC$ vuông, ta tính được ngay bằng <b>Định lí Pythagore</b>: <br>
+                        $AC^2 = AB^2 + BC^2 = 20^2 + 10^2$<br>
+                        Nhưng nếu tam giác <b>KHÔNG VUÔNG</b> thì sao?
+                    </div>
+
+                    <button id="btn-next-4" onclick="activateStep(4)" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-xl transition shadow-sm hidden">
+                        Vấn đề Trung tâm
+                    </button>
+                </div>
+
+                <!-- HĐ 5: VẤN ĐỀ TRUNG TÂM -->
+                <div class="activity-card hidden border-2 border-red-400 bg-red-50/30" id="card-4">
+                    <h3 class="text-xl font-black text-red-700 mb-3">4. Vấn đề Trung tâm</h3>
+                    
+                    <div class="bg-white p-4 rounded-xl border border-red-200 mb-4 shadow-sm">
+                        <p class="text-md text-red-900 font-bold mb-2">Mâu thuẫn nhận thức:</p>
+                        <ul class="list-disc pl-5 text-[14px] text-red-800 space-y-2 font-medium">
+                            <li>Định lí Pythagore chỉ áp dụng cho <b>tam giác vuông</b>.</li>
+                            <li>Thực tế (hàng hải, hàng không...) tạo ra các <b>tam giác bất kỳ</b>.</li>
+                        </ul>
+                    </div>
+                    
+                    <button onclick="highlightTriangle()" id="btn-final" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-4 rounded-xl transition shadow-md animate-pulse text-lg">
+                        Xác lập Bài toán mới
+                    </button>
+
+                    <div id="final-conclusion" class="hidden mt-6">
+                        <div class="bg-slate-800 text-white p-5 rounded-2xl text-center shadow-2xl transform hover:scale-[1.02] transition">
+                            <p class="text-sm font-medium mb-3 text-slate-300">
+                                Có tồn tại một "phiên bản mở rộng" của định lí Pythagore cho tam giác bất kỳ không?
+                            </p>
+                            <div class="bg-slate-900 py-3 rounded-xl border border-slate-700">
+                                <p class="text-xs text-amber-400 font-bold mb-1 opacity-70 uppercase tracking-widest">Bài học hôm nay:</p>
+                                <p class="text-xl font-black text-amber-400 uppercase tracking-wide">
+                                    Hệ thức lượng trong tam giác
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </aside>
+
+            <!-- MAIN CANVAS (Đồ hoạ SVG Mặt biển) -->
+            <main class="canvas-area relative" id="main-canvas">
+                <div class="nautical-grid"></div>
+                
+                <!-- La bàn hàng hải -->
+                <svg class="compass" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
+                    <circle cx="50" cy="50" r="35" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+                    <!-- Mũi tên Bắc Nam -->
+                    <polygon points="50,5 58,50 42,50" fill="#ef4444"/>
+                    <polygon points="50,95 58,50 42,50" fill="white"/>
+                    <!-- Mũi tên Đông Tây -->
+                    <polygon points="95,50 50,42 50,58" fill="white"/>
+                    <polygon points="5,50 50,42 50,58" fill="white"/>
+                    <text x="50" y="15" fill="white" font-size="12" font-weight="bold" text-anchor="middle">N</text>
+                    <text x="85" y="54" fill="white" font-size="12" font-weight="bold">E</text>
+                </svg>
+
+                <svg id="sea-map" viewBox="0 0 800 600" class="w-full h-full drop-shadow-2xl" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <!-- Biểu tượng Tàu -->
+                        <g id="ship-icon">
+                            <path d="M-15,-8 L15,-8 L25,0 L15,8 L-15,8 Z" fill="#f8fafc" stroke="#334155" stroke-width="2"/>
+                            <rect x="-5" y="-5" width="15" height="10" fill="#94a3b8"/>
+                            <!-- Sóng biển sau tàu -->
+                            <path d="M-15,-10 Q-25,-15 -35,-10" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2"/>
+                            <path d="M-15,10 Q-25,15 -35,10" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2"/>
+                        </g>
+                        <!-- Biểu tượng Cảng -->
+                        <g id="port-icon">
+                            <circle cx="0" cy="0" r="12" fill="#ef4444" stroke="white" stroke-width="3"/>
+                            <circle cx="0" cy="0" r="4" fill="white"/>
+                        </g>
+                    </defs>
+
+                    <!-- Vùng tương tác Đồ hoạ Toán học -->
+                    <g id="math-layer" transform="translate(150, 250)">
+                        
+                        <!-- Đường đi AB -->
+                        <line id="path-ab" x1="0" y1="0" x2="300" y2="0" stroke="white" stroke-width="5" stroke-linecap="round" stroke-dasharray="10 6" class="opacity-80"/>
+                        
+                        <!-- Đường đi BC -->
+                        <line id="path-bc" x1="300" y1="0" x2="450" y2="0" stroke="#fde047" stroke-width="5" stroke-linecap="round" stroke-dasharray="10 6" class="opacity-90"/>
+                        
+                        <!-- Đường khoảng cách AC (Màu nổi) -->
+                        <line id="dist-ac" x1="0" y1="0" x2="450" y2="0" stroke="#ef4444" stroke-width="4" stroke-linecap="round" class="opacity-0"/>
+                        
+                        <!-- Hình Quạt thể hiện Góc B -->
+                        <path id="angle-arc" fill="rgba(255,255,255,0.2)" stroke="white" stroke-width="2" d=""/>
+                        
+                        <!-- Các điểm mút -->
+                        <use href="#port-icon" x="0" y="0"/>
+                        <circle cx="300" cy="0" r="6" fill="white"/>
+                        
+                        <!-- Con tàu di động ở C -->
+                        <use href="#ship-icon" x="450" y="0" id="ship-current"/>
+
+                        <!-- Nhãn Text -->
+                        <text x="-20" y="30" fill="white" font-weight="bold" font-size="20" class="glow-text">Cảng A</text>
+                        <text x="300" y="-15" fill="white" font-weight="bold" font-size="20" class="glow-text">B</text>
+                        <text id="lbl-c" x="470" y="25" fill="#fde047" font-weight="bold" font-size="20" class="glow-text">Tàu (C)</text>
+                        
+                        <!-- Thông số Cạnh & Góc -->
+                        <text x="150" y="-15" fill="white" font-weight="bold" font-size="18" text-anchor="middle" class="glow-text">20 km</text>
+                        <text id="lbl-bc" x="375" y="25" fill="#fde047" font-weight="bold" font-size="18" class="glow-text">10 km</text>
+                        <text id="lbl-angle" x="245" y="25" fill="white" font-weight="bold" font-size="18" class="glow-text">135°</text>
+                        
+                        <!-- Nhãn AC -->
+                        <text id="lbl-ac" x="225" y="50" fill="#ef4444" font-weight="bold" font-size="22" text-anchor="middle" class="opacity-0 bg-white/50 px-2 rounded backdrop-blur">? km</text>
+                        
+                        <!-- Hiệu ứng toả sáng toàn tam giác khi chốt vấn đề -->
+                        <polygon id="triangle-glow" points="0,0 300,0 450,0" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="2" class="opacity-0 transition-opacity duration-1000"/>
+                    </g>
+                </svg>
+
+                <!-- Lớp phủ giới thiệu (Chỉ hiện lúc đầu) -->
+                <div id="intro-overlay" class="absolute bottom-10 left-10 bg-slate-900/60 backdrop-blur border border-slate-600 p-4 rounded-xl shadow-lg text-white max-w-sm transition-opacity duration-500">
+                    <h4 class="font-bold text-amber-400 mb-1 flex items-center gap-2">📍 Vị trí hiện tại</h4>
+                    <p class="text-sm">Vùng biển ngoài khơi Vân Phong, Khánh Hoà. Hệ thống radar đang theo dõi lộ trình của tàu vận tải.</p>
+                </div>
+            </main>
+        </div>
+
+        <!-- MODAL GỢI Ý SƯ PHẠM -->
+        <div id="teacher-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl p-8 w-[700px] max-w-full max-h-[90vh] overflow-y-auto relative border-4 border-amber-300">
+                <div class="flex justify-between items-center mb-6 border-b-2 border-slate-100 pb-4">
+                    <h3 class="text-2xl font-black text-amber-700 flex items-center gap-2">🎓 Gợi ý Sư phạm - Toán 10 (KNTT)</h3>
+                    <button onclick="toggleTeacherMode()" class="text-slate-400 hover:text-red-600 bg-slate-100 rounded-full w-10 h-10 flex items-center justify-center transition font-bold text-xl">✕</button>
+                </div>
+                
+                <h4 class="font-bold text-slate-800 text-lg mb-2 bg-blue-100 px-3 py-1 rounded inline-block">1. Mục tiêu khởi động</h4>
+                <ul class="list-disc pl-6 mb-6 text-sm text-slate-700 space-y-2 font-medium">
+                    <li>Giúp học sinh phân biệt rõ ràng giữa <b>tổng quãng đường đã đi</b> và <b>khoảng cách thực tế</b> (độ dài cạnh thứ 3 của tam giác).</li>
+                    <li>Tạo nhu cầu tự nhiên: Cần một công cụ để tính cạnh còn lại khi biết 2 cạnh và góc xen giữa.</li>
+                    <li>Chỉ ra giới hạn của định lí Pythagore (chỉ dùng cho tam giác vuông), từ đó khơi gợi sự tò mò về "phiên bản mở rộng" cho tam giác bất kỳ (Định lí Cosin).</li>
+                </ul>
+                
+                <h4 class="font-bold text-slate-800 text-lg mb-2 bg-red-100 px-3 py-1 rounded inline-block">2. Câu hỏi gợi mở cho GV</h4>
+                <div class="bg-red-50 p-4 rounded-xl border border-red-200 text-sm text-red-900 mb-6 font-medium italic space-y-2">
+                    <p>"Khoảng cách từ tàu đến cảng có bằng tổng quãng đường 30km đã đi không? Tại sao?" (Kỳ vọng: Bất đẳng thức tam giác).</p>
+                    <p>"Nếu góc rẽ là 90 độ, ta dùng công cụ gì để tính? (Pythagore). Vậy góc 135 độ như hình thì công cụ đó còn xài được không?"</p>
+                </div>
+                
+                <h4 class="font-bold text-slate-800 text-lg mb-2 bg-emerald-100 px-3 py-1 rounded inline-block">3. Sai lầm thường gặp của HS</h4>
+                <ul class="list-disc pl-6 mb-6 text-sm text-slate-700 space-y-2 font-medium">
+                    <li>Cộng nhầm: Cứ thấy 20km và 10km là cộng lại thành 30km khoảng cách.</li>
+                    <li>Áp dụng máy móc: Ép dùng định lí Pythagore $AC^2 = 20^2 + 10^2$ dù tam giác không vuông.</li>
+                </ul>
+
+                <div class="text-center">
+                    <button onclick="toggleTeacherMode()" class="bg-slate-800 text-white px-8 py-3 rounded-xl text-md font-bold hover:bg-slate-700 transition shadow-lg">Đóng Hướng Dẫn</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- TOẠ ĐỘ & LOGIC HÌNH HỌC ---
+        const scale = 15; // 1 km = 15 pixels
+        const ab_km = 20;
+        const bc_km = 10;
+        const ab_px = ab_km * scale; // 300px
+        const bc_px = bc_km * scale; // 150px
+        
+        let currentStep = 1;
+        let currentAngle = 135; // Góc trong tại B (Độ)
+
+        // --- CÁC HÀM TÍNH TOÁN & VẼ SVG ---
+        function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
+            // Trong SVG, y hướng xuống. Góc 0 là trục ngang hướng phải.
+            // Để tàu rẽ hướng Nam (xuống dưới), góc xoay sẽ dương.
+            let angleInRadians = angleInDegrees * Math.PI / 180.0;
+            return {
+                x: centerX + (radius * Math.cos(angleInRadians)),
+                y: centerY + (radius * Math.sin(angleInRadians))
+            };
+        }
+
+        // Vẽ hình quạt biểu diễn góc tại B
+        function describeAngleArc(x, y, radius, startAngle, endAngle) {
+            let start = polarToCartesian(x, y, radius, endAngle);
+            let end = polarToCartesian(x, y, radius, startAngle);
+            let largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+            return [
+                "M", x, y,
+                "L", start.x, start.y, 
+                "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y,
+                "Z"
+            ].join(" ");       
+        }
+
+        function updateGeometry(angleDeg) {
+            currentAngle = angleDeg;
+            
+            // A là (0,0) trong math-layer. B là (300, 0)
+            let B = { x: 300, y: 0 };
+            
+            // Tính toạ độ C. Cạnh BC tạo với cạnh BA một góc angleDeg.
+            // Vecto BA là hướng về phía Trái (180 độ).
+            // Vecto BC sẽ quay một góc angleDeg so với BA.
+            // Để rẽ "Đông Nam" trên màn hình (Đông = Phải, Nam = Dưới), góc nghiêng của BC so với trục Ox là (180 - angleDeg).
+            let heading = 180 - angleDeg; 
+            let C = {
+                x: B.x + bc_px * Math.cos(heading * Math.PI / 180),
+                y: B.y + bc_px * Math.sin(heading * Math.PI / 180)
+            };
+
+            // Cập nhật SVG Cạnh BC
+            let pathBC = document.getElementById('path-bc');
+            pathBC.setAttribute('x2', C.x);
+            pathBC.setAttribute('y2', C.y);
+
+            // Cập nhật Vị trí & Xoay Tàu tại C
+            let ship = document.getElementById('ship-current');
+            ship.setAttribute('x', C.x);
+            ship.setAttribute('y', C.y);
+            // Tâm của icon tàu đang ở (0,0) của nó.
+            ship.setAttribute('transform', `rotate(${heading} ${C.x} ${C.y})`);
+
+            // Cập nhật Nhãn C & BC
+            document.getElementById('lbl-c').setAttribute('x', C.x + 20);
+            document.getElementById('lbl-c').setAttribute('y', C.y + 20);
+            
+            let midBC = { x: (B.x + C.x)/2, y: (B.y + C.y)/2 };
+            document.getElementById('lbl-bc').setAttribute('x', midBC.x + 10);
+            document.getElementById('lbl-bc').setAttribute('y', midBC.y + 20);
+
+            // Cập nhật Góc Arc
+            document.getElementById('angle-arc').setAttribute('d', describeAngleArc(B.x, B.y, 40, heading, 180));
+            
+            // Đặt text góc
+            let midAngle = (180 + heading) / 2;
+            let lblAngleP = polarToCartesian(B.x, B.y, 65, midAngle);
+            let lblAngle = document.getElementById('lbl-angle');
+            lblAngle.setAttribute('x', lblAngleP.x);
+            lblAngle.setAttribute('y', lblAngleP.y + 6);
+            lblAngle.setAttribute('text-anchor', 'middle');
+            lblAngle.textContent = `${angleDeg}°`;
+
+            // Tính & Cập nhật Đoạn AC (Khoảng cách)
+            document.getElementById('dist-ac').setAttribute('x2', C.x);
+            document.getElementById('dist-ac').setAttribute('y2', C.y);
+            
+            let midAC = { x: C.x/2, y: C.y/2 };
+            let lblAC = document.getElementById('lbl-ac');
+            lblAC.setAttribute('x', midAC.x);
+            lblAC.setAttribute('y', midAC.y - 15);
+            
+            // Tính toán Toán học thực tế (Định lí Cosin)
+            let rad = angleDeg * Math.PI / 180;
+            let ac_km = Math.sqrt(ab_km*ab_km + bc_km*bc_km - 2*ab_km*bc_km*Math.cos(rad));
+            
+            // Cập nhật UI Texts
+            document.getElementById('val-angle').textContent = angleDeg;
+            document.getElementById('val-dist').textContent = ac_km.toFixed(2);
+            if(currentStep >= 2) lblAC.textContent = `${ac_km.toFixed(2)} km`;
+
+            // Cập nhật Polygon sáng
+            document.getElementById('triangle-glow').setAttribute('points', `0,0 300,0 ${C.x},${C.y}`);
+        }
+
+        // Bắt sự kiện Slider HĐ 2
+        document.getElementById('slider-angle').addEventListener('input', (e) => {
+            if(currentStep >= 2) {
+                updateGeometry(parseFloat(e.target.value));
+            }
+        });
+
+        // Nút force góc 90 (HĐ 3)
+        function forceRightAngle() {
+            document.getElementById('slider-angle').value = 90;
+            updateGeometry(90);
+            document.getElementById('pythagoras-msg').classList.remove('hidden');
+            document.getElementById('btn-next-4').classList.remove('hidden');
+        }
+
+        // --- QUẢN LÝ TIẾN TRÌNH ---
+        function activateStep(step) {
+            currentStep = step;
+            
+            // Cập nhật trạng thái Card Sidebar
+            [1, 2, 3, 4].forEach(i => {
+                let card = document.getElementById(`card-${i}`);
+                if(i < step) {
+                    card.classList.remove('hidden', 'inactive');
+                    card.classList.add('inactive'); // Làm mờ bước cũ
+                } else if(i === step) {
+                    card.classList.remove('hidden', 'inactive');
+                }
+            });
+
+            // Logic hình ảnh theo Bước
+            if(step === 1) {
+                document.getElementById('dist-ac').classList.add('opacity-0');
+                document.getElementById('lbl-ac').classList.add('opacity-0');
+                setTimeout(() => { document.getElementById('h1-ans').classList.remove('hidden'); }, 1500);
+            } 
+            else if(step === 2) {
+                document.getElementById('dist-ac').classList.replace('opacity-0', 'opacity-100');
+                document.getElementById('lbl-ac').classList.replace('opacity-0', 'opacity-100');
+                document.getElementById('intro-overlay').classList.add('opacity-0');
+            }
+            
+            // Tự cuộn menu
+            setTimeout(() => {
+                const sidebar = document.getElementById('sidebar');
+                sidebar.scrollTop = sidebar.scrollHeight;
+            }, 100);
+        }
+
+        function highlightTriangle() {
+            // Nháy đỏ text
+            document.getElementById('lbl-ac').classList.add('text-red-500', 'scale-110');
+            // Tô sáng tam giác
+            document.getElementById('triangle-glow').classList.replace('opacity-0', 'opacity-100');
+            
+            document.getElementById('btn-final').classList.add('hidden');
+            document.getElementById('final-conclusion').classList.remove('hidden');
+            
+            setTimeout(() => {
+                const sidebar = document.getElementById('sidebar');
+                sidebar.scrollTop = sidebar.scrollHeight;
+            }, 100);
+        }
+
+        function resetModel() {
+            [1, 2, 3, 4].forEach(i => document.getElementById(`card-${i}`).classList.add('hidden', 'inactive'));
+            
+            document.getElementById('slider-angle').value = 135;
+            updateGeometry(135);
+            
+            document.getElementById('h1-ans').classList.add('hidden');
+            document.getElementById('pythagoras-msg').classList.add('hidden');
+            document.getElementById('btn-next-4').classList.add('hidden');
+            document.getElementById('btn-final').classList.remove('hidden');
+            document.getElementById('final-conclusion').classList.add('hidden');
+            
+            document.getElementById('triangle-glow').classList.replace('opacity-100', 'opacity-0');
+            document.getElementById('lbl-ac').classList.remove('text-red-500', 'scale-110');
+            
+            document.getElementById('dist-ac').classList.replace('opacity-100', 'opacity-0');
+            document.getElementById('lbl-ac').classList.replace('opacity-100', 'opacity-0');
+            document.getElementById('intro-overlay').classList.remove('opacity-0');
+
+            activateStep(1);
+            document.getElementById('card-1').classList.remove('inactive');
+        }
+
+        function toggleTeacherMode() {
+            document.getElementById('teacher-modal').classList.toggle('hidden');
+        }
+
+        // Kịch bản Tự động (Auto-play)
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+        async function runScript() {
+            resetModel();
+            await sleep(2000);
+            
+            // HĐ1 -> HĐ2
+            document.getElementById('btn-next-2').click();
+            await sleep(1000);
+            
+            // Slide angle 135 -> 60 -> 150
+            for(let a=135; a>=60; a-=2) {
+                document.getElementById('slider-angle').value = a;
+                updateGeometry(a);
+                await sleep(30);
+            }
+            await sleep(1000);
+            for(let a=60; a<=150; a+=2) {
+                document.getElementById('slider-angle').value = a;
+                updateGeometry(a);
+                await sleep(30);
+            }
+            await sleep(1000);
+
+            // HĐ3
+            document.getElementById('btn-next-3').click();
+            await sleep(2000);
+            forceRightAngle();
+            await sleep(3000);
+
+            // HĐ4
+            document.getElementById('btn-next-4').click();
+            await sleep(2000);
+            highlightTriangle();
+        }
+
+        // Fullscreen Toggle
+        document.getElementById('btnFullscreen').addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+                document.getElementById('txtFullscreen').innerHTML = '✖ Thu nhỏ';
+            } else {
+                document.exitFullscreen();
+                document.getElementById('txtFullscreen').innerHTML = '⛶ Toàn màn hình';
+            }
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                document.getElementById('txtFullscreen').innerHTML = '⛶ Toàn màn hình';
+            }
+        });
+
+        // INIT
+        window.onload = () => {
+            updateGeometry(135);
+            activateStep(1);
+        };
+    </script>
+</body>
+</html>

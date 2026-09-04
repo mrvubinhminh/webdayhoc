@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Khởi động: Tổng và hiệu hai vectơ - Toán 10</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- MathJax -->
+    <script>
+        window.MathJax = {
+            options: { enableMenu: false },
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            margin: 0; overflow: hidden; 
+            user-select: none; touch-action: none; background-color: #f8fafc; 
+        }
+        .app-container { display: flex; flex-direction: column; height: 100vh; width: 100vw; background: white;}
+        .main-content { display: flex; flex: 1; overflow: hidden; }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 450px; background-color: #ffffff; border-right: 1px solid #e2e8f0;
+            display: flex; flex-direction: column; overflow-y: auto; z-index: 20;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.05); padding: 1.5rem; scroll-behavior: smooth;
+        }
+
+        /* Water Background (Dòng sông) */
+        .canvas-area {
+            flex: 1; position: relative; display: flex; flex-direction: column;
+            overflow: hidden; 
+            background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 50%, #2563eb 100%);
+        }
+
+        .water-pattern {
+            position: absolute; inset: 0;
+            background-image: url('data:image/svg+xml;utf8,<svg width="100" height="40" xmlns="http://www.w3.org/2000/svg"><path d="M0,20 Q25,30 50,20 T100,20" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2"/></svg>');
+            background-size: 150px 60px;
+            animation: flowWater 10s linear infinite;
+            pointer-events: none;
+        }
+        
+        .bank-top { position: absolute; top: 0; left: 0; width: 100%; height: 80px; background: #84cc16; border-bottom: 8px solid #65a30d; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .bank-bottom { position: absolute; bottom: 0; left: 0; width: 100%; height: 80px; background: #84cc16; border-top: 8px solid #65a30d; box-shadow: 0 -10px 20px rgba(0,0,0,0.1); }
+
+        @keyframes flowWater { from { background-position: 0 0; } to { background-position: 150px 0; } }
+
+        .activity-card {
+            background: white; border: 1px solid #e2e8f0; border-radius: 1rem;
+            padding: 1.25rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: all 0.4s ease; animation: slideIn 0.4s ease-out; margin-bottom: 1rem;
+        }
+        .activity-card.inactive { opacity: 0.35; pointer-events: none; filter: grayscale(80%); }
+        
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Sliders */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%;
+            background: #3b82f6; cursor: pointer; margin-top: -8px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); border: 2px solid white;
+        }
+        #slider-angle::-webkit-slider-thumb { background: #ef4444; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 8px; cursor: pointer; background: #cbd5e1; border-radius: 4px; }
+
+        .math-display { font-size: 1.15rem; overflow-x: auto; overflow-y: hidden; }
+        .hidden { display: none !important; }
+        
+        /* SVG Transitions */
+        path, line, circle, text, g { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        .glow-text { text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        
+        /* Vector styles */
+        .vec-u { stroke: #ef4444; fill: #ef4444; } /* Tàu - Đỏ */
+        .vec-v { stroke: #38bdf8; fill: #38bdf8; } /* Nước - Xanh dương nhạt */
+        .vec-w { stroke: #a855f7; fill: #a855f7; } /* Thực tế - Tím */
+
+        .dashed-line { stroke: #ffffff; stroke-dasharray: 6 4; stroke-width: 2; opacity: 0.5; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- HEADER -->
+        <header class="h-16 bg-white border-b-2 border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-30">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-xl border border-purple-200">
+                    ↗
+                </div>
+                <h1 class="text-xl font-extrabold text-slate-800 uppercase tracking-wide">Tổng và Hiệu hai vectơ</h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="toggleTeacherMode()" class="flex items-center gap-2 text-amber-800 bg-amber-50 hover:bg-amber-100 px-4 py-2 rounded-lg text-sm border border-amber-200 transition font-bold shadow-sm">
+                    🎓 Gợi ý sư phạm
+                </button>
+                <button onclick="runScript()" class="flex items-center gap-2 text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-4 py-2 rounded-lg text-sm border border-emerald-200 transition font-bold shadow-sm">
+                    ▶ Trình chiếu
+                </button>
+                <button onclick="resetModel()" class="flex items-center gap-2 text-slate-700 hover:text-slate-900 px-4 py-2 rounded-lg text-sm border border-slate-300 hover:bg-slate-50 transition font-bold shadow-sm">
+                    ↺ Đặt lại
+                </button>
+                <button id="btnFullscreen" class="flex items-center gap-2 text-slate-700 hover:text-blue-700 px-4 py-2 rounded-lg text-sm border border-slate-300 hover:bg-slate-50 transition font-bold shadow-sm">
+                    <span id="txtFullscreen">⛶ Toàn màn hình</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- SIDEBAR -->
+            <aside class="sidebar" id="sidebar">
+                <div class="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">Tiến trình Khám phá</div>
+                
+                <!-- HĐ 1: QUAN SÁT TÀU ĐỨNG YÊN -->
+                <div class="activity-card" id="card-1">
+                    <h3 class="text-lg font-black text-blue-700 mb-3">1. Tình huống: Tàu qua sông</h3>
+                    <p class="text-[14px] text-slate-700 mb-3 font-medium leading-relaxed">
+                        Một con tàu chuẩn bị qua sông. Hãy thử tăng vận tốc dòng nước khi <b>động cơ tàu đang tắt</b>.
+                    </p>
+                    
+                    <div class="bg-blue-50 p-4 rounded-xl border border-blue-200 mb-4 shadow-inner">
+                        <label class="flex justify-between font-bold text-slate-700 mb-3">
+                            <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-[#38bdf8]"></span> Vận tốc dòng nước ($\vec{v}$):</span>
+                            <span class="text-blue-600"><span id="val-water">0</span> km/h</span>
+                        </label>
+                        <input type="range" id="slider-water" min="0" max="60" value="0" class="w-full">
+                    </div>
+
+                    <div class="bg-amber-50 p-3 rounded-lg border border-amber-300 mb-4 text-[14px] text-amber-900 font-medium hidden" id="msg-drift">
+                        🤔 <b>Nhận xét:</b> Dù không nổ máy, tàu vẫn bị trôi ngang. Dòng nước tạo ra một <b>vectơ vận tốc riêng</b> tác động lên tàu.
+                    </div>
+                    
+                    <button id="btn-next-2" onclick="activateStep(2)" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition shadow-sm hidden">
+                        Nổ máy tàu (Dự đoán)
+                    </button>
+                </div>
+
+                <!-- HĐ 2: NỔ MÁY & DỰ ĐOÁN -->
+                <div class="activity-card hidden" id="card-2">
+                    <h3 class="text-lg font-black text-red-700 mb-3">2. Nổ máy & Chuyển động thực tế</h3>
+                    <p class="text-[14px] text-slate-700 mb-3 font-medium leading-relaxed">
+                        Bây giờ tàu nổ máy (Mũi tên đỏ $\vec{u}$). Bạn hãy đổi hướng mũi tàu và quan sát.
+                    </p>
+                    
+                    <div class="bg-red-50 p-4 rounded-xl border border-red-200 mb-4 shadow-inner">
+                        <label class="flex justify-between font-bold text-slate-700 mb-3">
+                            <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-red-500"></span> Hướng mũi tàu ($\vec{u}$):</span>
+                        </label>
+                        <input type="range" id="slider-angle" min="45" max="135" value="90" class="w-full">
+                        <div class="text-xs text-slate-500 text-center mt-2">Kéo để xoay hướng lái</div>
+                    </div>
+
+                    <button onclick="runBoat()" id="btn-run" class="w-full border-2 border-red-500 text-red-600 hover:bg-red-50 font-bold py-2 px-4 rounded-xl transition shadow-sm mb-4">
+                        ▶ Chạy thử tàu
+                    </button>
+
+                    <div id="msg-actual" class="hidden bg-slate-100 p-3 rounded-lg border border-slate-300 text-[14px] text-slate-700 font-medium mb-4">
+                        Tàu đi theo hướng chéo (Vectơ màu tím $\vec{w}$), không hoàn toàn trùng với mũi tàu cũng không trùng với dòng nước.
+                    </div>
+                    
+                    <button id="btn-next-3" onclick="activateStep(3)" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl transition shadow-sm hidden">
+                        Khám phá phép toán Vectơ
+                    </button>
+                </div>
+
+                <!-- HĐ 3 & 4: QUY TẮC HÌNH BÌNH HÀNH -->
+                <div class="activity-card hidden" id="card-3">
+                    <h3 class="text-lg font-black text-emerald-700 mb-3">3. Phép Cộng Vectơ</h3>
+                    <p class="text-[14px] text-slate-700 mb-4 font-medium">
+                        Làm thế nào để ghép hai vectơ $\vec{u}$ và $\vec{v}$ tạo ra vectơ $\vec{w}$?
+                    </p>
+                    
+                    <div class="space-y-2 mb-4">
+                        <button onclick="animAddition()" class="w-full text-left bg-white border border-emerald-300 hover:bg-emerald-50 px-4 py-3 rounded-xl transition font-bold text-emerald-800 flex justify-between">
+                            <span>Kích hoạt: Quy tắc Hình bình hành</span> <span>▶</span>
+                        </button>
+                    </div>
+
+                    <div id="math-add" class="hidden math-display text-center bg-emerald-50 py-3 rounded-xl border border-emerald-200 text-emerald-900 mb-4 font-bold">
+                        $$ \vec{w} = \vec{u} + \vec{v} $$
+                    </div>
+
+                    <button id="btn-next-4" onclick="activateStep(4)" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-xl transition shadow-sm hidden">
+                        Vấn đề Trung tâm
+                    </button>
+                </div>
+
+                <!-- HĐ 5: VẤN ĐỀ TRUNG TÂM (PHÉP TRỪ) -->
+                <div class="activity-card hidden border-2 border-purple-400 bg-purple-50/50" id="card-4">
+                    <h3 class="text-xl font-black text-purple-700 mb-3">4. Vấn đề Trung tâm</h3>
+                    
+                    <div class="bg-white p-4 rounded-xl border border-purple-200 mb-4 shadow-sm">
+                        <p class="text-[14px] text-purple-900 font-medium mb-3">
+                            Giả sử ta chỉ quan sát được từ trên cao:
+                        </p>
+                        <ul class="list-disc pl-5 text-[14px] text-purple-800 space-y-1 font-medium mb-3">
+                            <li>Hướng tàu thực tế $\vec{w}$</li>
+                            <li>Dòng nước chảy $\vec{v}$</li>
+                        </ul>
+                        <p class="font-bold text-purple-900">Làm sao biết người lái tàu đang bẻ lái theo hướng nào ($\vec{u}$)?</p>
+                    </div>
+                    
+                    <button onclick="animSubtraction()" id="btn-sub" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-xl transition shadow-md flex items-center justify-center gap-2 mb-4">
+                        Dùng phép toán ngược
+                    </button>
+
+                    <div id="math-sub" class="hidden math-display text-center bg-white py-3 rounded-xl border-2 border-purple-300 text-purple-900 mb-4 font-bold">
+                        $$ \vec{u} = \vec{w} - \vec{v} $$
+                    </div>
+
+                    <div id="final-conclusion" class="hidden mt-6">
+                        <div class="bg-slate-800 text-white p-5 rounded-2xl text-center shadow-2xl transform hover:scale-[1.02] transition">
+                            <p class="text-[13px] font-medium mb-3 text-slate-300 leading-relaxed">
+                                Số học cộng độ lớn ($3+5=8$). Còn Vectơ phải xét cả <b>Hướng</b>. Để tính toán, ta cần định nghĩa các phép toán mới!
+                            </p>
+                            <div class="bg-slate-900 py-3 rounded-xl border border-slate-700">
+                                <p class="text-xs text-amber-400 font-bold mb-1 opacity-70 uppercase tracking-widest">Bài học hôm nay:</p>
+                                <p class="text-xl font-black text-amber-400 uppercase tracking-wide">
+                                    Tổng và Hiệu hai vectơ
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </aside>
+
+            <!-- MAIN CANVAS (Đồ hoạ SVG Mặt sông) -->
+            <main class="canvas-area relative" id="main-canvas">
+                
+                <!-- Background Sông -->
+                <div class="bank-top"></div>
+                <div class="water-pattern"></div>
+                <div class="bank-bottom"></div>
+                <div class="absolute inset-0 bg-gradient-to-b from-black/10 to-transparent pointer-events-none"></div>
+
+                <svg id="river-map" viewBox="0 0 800 600" class="w-full h-full drop-shadow-2xl z-10" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <!-- Arrowheads -->
+                        <marker id="arrow-u" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444" />
+                        </marker>
+                        <marker id="arrow-v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#38bdf8" />
+                        </marker>
+                        <marker id="arrow-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#a855f7" />
+                        </marker>
+                        
+                        <!-- Biểu tượng Tàu -->
+                        <g id="boat-icon">
+                            <!-- Thân tàu -->
+                            <path d="M-15,-20 Q0,-40 15,-20 L20,20 L-20,20 Z" fill="#f8fafc" stroke="#334155" stroke-width="2"/>
+                            <!-- Cabin -->
+                            <rect x="-10" y="-5" width="20" height="15" fill="#94a3b8" rx="2"/>
+                            <rect x="-6" y="-2" width="12" height="8" fill="#e2e8f0"/>
+                            <!-- Đuôi nước -->
+                            <path id="wake-l" d="M-20,20 Q-30,30 -25,40" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" class="opacity-0"/>
+                            <path id="wake-r" d="M20,20 Q30,30 25,40" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" class="opacity-0"/>
+                        </g>
+                    </defs>
+
+                    <!-- Lớp chứa các đối tượng toán học -->
+                    <g id="math-layer" transform="translate(400, 480)">
+                        
+                        <!-- Hình bình hành (Nét đứt) -->
+                        <g id="para-group" class="opacity-0">
+                            <line id="line-p1" x1="0" y1="0" x2="0" y2="0" class="dashed-line"/>
+                            <line id="line-p2" x1="0" y1="0" x2="0" y2="0" class="dashed-line"/>
+                        </g>
+
+                        <!-- Vectơ u (Mũi tàu - Đỏ) -->
+                        <line id="vec-u" x1="0" y1="0" x2="0" y2="-120" stroke-width="5" marker-end="url(#arrow-u)" class="vec-u opacity-0"/>
+                        <text id="lbl-u" x="-15" y="-60" fill="#ef4444" font-weight="bold" font-size="20" class="glow-text opacity-0">u</text>
+
+                        <!-- Vectơ v (Dòng nước - Xanh) -->
+                        <line id="vec-v" x1="0" y1="0" x2="0" y2="0" stroke-width="5" marker-end="url(#arrow-v)" class="vec-v"/>
+                        <text id="lbl-v" x="0" y="25" fill="#38bdf8" font-weight="bold" font-size="20" class="glow-text opacity-0">v</text>
+                        
+                        <!-- Vectơ v phụ (Tịnh tiến) -->
+                        <line id="vec-v-clone" x1="0" y1="0" x2="0" y2="0" stroke-width="5" marker-end="url(#arrow-v)" class="vec-v opacity-0"/>
+
+                        <!-- Vectơ w (Thực tế - Tím) -->
+                        <line id="vec-w" x1="0" y1="0" x2="0" y2="0" stroke-width="6" marker-end="url(#arrow-w)" class="vec-w opacity-0"/>
+                        <text id="lbl-w" x="0" y="0" fill="#a855f7" font-weight="bold" font-size="22" class="glow-text opacity-0">w</text>
+
+                        <!-- Vị trí xuất phát -->
+                        <circle cx="0" cy="0" r="5" fill="white"/>
+                    </g>
+                    
+                    <!-- Icon Tàu di động (Nằm ngoài group toán học để dễ xoay quanh tâm tàu) -->
+                    <use href="#boat-icon" id="boat-current" x="400" y="480" transform="rotate(0 400 480)"/>
+
+                </svg>
+            </main>
+        </div>
+
+        <!-- MODAL GỢI Ý SƯ PHẠM -->
+        <div id="teacher-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl p-8 w-[700px] max-w-full max-h-[90vh] overflow-y-auto relative border-4 border-amber-300">
+                <div class="flex justify-between items-center mb-6 border-b-2 border-slate-100 pb-4">
+                    <h3 class="text-2xl font-black text-amber-700 flex items-center gap-2">🎓 Gợi ý Sư phạm - Toán 10 (KNTT)</h3>
+                    <button onclick="toggleTeacherMode()" class="text-slate-400 hover:text-red-600 bg-slate-100 rounded-full w-10 h-10 flex items-center justify-center transition font-bold text-xl">✕</button>
+                </div>
+                
+                <h4 class="font-bold text-slate-800 text-lg mb-2 bg-blue-100 px-3 py-1 rounded inline-block">1. Mục tiêu khởi động</h4>
+                <ul class="list-disc pl-6 mb-6 text-sm text-slate-700 space-y-2 font-medium">
+                    <li>Tạo nhu cầu tự nhiên xuất hiện phép cộng và phép trừ vectơ thông qua bài toán thực tế (tổng hợp vận tốc).</li>
+                    <li>Giúp học sinh nhận thấy sự khác biệt cốt lõi giữa <b>cộng số học</b> (chỉ có độ lớn) và <b>cộng vectơ</b> (có xét đến hướng).</li>
+                    <li>Trực quan hoá <b>Quy tắc hình bình hành</b> bằng hình ảnh động.</li>
+                </ul>
+                
+                <h4 class="font-bold text-slate-800 text-lg mb-2 bg-amber-100 px-3 py-1 rounded inline-block">2. Câu hỏi gợi mở cho GV</h4>
+                <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 text-sm text-amber-900 mb-6 font-medium italic space-y-2">
+                    <p>"Tại sao mũi tàu hướng thẳng sang bờ bên kia nhưng tàu lại bị trôi chéo?"</p>
+                    <p>"Vận tốc thực tế được tạo thành từ những thành phần nào?"</p>
+                    <p>"Nếu ta biết đường đi thực tế của tàu và vận tốc nước, làm sao biết người lái tàu đã bẻ lái hướng nào? Ta dùng phép toán gì?"</p>
+                </div>
+                
+                <h4 class="font-bold text-slate-800 text-lg mb-2 bg-red-100 px-3 py-1 rounded inline-block">3. Sai lầm thường gặp của HS</h4>
+                <ul class="list-disc pl-6 mb-6 text-sm text-slate-700 space-y-2 font-medium">
+                    <li>Cộng trực tiếp độ dài hai vectơ (VD: Tàu đi 10km/h, nước 5km/h thì thực tế là 15km/h -> Sai vì khác hướng).</li>
+                    <li>Nhầm lẫn giữa <b>Vectơ tổng</b> và <b>Vectơ hiệu</b> khi vẽ hình. Phân đoạn cuối của mô hình sẽ làm rõ phép trừ.</li>
+                </ul>
+
+                <div class="text-center">
+                    <button onclick="toggleTeacherMode()" class="bg-slate-800 text-white px-8 py-3 rounded-xl text-md font-bold hover:bg-slate-700 transition shadow-lg">Đóng Hướng Dẫn</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- TOẠ ĐỘ & TRẠNG THÁI ---
+        let currentStep = 1;
+        const originX = 400;
+        const originY = 480;
+        
+        let u_mag = 140; // Độ dài mũi tàu cố định khi nổ máy
+        let u_angle = 90; // Góc mũi tàu (Tính từ trục ngang, 90 là thẳng lên)
+        let v_mag = 0;   // Độ dài dòng nước (Sang phải)
+        
+        // Vectors components
+        let vx = 0, vy = 0;
+        let ux = 0, uy = -140; // Default up
+        let wx = 0, wy = 0;
+
+        // UI Elements
+        const sWater = document.getElementById('slider-water');
+        const sAngle = document.getElementById('slider-angle');
+        
+        const vecU = document.getElementById('vec-u');
+        const vecV = document.getElementById('vec-v');
+        const vecW = document.getElementById('vec-w');
+        const vecVClone = document.getElementById('vec-v-clone');
+        
+        const lblU = document.getElementById('lbl-u');
+        const lblV = document.getElementById('lbl-v');
+        const lblW = document.getElementById('lbl-w');
+        
+        const boat = document.getElementById('boat-current');
+
+        // --- HÀM TÍNH TOÁN & VẼ ---
+        function updateMath() {
+            // Tính V (Nước)
+            v_mag = parseInt(sWater.value) * 2; // scale visually
+            vx = v_mag;
+            vy = 0;
+            
+            // Tính U (Tàu)
+            if (currentStep >= 2) {
+                u_angle = parseInt(sAngle.value);
+                let rad = u_angle * Math.PI / 180;
+                // Trục X dương hướng phải, Trục Y dương hướng XUỐNG (SVG). 
+                // Góc 90 độ thẳng lên => x = 0, y = -mag
+                ux = u_mag * Math.cos(rad);
+                uy = -u_mag * Math.sin(rad); 
+            } else {
+                ux = 0; uy = 0;
+            }
+
+            // Tính W (Thực tế)
+            wx = ux + vx;
+            wy = uy + vy;
+
+            drawVectors();
+        }
+
+        function drawVectors() {
+            // Vẽ V
+            vecV.setAttribute('x2', vx);
+            lblV.setAttribute('x', vx/2);
+            if(v_mag > 0) lblV.classList.remove('opacity-0'); else lblV.classList.add('opacity-0');
+
+            // Vẽ U
+            vecU.setAttribute('x2', ux);
+            vecU.setAttribute('y2', uy);
+            lblU.setAttribute('x', ux/2 - 20);
+            lblU.setAttribute('y', uy/2 - 10);
+            
+            // Vẽ W (Thực tế)
+            vecW.setAttribute('x2', wx);
+            vecW.setAttribute('y2', wy);
+            lblW.setAttribute('x', wx/2 + 10);
+            lblW.setAttribute('y', wy/2 - 10);
+
+            // Cập nhật Hình bình hành (Line p1 song song v, p2 song song u)
+            document.getElementById('line-p1').setAttribute('x1', ux);
+            document.getElementById('line-p1').setAttribute('y1', uy);
+            document.getElementById('line-p1').setAttribute('x2', wx);
+            document.getElementById('line-p1').setAttribute('y2', wy);
+
+            document.getElementById('line-p2').setAttribute('x1', vx);
+            document.getElementById('line-p2').setAttribute('y1', vy);
+            document.getElementById('line-p2').setAttribute('x2', wx);
+            document.getElementById('line-p2').setAttribute('y2', wy);
+
+            // Xoay hình ảnh con tàu (Boat Icon)
+            // Góc của mũi tàu theo trục Y đứng
+            let deg = 90 - u_angle;
+            
+            // Nếu tàu chưa nổ máy, drift theo nước
+            if(currentStep === 1) {
+                boat.setAttribute('transform', `translate(0,0) rotate(0 400 480)`);
+                // Animation drift nhẹ
+                document.getElementById('wake-l').classList.add('opacity-0');
+                document.getElementById('wake-r').classList.add('opacity-0');
+            } else {
+                // Tàu đứng ở gốc, quay mũi theo U
+                boat.setAttribute('transform', `translate(0,0) rotate(${deg} 400 480)`);
+            }
+        }
+
+        // Sự kiện Sliders
+        sWater.addEventListener('input', (e) => {
+            document.getElementById('val-water').textContent = e.target.value;
+            if(currentStep === 1 && e.target.value > 10) {
+                document.getElementById('msg-drift').classList.remove('hidden');
+                document.getElementById('btn-next-2').classList.remove('hidden');
+            }
+            updateMath();
+        });
+
+        sAngle.addEventListener('input', () => {
+            if(currentStep >= 2) updateMath();
+        });
+
+        // --- CÁC HOẠT ẢNH ---
+        function runBoat() {
+            // Chạy tàu dọc theo vectơ W
+            document.getElementById('btn-run').disabled = true;
+            document.getElementById('wake-l').classList.remove('opacity-0');
+            document.getElementById('wake-r').classList.remove('opacity-0');
+            
+            // Xoay mũi theo U, nhưng tịnh tiến theo W
+            let deg = 90 - u_angle;
+            
+            // Tạm thời hiển thị W nhạt
+            vecW.classList.remove('opacity-0');
+            vecW.setAttribute('stroke-dasharray', '5 5');
+            vecW.setAttribute('stroke-width', '2');
+            
+            boat.style.transition = "transform 2s linear";
+            boat.setAttribute('transform', `translate(${wx}, ${wy}) rotate(${deg} 400 480)`);
+
+            setTimeout(() => {
+                boat.style.transition = "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)";
+                boat.setAttribute('transform', `translate(0,0) rotate(${deg} 400 480)`);
+                document.getElementById('wake-l').classList.add('opacity-0');
+                document.getElementById('wake-r').classList.add('opacity-0');
+                vecW.classList.add('opacity-0');
+                vecW.removeAttribute('stroke-dasharray');
+                vecW.setAttribute('stroke-width', '6');
+                
+                document.getElementById('msg-actual').classList.remove('hidden');
+                document.getElementById('btn-next-3').classList.remove('hidden');
+                document.getElementById('btn-run').disabled = false;
+            }, 2500);
+        }
+
+        function animAddition() {
+            // Hiện u, v
+            vecU.classList.remove('opacity-0');
+            lblU.classList.remove('opacity-0');
+            
+            setTimeout(() => {
+                // Clone v, move to tip of u
+                vecVClone.setAttribute('x1', 0); vecVClone.setAttribute('y1', 0);
+                vecVClone.setAttribute('x2', vx); vecVClone.setAttribute('y2', vy);
+                vecVClone.classList.remove('opacity-0');
+                
+                setTimeout(() => {
+                    vecVClone.setAttribute('x1', ux); vecVClone.setAttribute('y1', uy);
+                    vecVClone.setAttribute('x2', wx); vecVClone.setAttribute('y2', wy);
+                    
+                    setTimeout(() => {
+                        // Hiện Hình bình hành
+                        document.getElementById('para-group').classList.remove('opacity-0');
+                        // Vẽ W
+                        vecW.classList.remove('opacity-0');
+                        lblW.classList.remove('opacity-0');
+                        document.getElementById('math-add').classList.remove('hidden');
+                        document.getElementById('btn-next-4').classList.remove('hidden');
+                        scrollToBottom();
+                    }, 600);
+                }, 500);
+            }, 500);
+        }
+
+        function animSubtraction() {
+            let btn = document.getElementById('btn-sub');
+            btn.disabled = true;
+            
+            // Xoá hình bình hành và clone V
+            document.getElementById('para-group').classList.add('opacity-0');
+            vecVClone.classList.add('opacity-0');
+            document.getElementById('math-add').classList.add('opacity-30');
+            
+            setTimeout(() => {
+                // Giả vờ mất U (Chỉ thấy thực tế W và dòng nước V)
+                vecU.classList.add('opacity-0');
+                lblU.classList.add('opacity-0');
+                
+                setTimeout(() => {
+                    // Dựng lại U từ W - V. (Vẽ mũi tên từ ngọn V đến ngọn W)
+                    vecVClone.setAttribute('x1', vx); vecVClone.setAttribute('y1', vy);
+                    vecVClone.setAttribute('x2', wx); vecVClone.setAttribute('y2', wy);
+                    vecVClone.setAttribute('stroke', '#ef4444'); // Đổi sang màu đỏ
+                    vecVClone.setAttribute('fill', '#ef4444');
+                    vecVClone.setAttribute('marker-end', 'url(#arrow-u)');
+                    vecVClone.classList.remove('opacity-0');
+                    vecVClone.classList.add('dashed-line'); // Hiện nét đứt
+                    
+                    setTimeout(() => {
+                        // Tịnh tiến nó về gốc tạo thành U thực sự
+                        vecVClone.classList.add('opacity-0');
+                        vecU.classList.remove('opacity-0');
+                        lblU.classList.remove('opacity-0');
+                        
+                        document.getElementById('math-sub').classList.remove('hidden');
+                        document.getElementById('final-conclusion').classList.remove('hidden');
+                        scrollToBottom();
+                    }, 1200);
+
+                }, 1000);
+            }, 800);
+        }
+
+        // --- QUẢN LÝ TIẾN TRÌNH ---
+        function activateStep(step) {
+            currentStep = step;
+            
+            // Cập nhật trạng thái Card Sidebar
+            [1, 2, 3, 4].forEach(i => {
+                let card = document.getElementById(`card-${i}`);
+                if(i < step) {
+                    card.classList.remove('hidden', 'inactive');
+                    card.classList.add('inactive'); // Làm mờ bước cũ
+                } else if(i === step) {
+                    card.classList.remove('hidden', 'inactive');
+                }
+            });
+
+            // Logic theo Bước
+            if(step === 2) {
+                vecU.classList.remove('opacity-0');
+                lblU.classList.remove('opacity-0');
+                updateMath();
+            }
+            
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            setTimeout(() => {
+                const sidebar = document.getElementById('sidebar');
+                sidebar.scrollTop = sidebar.scrollHeight;
+            }, 100);
+        }
+
+        function resetModel() {
+            [1, 2, 3, 4].forEach(i => document.getElementById(`card-${i}`).classList.add('hidden', 'inactive'));
+            
+            sWater.value = 0; document.getElementById('val-water').textContent = 0;
+            sAngle.value = 90;
+            
+            vecU.classList.add('opacity-0'); lblU.classList.add('opacity-0');
+            vecW.classList.add('opacity-0'); lblW.classList.add('opacity-0');
+            vecVClone.classList.add('opacity-0');
+            document.getElementById('para-group').classList.add('opacity-0');
+            
+            document.getElementById('msg-drift').classList.add('hidden');
+            document.getElementById('btn-next-2').classList.add('hidden');
+            document.getElementById('msg-actual').classList.add('hidden');
+            document.getElementById('btn-next-3').classList.add('hidden');
+            document.getElementById('math-add').classList.add('hidden');
+            document.getElementById('math-add').classList.remove('opacity-30');
+            document.getElementById('btn-next-4').classList.add('hidden');
+            document.getElementById('math-sub').classList.add('hidden');
+            document.getElementById('final-conclusion').classList.add('hidden');
+            
+            document.getElementById('btn-sub').disabled = false;
+            
+            // Reset vecVClone style
+            vecVClone.setAttribute('stroke', '#38bdf8');
+            vecVClone.setAttribute('fill', '#38bdf8');
+            vecVClone.setAttribute('marker-end', 'url(#arrow-v)');
+            vecVClone.classList.remove('dashed-line');
+
+            updateMath();
+            activateStep(1);
+        }
+
+        function toggleTeacherMode() {
+            document.getElementById('teacher-modal').classList.toggle('hidden');
+        }
+
+        // Kịch bản Tự động (Auto-play)
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+        async function runScript() {
+            resetModel();
+            await sleep(1000);
+            
+            // HĐ1: Tăng nước
+            for(let v=0; v<=40; v+=2) {
+                sWater.value = v; sWater.dispatchEvent(new Event('input'));
+                await sleep(40);
+            }
+            await sleep(1000);
+            
+            // HĐ2: Đổi hướng, chạy tàu
+            document.getElementById('btn-next-2').click();
+            await sleep(1000);
+            for(let a=90; a>=60; a-=2) {
+                sAngle.value = a; sAngle.dispatchEvent(new Event('input'));
+                await sleep(40);
+            }
+            await sleep(500);
+            runBoat();
+            await sleep(3500);
+
+            // HĐ3: Cộng
+            document.getElementById('btn-next-3').click();
+            await sleep(1000);
+            animAddition();
+            await sleep(3500);
+
+            // HĐ4: Trừ
+            document.getElementById('btn-next-4').click();
+            await sleep(2000);
+            animSubtraction();
+        }
+
+        // Fullscreen Toggle
+        document.getElementById('btnFullscreen').addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+                document.getElementById('txtFullscreen').innerHTML = '✖ Thu nhỏ';
+            } else {
+                document.exitFullscreen();
+                document.getElementById('txtFullscreen').innerHTML = '⛶ Toàn màn hình';
+            }
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                document.getElementById('txtFullscreen').innerHTML = '⛶ Toàn màn hình';
+            }
+        });
+
+        // INIT
+        window.onload = () => {
+            updateMath();
+            activateStep(1);
+        };
+    </script>
+</body>
+</html>

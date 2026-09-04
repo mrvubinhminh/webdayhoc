@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Khám phá: Tích của một số với một vectơ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script>
+        window.MathJax = {
+            options: { enableMenu: false },
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            margin: 0;
+            overflow: hidden; 
+            user-select: none;
+            background-color: #f8fafc; 
+            touch-action: none;
+        }
+        
+        .app-container { display: flex; flex-direction: column; height: 100vh; width: 100vw; background: white;}
+        .main-content { display: flex; flex: 1; overflow: hidden; }
+
+        /* Kích thước Sidebar lớn hơn để dễ đọc */
+        .sidebar {
+            width: 480px;
+            background-color: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 10;
+            box-shadow: 2px 0 15px rgba(0,0,0,0.05);
+            padding: 1.5rem;
+            scroll-behavior: smooth;
+        }
+
+        /* Nền không gian vật lí / đồ họa */
+        .canvas-area {
+            flex: 1;
+            position: relative;
+            background-color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background-image: 
+                linear-gradient(rgba(59, 130, 246, 0.05) 2px, transparent 2px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.05) 2px, transparent 2px);
+            background-size: 50px 50px;
+        }
+
+        .activity-card {
+            background: white; border: 1px solid #e2e8f0; border-radius: 0.75rem;
+            padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            animation: slideIn 0.4s ease-out;
+            margin-bottom: 1.25rem;
+        }
+        .activity-card.inactive { opacity: 0.4; pointer-events: none; }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Sliders to và rõ ràng */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; padding: 10px 0; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 28px; width: 28px;
+            border-radius: 50%; background: #2563eb; cursor: pointer;
+            margin-top: -10px; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            border: 3px solid white;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 8px; cursor: pointer;
+            background: #cbd5e1; border-radius: 4px;
+        }
+        
+        .vec-text { font-family: 'Times New Roman', serif; font-style: italic; font-weight: bold; }
+        .vec-arrow { display: inline-block; position: relative; }
+        .vec-arrow::after {
+            content: '→'; position: absolute; top: -12px; left: 0; right: 0;
+            text-align: center; font-size: 0.8em; font-style: normal;
+        }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="app-container" id="app-container">
+        <!-- HEADER -->
+        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-20">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
+                    $k\vec{a}$
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-800 uppercase tracking-wide">Tích của một số với một vectơ</h1>
+                    <div class="text-xs font-semibold text-blue-600 uppercase">Hệ Thống Thi lớp Toán Thầy Lực NHC</div>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="toggleTeacherMode()" class="flex items-center gap-2 text-amber-700 bg-amber-50 hover:bg-amber-100 px-4 py-2 rounded-lg text-base border border-amber-200 transition font-bold shadow-sm">
+                    🎓 Gợi ý sư phạm
+                </button>
+                <button onclick="runScript()" class="flex items-center gap-2 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-4 py-2 rounded-lg text-base border border-emerald-200 transition font-bold shadow-sm">
+                    ▶ Trình chiếu
+                </button>
+                <button onclick="resetModel()" class="flex items-center gap-2 text-slate-600 hover:text-slate-800 px-4 py-2 rounded-lg text-base border border-slate-300 hover:bg-slate-50 transition font-bold shadow-sm">
+                    ↺ Đặt lại
+                </button>
+                <button id="btn-fullscreen" onclick="toggleFullScreen()" class="flex items-center gap-2 text-slate-600 hover:text-slate-800 px-4 py-2 rounded-lg text-base border border-slate-300 hover:bg-slate-50 transition font-bold shadow-sm">
+                    ⛶ Toàn màn hình
+                </button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- SIDEBAR: TIẾN TRÌNH HỌC TẬP -->
+            <aside class="sidebar" id="sidebar">
+                <div class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Tiến trình Khám phá</div>
+                
+                <!-- HĐ 1 & 2: Khởi động Thực tiễn (Đòn bẩy) -->
+                <div class="activity-card" id="card-1">
+                    <h3 class="font-bold text-blue-700 text-lg mb-3 flex justify-between items-center">
+                        <span>1. Trải nghiệm: Thanh đòn cân bằng</span>
+                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Vật lí</span>
+                    </h3>
+                    <p class="text-base text-slate-700 mb-4">Thay đổi khối lượng ở hai đầu A và B để tìm vị trí đặt trụ đỡ M giúp thanh cân bằng.</p>
+                    
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4">
+                        <div class="mb-4">
+                            <label class="flex justify-between font-bold text-slate-700 text-lg mb-2">
+                                <span>Khối lượng tại A ($m_A$):</span>
+                                <span class="text-blue-600"><span id="val-mA">1</span> kg</span>
+                            </label>
+                            <input type="range" id="slider-mA" min="1" max="5" step="1" value="1">
+                        </div>
+                        <div>
+                            <label class="flex justify-between font-bold text-slate-700 text-lg mb-2">
+                                <span>Khối lượng tại B ($m_B$):</span>
+                                <span class="text-orange-500"><span id="val-mB">1</span> kg</span>
+                            </label>
+                            <input type="range" id="slider-mB" min="1" max="5" step="1" value="1">
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50 text-blue-900 p-4 rounded-xl text-center border border-blue-200 text-lg">
+                        Mối liên hệ giữa hai vectơ: <br/>
+                        <div class="mt-2 text-2xl font-bold font-mono" id="eq-balance">
+                            <span class="vec-arrow vec-text text-red-600">AM</span> = <span class="text-blue-700">0.5</span> <span class="vec-arrow vec-text text-emerald-600">AB</span>
+                        </div>
+                    </div>
+                    
+                    <button id="btn-next-2" onclick="activateStep(2)" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl text-lg transition shadow-md">
+                        Mở rộng: Khám phá hệ số k
+                    </button>
+                </div>
+
+                <!-- HĐ 3, 4, 5: Khám phá hệ số k -->
+                <div class="activity-card hidden" id="card-2">
+                    <h3 class="font-bold text-emerald-700 text-lg mb-3">2. Phép nhân Vectơ với một số ($k$)</h3>
+                    <p class="text-base text-slate-700 mb-4">Điều gì xảy ra với chiều và độ dài của vectơ khi nhân với các hệ số $k$ khác nhau?</p>
+                    
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-base mb-4">
+                        <label class="flex justify-between font-bold text-slate-700 text-lg mb-2">
+                            <span>Hệ số nhân <i>k</i>:</span>
+                            <span class="text-emerald-600 text-2xl" id="val-k">0.5</span>
+                        </label>
+                        <input type="range" id="slider-k" min="-2" max="3" step="0.25" value="0.5">
+                        
+                        <div class="flex justify-between text-xs text-slate-400 mt-2 px-1 font-bold">
+                            <span>-2</span><span>-1</span><span>0</span><span>1</span><span>2</span><span>3</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <button onclick="document.getElementById('slider-k').value=2; updateFromK();" class="bg-gray-100 hover:bg-gray-200 text-slate-700 font-bold py-2 rounded-lg border border-gray-300">k = 2</button>
+                        <button onclick="document.getElementById('slider-k').value=-1; updateFromK();" class="bg-gray-100 hover:bg-gray-200 text-slate-700 font-bold py-2 rounded-lg border border-gray-300">k = -1</button>
+                    </div>
+
+                    <div class="p-4 rounded-xl text-center border text-lg font-bold" id="k-analysis">
+                        <!-- Sẽ cập nhật bằng JS -->
+                    </div>
+
+                    <button id="btn-next-3" onclick="activateStep(3)" class="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl text-lg transition shadow-md">
+                        Tổng quát hóa vấn đề
+                    </button>
+                </div>
+
+                <!-- HĐ 6: Tổng kết -->
+                <div class="activity-card hidden" id="card-3">
+                    <h3 class="font-bold text-purple-700 text-lg mb-3">3. Nhận xét trọng tâm</h3>
+                    <div class="space-y-3 text-base text-slate-700 bg-purple-50 p-4 rounded-xl border border-purple-200">
+                        <p>Từ một vectơ $\vec{a}$ ban đầu, ta có thể tạo ra vô số vectơ mới $k\vec{a}$:</p>
+                        <ul class="list-disc pl-5 space-y-2 font-medium">
+                            <li>Nếu $k > 0$: $k\vec{a}$ <b>cùng hướng</b> với $\vec{a}$.</li>
+                            <li>Nếu $k < 0$: $k\vec{a}$ <b>ngược hướng</b> với $\vec{a}$.</li>
+                            <li>Độ dài: $|k\vec{a}| = |k| \cdot |\vec{a}|$.</li>
+                        </ul>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- MAIN CANVAS -->
+            <main class="canvas-area" id="main-canvas">
+                <svg id="math-plane" viewBox="0 0 1000 600" class="w-full h-full drop-shadow-xl" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <!-- Arrowheads -->
+                        <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#10b981" />
+                        </marker>
+                        <marker id="arrow-red" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444" />
+                        </marker>
+                        
+                        <!-- 3D Sphere Gradients (Giống SGK) -->
+                        <radialGradient id="gradBlue" cx="35%" cy="30%" r="65%">
+                            <stop offset="0%" stop-color="#38bdf8" />
+                            <stop offset="50%" stop-color="#0284c7" />
+                            <stop offset="100%" stop-color="#1e3a8a" />
+                        </radialGradient>
+                        <radialGradient id="gradOrange" cx="35%" cy="30%" r="65%">
+                            <stop offset="0%" stop-color="#fde047" />
+                            <stop offset="40%" stop-color="#f97316" />
+                            <stop offset="100%" stop-color="#9a3412" />
+                        </radialGradient>
+                        
+                        <!-- Ánh sáng phản chiếu (Highlights) -->
+                        <linearGradient id="highlight" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="rgba(255,255,255,0.8)" />
+                            <stop offset="100%" stop-color="rgba(255,255,255,0)" />
+                        </linearGradient>
+                    </defs>
+
+                    <!-- Background Grid -->
+                    <g id="grid-lines" stroke="#e2e8f0" stroke-width="2"></g>
+
+                    <!-- Trục ngang (Thanh đòn màu nâu như SGK) -->
+                    <line x1="250" y1="400" x2="750" y2="400" stroke="#a67c52" stroke-width="6" stroke-linecap="round" />
+                    
+                    <!-- Nhãn A, B (Màu xanh dương nhạt) -->
+                    <text x="295" y="440" font-size="28" font-style="italic" font-weight="bold" fill="#0ea5e9">A</text>
+                    <text x="695" y="440" font-size="28" font-style="italic" font-weight="bold" fill="#0ea5e9">B</text>
+
+                    <!-- Trọng lượng (Quả cầu 3D) -->
+                    <g id="mass-group" class="transition-opacity duration-500">
+                        <!-- Quả cầu A (Xanh) -->
+                        <g id="sphere-A" transform="translate(300, 360)" style="transition: transform 0.2s;">
+                            <circle cx="0" cy="0" r="40" fill="url(#gradBlue)" />
+                            <ellipse cx="-10" cy="-20" rx="15" ry="8" fill="url(#highlight)" transform="rotate(-30 -10 -20)" />
+                        </g>
+                        
+                        <!-- Quả cầu B (Cam) -->
+                        <g id="sphere-B" transform="translate(700, 360)" style="transition: transform 0.2s;">
+                            <circle cx="0" cy="0" r="40" fill="url(#gradOrange)" />
+                            <ellipse cx="-10" cy="-20" rx="15" ry="8" fill="url(#highlight)" transform="rotate(-30 -10 -20)" />
+                        </g>
+                    </g>
+
+                    <!-- Điểm tựa M -->
+                    <g id="fulcrum-M" transform="translate(500, 400)" style="transition: transform 0.1s linear;">
+                        <!-- Hình tam giác màu nâu -->
+                        <polygon points="0,0 -30,60 30,60" fill="#bcaaa4" stroke="#8d6e63" stroke-width="4" stroke-linejoin="round"/>
+                        <polygon points="0,0 0,60 30,60" fill="#8d6e63" opacity="0.4"/> <!-- Đổ bóng tam giác -->
+                        <!-- Nhãn M -->
+                        <text x="-15" y="-15" font-size="28" font-style="italic" font-weight="bold" fill="#0ea5e9">M</text>
+                    </g>
+
+                    <!-- Vectơ gốc AB (Màu xanh lục) -->
+                    <line x1="300" y1="200" x2="690" y2="200" stroke="#10b981" stroke-width="6" marker-end="url(#arrow-green)" stroke-dasharray="10,5" opacity="0.5" />
+                    <text x="480" y="185" font-size="24" font-weight="bold" fill="#10b981" font-family="Times New Roman" font-style="italic">AB</text>
+                    <path d="M 480 165 L 515 165 M 510 160 L 515 165 L 510 170" stroke="#10b981" stroke-width="2" fill="none"/>
+
+                    <!-- Vectơ động AM (Màu đỏ) -->
+                    <g id="vec-AM-group">
+                        <line id="vec-AM" x1="300" y1="230" x2="490" y2="230" stroke="#ef4444" stroke-width="8" marker-end="url(#arrow-red)" style="transition: all 0.3s;"/>
+                        <text id="lbl-vec-AM" x="380" y="215" font-size="24" font-weight="bold" fill="#ef4444" font-family="Times New Roman" font-style="italic">AM</text>
+                        <path id="arr-lbl-AM" d="M 380 195 L 415 195 M 410 190 L 415 195 L 410 200" stroke="#ef4444" stroke-width="2" fill="none"/>
+                        <!-- Nét đứt gióng từ vectơ xuống M -->
+                        <line id="guide-M" x1="500" y1="230" x2="500" y2="390" stroke="#ef4444" stroke-width="2" stroke-dasharray="6,4" opacity="0.4" style="transition: all 0.1s linear;"/>
+                    </g>
+                </svg>
+            </main>
+        </div>
+
+        <!-- MODAL GỢI Ý SƯ PHẠM -->
+        <div id="teacher-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl p-8 w-[700px] max-w-full max-h-[90vh] overflow-y-auto relative">
+                <div class="flex justify-between items-center mb-6 border-b pb-4">
+                    <h3 class="text-2xl font-bold text-amber-600 flex items-center gap-3">🎓 Gợi ý sư phạm Toán 10 (KNTT)</h3>
+                    <button onclick="toggleTeacherMode()" class="text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full w-10 h-10 flex items-center justify-center transition text-xl">✕</button>
+                </div>
+                
+                <h4 class="font-bold text-slate-800 text-lg mb-2 bg-amber-100 px-4 py-2 rounded-lg border-l-4 border-amber-500">1. Ý đồ thiết kế Khởi động</h4>
+                <ul class="list-disc pl-6 mb-5 text-base text-slate-700 space-y-2">
+                    <li>Bắt đầu bằng bài toán **Điểm tựa đòn bẩy** trong Vật lí. Học sinh dễ dàng chấp nhận việc điểm tựa $M$ sẽ dịch chuyển gần về phía vật nặng hơn.</li>
+                    <li>Sự dịch chuyển của $M$ chia đoạn $AB$ theo một tỉ lệ xác định, từ đó làm nảy sinh tự nhiên nhu cầu sử dụng một "hệ số" nhân với vectơ $\overrightarrow{AB}$ để tạo ra vectơ $\overrightarrow{AM}$.</li>
+                </ul>
+                
+                <h4 class="font-bold text-slate-800 text-lg mb-2 bg-red-100 px-4 py-2 rounded-lg border-l-4 border-red-500">2. Sai lầm thường gặp của HS</h4>
+                <ul class="list-disc pl-6 mb-5 text-base text-red-700 space-y-2">
+                    <li>Chỉ nghĩ rằng nhân vectơ với một số là **làm thay đổi độ dài**.</li>
+                    <li>Quên mất rằng nhân với số âm ($k < 0$) sẽ làm **đảo ngược chiều** của vectơ.</li>
+                    <li>Cho rằng vectơ kết quả bắt buộc phải nằm gọn bên trong đoạn thẳng $AB$ (Khắc phục bằng việc cho $k=2$).</li>
+                </ul>
+
+                <!-- TÓM TẮT KIẾN THỨC -->
+                <h4 class="font-bold text-slate-800 text-lg mb-2 bg-blue-100 px-4 py-2 rounded-lg border-l-4 border-blue-500">3. Tóm tắt kiến thức (Thầy Lực NHC)</h4>
+                <div class="bg-slate-50 p-5 rounded-lg border border-slate-200 text-base text-slate-800 space-y-3 shadow-inner">
+                    <p><b>Định nghĩa:</b> Tích của một số thực $k \neq 0$ với một vectơ $\vec{a} \neq \vec{0}$ là một vectơ, kí hiệu là $k\vec{a}$.</p>
+                    <hr class="border-slate-300">
+                    <p><b>Tính chất của vectơ $k\vec{a}$:</b></p>
+                    <ul class="list-disc pl-6 space-y-1 text-slate-700">
+                        <li><b>Về hướng:</b> Cùng hướng với $\vec{a}$ nếu $k > 0$; Ngược hướng với $\vec{a}$ nếu $k < 0$.</li>
+                        <li><b>Về độ dài:</b> $|k\vec{a}| = |k| \cdot |\vec{a}|$.</li>
+                    </ul>
+                    <hr class="border-slate-300">
+                    <p><b>Điều kiện cùng phương:</b> Hai vectơ $\vec{a}$ và $\vec{b}$ ($\vec{b} \neq \vec{0}$) cùng phương khi và chỉ khi tồn tại số thực $k$ sao cho $\vec{a} = k\vec{b}$.</p>
+                </div>
+
+                <div class="text-center mt-6">
+                    <button onclick="toggleTeacherMode()" class="bg-slate-800 hover:bg-slate-900 text-white px-8 py-3 rounded-xl text-lg font-bold transition shadow-md">Đóng gợi ý</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONSTANTS & CONFIG ---
+        const A_x = 300;
+        const B_x = 700;
+        const BASE_Y = 230; // Vị trí vẽ vector AM
+        const vec_length = B_x - A_x; // 400
+        
+        let currentMode = 'mass'; // 'mass' or 'k'
+        let currentStep = 1;
+
+        // Elements
+        const s_mA = document.getElementById('slider-mA');
+        const s_mB = document.getElementById('slider-mB');
+        const s_k = document.getElementById('slider-k');
+        
+        const massGroup = document.getElementById('mass-group');
+        const fulcrum = document.getElementById('fulcrum-M');
+        const vecAM = document.getElementById('vec-AM');
+        const lblVecAM = document.getElementById('lbl-vec-AM');
+        const arrLblAM = document.getElementById('arr-lbl-AM');
+        
+        // --- VẼ LƯỚI TRỤC ---
+        function drawRulerMarks() {
+            const group = document.getElementById('grid-lines');
+            // Vẽ các vạch chia nhỏ
+            for(let i = 0; i <= 20; i++) {
+                let x = A_x - 100 + i * (50);
+                if (x >= 250 && x <= 750) {
+                    group.innerHTML += `<line x1="${x}" y1="395" x2="${x}" y2="405" stroke="#a67c52" stroke-width="2"/>`;
+                }
+            }
+        }
+
+        // --- CẬP NHẬT TỪ KHỐI LƯỢNG (HĐ 1 & 2) ---
+        function updateFromMass() {
+            if(currentMode !== 'mass') return;
+            
+            let mA = parseFloat(s_mA.value);
+            let mB = parseFloat(s_mB.value);
+            
+            document.getElementById('val-mA').textContent = mA;
+            document.getElementById('val-mB').textContent = mB;
+            
+            // Tính toán bán kính quả cầu dựa trên khối lượng (1kg = r:30, to dần)
+            let rA = 20 + mA * 10;
+            let rB = 20 + mB * 10;
+            
+            // Lấy element quả cầu và cập nhật bán kính (scale) & vị trí chạm thanh đòn
+            let sphereA = document.getElementById('sphere-A');
+            let sphereB = document.getElementById('sphere-B');
+            
+            // Tính tỷ lệ scale dựa trên bán kính gốc là 40
+            let scaleA = rA / 40;
+            let scaleB = rB / 40;
+            
+            // Dịch chuyển y để quả cầu luôn nằm trên thanh đòn (y=400)
+            sphereA.setAttribute('transform', `translate(${A_x}, ${400 - rA}) scale(${scaleA})`);
+            sphereB.setAttribute('transform', `translate(${B_x}, ${400 - rB}) scale(${scaleB})`);
+            
+            // Tính toán vị trí tâm đòn bẩy: k = mB / (mA + mB)
+            let k = mB / (mA + mB);
+            
+            let k_str = Number.isInteger(k) ? k : k.toFixed(2);
+            document.getElementById('eq-balance').innerHTML = 
+                `<span class="vec-arrow vec-text text-red-600">AM</span> = 
+                 <span class="text-blue-700">${k_str}</span> 
+                 <span class="vec-arrow vec-text text-emerald-600">AB</span>`;
+                 
+            updateGraphics(k);
+        }
+
+        // --- CẬP NHẬT TỪ HỆ SỐ K (HĐ 3, 4, 5) ---
+        function updateFromK() {
+            if(currentMode !== 'k') return;
+            
+            let k = parseFloat(s_k.value);
+            document.getElementById('val-k').textContent = k;
+            
+            // Phân tích trạng thái
+            let analysisBox = document.getElementById('k-analysis');
+            let txt = "";
+            let colorCls = "";
+            let bgCls = "";
+
+            if(k > 0 && k < 1) {
+                txt = "Cùng hướng, Độ dài ngắn hơn AB";
+                colorCls = "text-blue-700"; bgCls = "bg-blue-50 border-blue-200";
+            } else if (k === 1) {
+                txt = "Hai vectơ bằng nhau";
+                colorCls = "text-emerald-700"; bgCls = "bg-emerald-50 border-emerald-200";
+            } else if (k > 1) {
+                txt = "Cùng hướng, Độ dài dài hơn AB";
+                colorCls = "text-amber-700"; bgCls = "bg-amber-50 border-amber-200";
+            } else if (k === 0) {
+                txt = "Vectơ không (M trùng A)";
+                colorCls = "text-slate-600"; bgCls = "bg-slate-100 border-slate-300";
+            } else if (k === -1) {
+                txt = "Ngược hướng, Cùng độ dài (Vectơ đối)";
+                colorCls = "text-purple-700"; bgCls = "bg-purple-50 border-purple-200";
+            } else if (k < 0) {
+                txt = "Ngược hướng với AB";
+                colorCls = "text-red-700"; bgCls = "bg-red-50 border-red-200";
+            }
+
+            analysisBox.className = `p-4 rounded-xl text-center border text-lg font-bold transition-colors ${colorCls} ${bgCls}`;
+            analysisBox.innerHTML = `
+                <div class="text-2xl font-mono mb-2">
+                    <span class="vec-arrow vec-text text-red-600">AM</span> = 
+                    <span class="text-slate-800">${k}</span> 
+                    <span class="vec-arrow vec-text text-emerald-600">AB</span>
+                </div>
+                ${txt}
+            `;
+            
+            updateGraphics(k);
+        }
+
+        // --- CẬP NHẬT ĐỒ HỌA TRUNG TÂM ---
+        function updateGraphics(k) {
+            let M_x = A_x + k * vec_length;
+            
+            // Di chuyển điểm tựa
+            fulcrum.setAttribute('transform', `translate(${M_x}, 400)`);
+            
+            // Cập nhật đường gióng nét đứt
+            let guideM = document.getElementById('guide-M');
+            guideM.setAttribute('x1', M_x);
+            guideM.setAttribute('x2', M_x);
+            
+            // Xử lý mũi tên vector AM
+            if (k === 0) {
+                vecAM.setAttribute('x2', A_x); // Zero length
+                vecAM.setAttribute('marker-end', '');
+                lblVecAM.setAttribute('x', A_x - 10);
+                arrLblAM.setAttribute('d', `M ${A_x-10} 215 L ${A_x+25} 215 M ${A_x+20} 210 L ${A_x+25} 215 L ${A_x+20} 220`);
+            } else {
+                // Determine direction for arrowhead placement
+                let endX = M_x;
+                let offset = (k > 0) ? -15 : 15; // Lùi lại một chút để mũi tên không đâm xuyên qua
+                
+                vecAM.setAttribute('x2', endX + offset); 
+                vecAM.setAttribute('marker-end', 'url(#arrow-red)');
+                
+                // Căn chỉnh chữ AM nằm giữa vector
+                let midX = (A_x + M_x) / 2;
+                lblVecAM.setAttribute('x', midX - 20);
+                arrLblAM.setAttribute('d', `M ${midX-20} 215 L ${midX+15} 215 M ${midX+10} 210 L ${midX+15} 215 L ${midX+10} 220`);
+            }
+        }
+
+        // --- ĐIỀU CHỈNH TIẾN TRÌNH ---
+        function activateStep(step) {
+            currentStep = step;
+            
+            if (step === 1) {
+                currentMode = 'mass';
+                massGroup.classList.remove('opacity-0', 'pointer-events-none');
+                document.getElementById('card-2').classList.add('hidden', 'inactive');
+                document.getElementById('card-3').classList.add('hidden', 'inactive');
+                updateFromMass();
+            } 
+            else if (step === 2) {
+                currentMode = 'k';
+                document.getElementById('card-1').classList.add('inactive');
+                document.getElementById('card-2').classList.remove('hidden', 'inactive');
+                massGroup.classList.add('opacity-0', 'pointer-events-none'); // Ẩn các khối vật lí
+                updateFromK();
+            }
+            else if (step === 3) {
+                document.getElementById('card-2').classList.add('inactive');
+                document.getElementById('card-3').classList.remove('hidden', 'inactive');
+            }
+
+            // Scroll sidebar
+            setTimeout(() => {
+                const sidebar = document.getElementById('sidebar');
+                sidebar.scrollTop = sidebar.scrollHeight;
+            }, 100);
+        }
+
+        // --- TIỆN ÍCH ---
+        function resetModel() {
+            s_mA.value = 1;
+            s_mB.value = 1;
+            s_k.value = 0.5;
+            document.getElementById('card-1').classList.remove('inactive');
+            activateStep(1);
+        }
+
+        function toggleTeacherMode() {
+            document.getElementById('teacher-modal').classList.toggle('hidden');
+        }
+
+        // Chế độ toàn màn hình
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    alert(`Không thể bật chế độ toàn màn hình: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+        
+        document.addEventListener('fullscreenchange', () => {
+            const btn = document.getElementById('btn-fullscreen');
+            if (document.fullscreenElement) {
+                btn.innerHTML = '⛶ Thu nhỏ';
+                btn.classList.add('bg-slate-200');
+            } else {
+                btn.innerHTML = '⛶ Toàn màn hình';
+                btn.classList.remove('bg-slate-200');
+            }
+        });
+
+        // Trình chiếu tự động
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+        async function runScript() {
+            resetModel();
+            await sleep(1500);
+            
+            // Đổi khối lượng B thành 3kg
+            s_mB.value = 3; updateFromMass();
+            await sleep(2000);
+            
+            // Sang step 2
+            activateStep(2);
+            await sleep(1000);
+            
+            // Kéo k = 2
+            s_k.value = 2; updateFromK();
+            await sleep(2500);
+            
+            // Kéo k = -1
+            s_k.value = -1; updateFromK();
+            await sleep(2500);
+            
+            // Sang step 3
+            activateStep(3);
+        }
+
+        // Khởi tạo Event Listeners
+        s_mA.addEventListener('input', updateFromMass);
+        s_mB.addEventListener('input', updateFromMass);
+        s_k.addEventListener('input', updateFromK);
+
+        // Chạy lần đầu
+        window.onload = () => {
+            drawRulerMarks();
+            resetModel();
+        };
+
+    </script>
+</body>
+</html>
