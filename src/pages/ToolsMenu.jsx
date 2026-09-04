@@ -11,7 +11,8 @@ const ToolsMenu = () => {
   const toolPaths = Object.keys(files);
 
   const parsedTools = toolPaths.map(path => {
-    const match = path.match(/\/public\/tools\/(\d+)\/(.+)\.html$/);
+    // Allow alphanumeric characters for the category folder
+    const match = path.match(/\/public\/tools\/([a-zA-Z0-9_-]+)\/(.+)\.html$/);
     if (!match) return null;
     
     const titleMatch = match[2].match(/^(\d+)[.\-_]?\s*(.*)/);
@@ -33,7 +34,23 @@ const ToolsMenu = () => {
     '10': parsedTools.filter(m => m.grade === '10'),
     '11': parsedTools.filter(m => m.grade === '11'),
     '12': parsedTools.filter(m => m.grade === '12'),
+    'chung': [
+      ...parsedTools.filter(m => m.grade === 'chung'),
+      {
+        id: 'mathda-calculator',
+        title: 'MÁY TÍNH MATHDA',
+        path: 'https://mathda.com/calculator/vi',
+        isExternal: true
+      }
+    ]
   };
+
+  const tabs = [
+    { id: '10', label: 'Lớp 10' },
+    { id: '11', label: 'Lớp 11' },
+    { id: '12', label: 'Lớp 12' },
+    { id: 'chung', label: 'Tiện ích chung' }
+  ];
 
   const icons = [Box, Cuboid, Cylinder, Layers, Pyramid, LayoutGrid, CheckSquare];
   
@@ -62,18 +79,18 @@ const ToolsMenu = () => {
         </p>
 
         {/* Tabs */}
-        <div className="flex justify-center gap-4 mb-12">
-          {['10', '11', '12'].map(grade => (
+        <div className="flex flex-wrap justify-center gap-4 mb-12">
+          {tabs.map(tab => (
             <button
-              key={grade}
-              onClick={() => setActiveTab(grade)}
-              className={`px-8 py-3 rounded-xl font-bold text-lg transition-all ${
-                activeTab === grade 
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-6 sm:px-8 py-3 rounded-xl font-bold text-lg transition-all ${
+                activeTab === tab.id 
                   ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30' 
                   : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
               }`}
             >
-              Lớp {grade}
+              {tab.label}
             </button>
           ))}
         </div>
@@ -84,7 +101,7 @@ const ToolsMenu = () => {
             {currentTools.map((model, idx) => (
               <div 
                 key={model.id}
-                onClick={() => navigate(model.path)}
+                onClick={() => model.isExternal ? window.open(model.path, '_blank') : navigate(model.path)}
                 className="glass-card p-3 rounded-xl flex flex-row items-center gap-4 cursor-pointer group hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all duration-300 border border-blue-500/10 hover:border-blue-500/50 bg-slate-900/60"
               >
                 <div className={`w-12 h-12 shrink-0 rounded-lg flex items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-700 text-white shadow-md group-hover:scale-110 transition-transform`}>

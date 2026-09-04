@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Khởi động: Vectơ - Toán 10 KNTT</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- MathJax -->
+    <script>
+        window.MathJax = {
+            options: { enableMenu: false },
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        window.mathJaxLoaded = true;
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body { 
+            font-family: 'Inter', system-ui, sans-serif; 
+            margin: 0; overflow: hidden; 
+            user-select: none; touch-action: none; 
+            background-color: #f8fafc; 
+        }
+        .app-container { display: flex; flex-direction: column; height: 100vh; width: 100vw; background: white;}
+        .main-content { display: flex; flex: 1; overflow: hidden; }
+
+        /* Sidebar khổng lồ */
+        .sidebar {
+            width: 480px; background-color: #ffffff; border-right: 2px solid #e2e8f0;
+            display: flex; flex-direction: column; overflow-y: auto; z-index: 20;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.05); padding: 1.5rem; scroll-behavior: smooth;
+        }
+
+        .canvas-area {
+            flex: 1; position: relative; background-color: #e2e8f0; display: flex; flex-direction: column;
+            overflow: hidden; 
+            /* Hình nền bản đồ mờ */
+            background-image: radial-gradient(#cbd5e1 1px, transparent 0);
+            background-size: 30px 30px;
+        }
+
+        .activity-card {
+            background: white; border: 2px solid #e2e8f0; border-radius: 1rem;
+            padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: all 0.4s ease; animation: slideIn 0.4s ease-out; margin-bottom: 1.5rem;
+        }
+        .activity-card.inactive { opacity: 0.3; pointer-events: none; filter: grayscale(100%); }
+        
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Sliders */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 28px; width: 28px;
+            border-radius: 50%; background: #2563eb; cursor: pointer;
+            margin-top: -10px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); border: 3px solid white;
+        }
+        #slider-angle::-webkit-slider-thumb { background: #d97706; }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 10px; cursor: pointer;
+            background: #cbd5e1; border-radius: 5px;
+        }
+
+        .btn-large {
+            width: 100%; font-size: 1.25rem; font-weight: 800; padding: 1rem; 
+            border-radius: 0.75rem; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            text-align: center; cursor: pointer;
+        }
+
+        /* La bàn đồ họa */
+        .compass-rose {
+            position: absolute; top: 20px; right: 20px;
+            width: 120px; height: 120px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%; border: 2px solid #cbd5e1;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; color: #475569; pointer-events: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .compass-label { position: absolute; font-size: 14px; }
+        .c-n { top: 5px; } .c-s { bottom: 5px; } .c-w { left: 5px; } .c-e { right: 5px; }
+
+        /* Mũi tên SVG */
+        .vector-arrow {
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: stroke-dashoffset 0.5s ease;
+        }
+        
+        .glow-effect {
+            filter: drop-shadow(0px 0px 8px rgba(59, 130, 246, 0.8));
+        }
+
+        /* Widget Thời tiết */
+        .weather-widget {
+            position: absolute; top: 20px; left: 20px;
+            background: white; border-radius: 1rem; padding: 1rem 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border: 2px solid #e2e8f0; z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- HEADER -->
+        <header class="h-20 bg-white border-b-2 border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-30">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-xl bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-3xl border-2 border-blue-200">
+                    ↗
+                </div>
+                <h1 class="text-3xl font-extrabold text-slate-800 uppercase tracking-wide">Khởi động: Vectơ</h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="toggleTeacherMode()" class="flex items-center gap-2 text-amber-800 bg-amber-100 hover:bg-amber-200 px-5 py-3 rounded-xl text-xl border-2 border-amber-300 transition font-bold shadow-sm">
+                    🎓 Gợi ý sư phạm
+                </button>
+                <button onclick="runScript()" class="flex items-center gap-2 text-emerald-800 bg-emerald-100 hover:bg-emerald-200 px-5 py-3 rounded-xl text-xl border-2 border-emerald-300 transition font-bold shadow-sm">
+                    ▶ Trình chiếu
+                </button>
+                <button onclick="resetModel()" class="flex items-center gap-2 text-slate-700 hover:text-slate-900 px-5 py-3 rounded-xl text-xl border-2 border-slate-300 hover:bg-slate-100 transition font-bold shadow-sm">
+                    ↺ Đặt lại
+                </button>
+                <button id="btnFullscreen" class="flex items-center gap-2 text-slate-700 hover:text-blue-700 px-5 py-3 rounded-xl text-xl border-2 border-slate-300 hover:bg-slate-100 transition font-bold shadow-sm">
+                    <span id="txtFullscreen">⛶ Toàn màn hình</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- SIDEBAR -->
+            <aside class="sidebar" id="sidebar">
+                <div class="text-xl font-black text-slate-400 uppercase tracking-widest mb-6">Tiến trình Khám phá</div>
+                
+                <!-- HĐ 1 & 2: Bản tin thời tiết & So sánh -->
+                <div class="activity-card" id="card-1">
+                    <h3 class="text-2xl font-black text-blue-700 mb-4">1. Tình huống: Bản tin thời tiết</h3>
+                    <p class="text-xl text-slate-700 mb-4 font-medium leading-relaxed">
+                        Trong bản tin dự báo thời tiết, ta thường nghe:
+                    </p>
+                    <div class="bg-blue-50 p-4 rounded-xl border-2 border-blue-200 mb-6 flex items-center justify-between">
+                        <div class="text-2xl">☀️ Nhiệt độ: <b class="text-red-600">30°C</b></div>
+                        <div class="text-2xl">🌬️ Gió: <b class="text-blue-600">Đông Nam, 18 km/h</b></div>
+                    </div>
+                    
+                    <div class="bg-amber-100 p-5 rounded-xl border-2 border-amber-300 mb-6">
+                        <p class="text-xl text-amber-900 font-bold mb-3">🤔 Nhận xét:</p>
+                        <ul class="text-lg text-amber-800 list-disc pl-6 space-y-2 font-medium">
+                            <li>Nhiệt độ chỉ cần <b class="text-red-700">một con số</b> để biểu diễn.</li>
+                            <li>Còn gió thì sao? Chỉ biết tốc độ "18 km/h" đã đủ để mô tả chưa?</li>
+                        </ul>
+                    </div>
+
+                    <p class="text-xl text-slate-800 font-bold mb-3">Hãy so sánh các cơn gió sau:</p>
+                    <div class="grid grid-cols-2 gap-3 mb-6">
+                        <button onclick="setWind(-45, 18, 'A')" class="p-3 bg-white border-2 border-slate-300 rounded-xl hover:bg-slate-50 transition text-left">
+                            <div class="font-bold text-slate-600">Trường hợp A</div>
+                            <div class="text-lg font-black text-blue-700">Đông Nam</div>
+                            <div class="text-lg font-black text-blue-700">18 km/h</div>
+                        </button>
+                        <button onclick="setWind(-45, 30, 'B')" class="p-3 bg-white border-2 border-slate-300 rounded-xl hover:bg-slate-50 transition text-left">
+                            <div class="font-bold text-slate-600">Trường hợp B</div>
+                            <div class="text-lg font-black text-blue-700">Đông Nam</div>
+                            <div class="text-lg font-black text-red-600">30 km/h</div>
+                        </button>
+                        <button onclick="setWind(135, 18, 'C')" class="p-3 bg-white border-2 border-slate-300 rounded-xl hover:bg-slate-50 transition text-left col-span-2">
+                            <div class="font-bold text-slate-600">Trường hợp C</div>
+                            <div class="text-lg font-black text-blue-700">Tây Bắc <span class="text-slate-400 font-normal">|</span> 18 km/h</div>
+                        </button>
+                    </div>
+                    
+                    <button id="btn-next-2" onclick="activateStep(2)" class="btn-large bg-blue-600 hover:bg-blue-700 text-white">
+                        Khám phá Mũi tên Biểu diễn
+                    </button>
+                </div>
+
+                <!-- HĐ 3 & 4: Khám phá Độ lớn & Hướng -->
+                <div class="activity-card hidden" id="card-2">
+                    <h3 class="text-2xl font-black text-emerald-700 mb-4">2. Biểu diễn bằng Toán học</h3>
+                    <p class="text-xl text-slate-700 mb-4 font-medium leading-relaxed">
+                        Hãy thay đổi các thông số dưới đây và quan sát sự thay đổi của mũi tên trên bản đồ.
+                    </p>
+                    
+                    <div class="bg-slate-50 p-5 rounded-2xl border-2 border-slate-200 mb-6">
+                        <!-- Slider Tốc độ (Độ lớn) -->
+                        <div class="mb-6">
+                            <label class="flex justify-between text-xl font-bold text-slate-700 mb-3">
+                                <span>Tốc độ (Độ lớn):</span>
+                                <span class="text-blue-600 text-2xl font-black"><span id="val-speed">18</span> km/h</span>
+                            </label>
+                            <input type="range" id="slider-speed" min="5" max="50" value="18">
+                            <p class="text-sm text-slate-500 mt-2 font-medium">Thay đổi độ dài mũi tên.</p>
+                        </div>
+                        
+                        <!-- Slider Hướng -->
+                        <div>
+                            <label class="flex justify-between text-xl font-bold text-slate-700 mb-3">
+                                <span>Hướng gió:</span>
+                                <span class="text-amber-600 text-2xl font-black" id="val-dir-txt">Đông Nam</span>
+                            </label>
+                            <input type="range" id="slider-angle" min="-180" max="180" value="-45" step="5">
+                            <p class="text-sm text-slate-500 mt-2 font-medium">Xoay mũi tên quanh điểm quan sát.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-emerald-100 p-5 rounded-2xl border-2 border-emerald-300 mb-6 shadow-inner">
+                        <p class="text-xl text-emerald-900 font-bold mb-2">💡 Nhận xét:</p>
+                        <ul class="text-lg text-emerald-800 list-disc pl-6 space-y-2 font-medium">
+                            <li>Chiều dài mũi tên $\leftrightarrow$ <b class="font-black">Độ lớn</b> của gió.</li>
+                            <li>Chiều chỉ của mũi tên $\leftrightarrow$ <b class="font-black">Hướng</b> của gió.</li>
+                        </ul>
+                    </div>
+                    
+                    <button id="btn-next-3" onclick="activateStep(3)" class="btn-large bg-emerald-600 hover:bg-emerald-700 text-white">
+                        Vấn đề Trung tâm
+                    </button>
+                </div>
+
+                <!-- HĐ 5 & Mâu thuẫn: Vấn đề trung tâm -->
+                <div class="activity-card hidden border-4 border-purple-400" id="card-3">
+                    <h3 class="text-2xl font-black text-purple-700 mb-4">3. Vấn đề Trung tâm</h3>
+                    <p class="text-xl text-slate-700 mb-4 font-medium leading-relaxed">
+                        Trong thực tế, ngoài gió, còn rất nhiều đại lượng khác cũng có tính chất tương tự:
+                    </p>
+                    
+                    <div class="grid grid-cols-2 gap-3 mb-6">
+                        <div class="bg-purple-50 p-3 rounded-xl border border-purple-200 text-center font-bold text-lg text-purple-900">🚗 Vận tốc ô tô</div>
+                        <div class="bg-purple-50 p-3 rounded-xl border border-purple-200 text-center font-bold text-lg text-purple-900">✈️ Hướng máy bay</div>
+                        <div class="bg-purple-50 p-3 rounded-xl border border-purple-200 text-center font-bold text-lg text-purple-900">💪 Lực tác dụng</div>
+                        <div class="bg-purple-50 p-3 rounded-xl border border-purple-200 text-center font-bold text-lg text-purple-900">⛵ Chuyển động thuyền</div>
+                    </div>
+                    
+                    <div id="final-conflict" class="bg-red-50 p-5 rounded-2xl border-2 border-red-200 mb-6 shadow-inner hidden">
+                        <p class="text-xl text-red-900 font-bold mb-3">❗️ Mâu thuẫn nhận thức:</p>
+                        <p class="text-lg text-red-800 font-medium">
+                            Nhiệt độ (30°C) chỉ cần một con số (đại lượng vô hướng). <br><br>
+                            Nhưng các đại lượng trên cần biểu diễn ĐỒNG THỜI cả <b>Hướng</b> và <b>Độ lớn</b>.
+                            Có đối tượng Toán học nào làm được việc này không?
+                        </p>
+                    </div>
+                    
+                    <button id="btn-show-conclusion" onclick="showConclusion()" class="btn-large bg-purple-600 hover:bg-purple-700 text-white mb-6 animate-pulse">
+                        Phát hiện khái niệm mới
+                    </button>
+
+                    <div id="final-conclusion" class="hidden">
+                        <div class="bg-slate-800 text-white p-6 rounded-2xl text-center shadow-2xl transform hover:scale-105 transition">
+                            <p class="text-xl font-medium leading-relaxed mb-4 text-slate-300">
+                                Trong toán học, để biểu diễn các đại lượng có cả hướng và độ lớn, người ta sử dụng một đối tượng đặc biệt gọi là <b class="text-white text-2xl">Vectơ</b>.
+                            </p>
+                            <div class="bg-slate-900 py-4 rounded-xl border border-slate-700">
+                                <p class="text-sm text-amber-400 font-bold mb-1 opacity-70 uppercase tracking-widest">Bài học hôm nay:</p>
+                                <p class="text-4xl font-black text-amber-400 uppercase tracking-widest">
+                                    VECTƠ
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </aside>
+
+            <!-- MAIN CANVAS -->
+            <main class="canvas-area relative" id="main-canvas">
+                
+                <!-- Weather Widget -->
+                <div class="weather-widget">
+                    <div class="text-slate-500 font-bold text-sm uppercase tracking-wider mb-2">Trạm Quan Sát Khí Tượng</div>
+                    <div class="flex items-end gap-6">
+                        <div>
+                            <div class="text-4xl font-black text-slate-800">30<span class="text-2xl">°C</span></div>
+                            <div class="text-sm font-medium text-slate-500">Nhiệt độ</div>
+                        </div>
+                        <div class="w-px h-10 bg-slate-200"></div>
+                        <div>
+                            <div class="text-4xl font-black text-blue-600" id="wid-speed">18 <span class="text-lg">km/h</span></div>
+                            <div class="text-sm font-bold text-blue-800 bg-blue-100 px-2 py-0.5 rounded mt-1 inline-block" id="wid-dir">Đông Nam</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Compass Rose -->
+                <div class="compass-rose">
+                    <div class="compass-label c-n">B</div>
+                    <div class="compass-label c-s">N</div>
+                    <div class="compass-label c-w">T</div>
+                    <div class="compass-label c-e">Đ</div>
+                    <div class="w-2 h-2 rounded-full bg-slate-400 absolute"></div>
+                </div>
+
+                <!-- SVG Bản đồ & Mũi tên -->
+                <svg id="math-plane" viewBox="0 0 800 800" class="w-full h-full">
+                    <defs>
+                        <!-- Arrowhead Normal -->
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#2563eb" />
+                        </marker>
+                        <!-- Arrowhead Highlighted -->
+                        <marker id="arrowhead-highlight" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#f59e0b" />
+                        </marker>
+                        <!-- Map Grid (Optional) -->
+                        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+                        </pattern>
+                    </defs>
+
+                    <!-- Lưới bản đồ -->
+                    <rect width="100%" height="100%" fill="url(#grid)" opacity="0.5" />
+                    
+                    <!-- Điểm gốc O -->
+                    <circle cx="400" cy="400" r="8" fill="#1e293b" stroke="white" stroke-width="3" />
+                    <text x="415" y="395" font-size="24" font-weight="900" fill="#1e293b">O (Trạm)</text>
+
+                    <!-- Vòng tròn biểu diễn tầm hoạt động (trực quan) -->
+                    <circle cx="400" cy="400" r="250" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="10 10" opacity="0.3"/>
+                    <circle cx="400" cy="400" r="150" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="10 10" opacity="0.3"/>
+
+                    <!-- Mũi tên Gió chính -->
+                    <g id="vector-group" transform="translate(400, 400)">
+                        <line id="wind-arrow" x1="0" y1="0" x2="100" y2="100" stroke="#2563eb" stroke-width="8" marker-end="url(#arrowhead)" class="vector-arrow" />
+                        
+                        <!-- Nhãn Độ lớn động trên mũi tên -->
+                        <text id="lbl-magnitude" x="50" y="40" font-size="20" font-weight="bold" fill="#1d4ed8" text-anchor="middle" class="bg-white/80 px-1 rounded">18 km/h</text>
+                    </g>
+                    
+                    <!-- Lớp phủ giải thích khi chuyển sang khái niệm Vectơ -->
+                    <g id="vector-anatomy" class="hidden opacity-0 transition-opacity duration-1000" transform="translate(400, 400)">
+                        <circle cx="0" cy="0" r="12" fill="#ef4444" class="animate-ping" opacity="0.5"/>
+                        <circle cx="0" cy="0" r="6" fill="#ef4444" />
+                        <text x="-15" y="-15" font-size="18" font-weight="bold" fill="#b91c1c" text-anchor="end">Điểm đầu</text>
+                        
+                        <!-- Vị trí điểm cuối sẽ được cập nhật động bằng JS -->
+                        <g id="vector-end-group">
+                            <circle cx="0" cy="0" r="12" fill="#ef4444" class="animate-ping" opacity="0.5"/>
+                            <circle cx="0" cy="0" r="6" fill="#ef4444" />
+                            <text x="15" y="-15" font-size="18" font-weight="bold" fill="#b91c1c">Điểm cuối</text>
+                        </g>
+                    </g>
+                </svg>
+
+            </main>
+        </div>
+
+        <!-- MODAL GỢI Ý SƯ PHẠM -->
+        <div id="teacher-modal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-[2rem] shadow-2xl p-10 w-[850px] max-w-full max-h-[90vh] overflow-y-auto relative border-4 border-amber-300">
+                <div class="flex justify-between items-center mb-8 border-b-4 border-amber-100 pb-5">
+                    <h3 class="text-3xl font-black text-amber-700 flex items-center gap-3">🎓 Gợi ý sư phạm Toán 10 KNTT</h3>
+                    <button onclick="toggleTeacherMode()" class="text-slate-400 hover:text-red-600 bg-slate-100 rounded-full w-14 h-14 flex items-center justify-center transition text-3xl font-bold">✕</button>
+                </div>
+                
+                <h4 class="font-black text-slate-800 text-2xl mb-4 bg-blue-100 px-5 py-2 rounded-xl inline-block">1. Mục tiêu khởi động</h4>
+                <ul class="list-disc pl-8 mb-8 text-xl text-slate-700 space-y-3 font-semibold">
+                    <li>Tạo nhu cầu tự nhiên xuất hiện khái niệm <b>vectơ</b>.</li>
+                    <li>Giúp học sinh phân biệt rõ ràng giữa <b>đại lượng vô hướng</b> (nhiệt độ, khối lượng) và <b>đại lượng có hướng</b> (vận tốc gió, lực).</li>
+                    <li>Hình thành trực giác hình học: Dùng <b>mũi tên</b> để biểu diễn đồng thời Hướng và Độ lớn.</li>
+                </ul>
+                
+                <h4 class="font-black text-slate-800 text-2xl mb-4 bg-red-100 px-5 py-2 rounded-xl inline-block">2. Sai lầm thường gặp của HS</h4>
+                <ul class="list-disc pl-8 mb-8 text-xl text-red-700 space-y-3 font-semibold">
+                    <li>Cho rằng chỉ cần biết độ lớn (tốc độ) là đủ mô tả đại lượng có hướng.</li>
+                    <li>Nhầm lẫn giữa <b>Hướng</b> và <b>Chiều</b>.</li>
+                    <li>Nghĩ rằng vectơ chỉ đơn thuần là một đoạn thẳng, mà quên mất vai trò quyết định của <b>Điểm đầu</b> và <b>Điểm cuối</b> tạo nên hướng.</li>
+                </ul>
+                
+                <h4 class="font-bold text-slate-800 text-2xl mb-4 bg-amber-100 px-5 py-2 rounded-xl inline-block">3. Câu hỏi gợi mở cho GV</h4>
+                <div class="bg-slate-50 p-6 rounded-2xl border-2 border-slate-200 text-xl text-slate-800 font-medium leading-relaxed mb-8 shadow-inner italic">
+                    "Nếu đài báo bão chỉ nói 'Bão đang di chuyển với tốc độ 100km/h' thì chúng ta có biết bão sẽ đi về đâu để phòng tránh không?"<br><br>
+                    "Một mũi tên biểu diễn được những thông tin gì trên bản đồ?"
+                </div>
+
+                <h4 class="font-black text-slate-800 text-2xl mb-4 bg-emerald-100 px-5 py-2 rounded-xl inline-block">4. Kiến thức cần hình thành chốt lại</h4>
+                <div class="bg-emerald-50 p-6 rounded-2xl border-2 border-emerald-200 text-xl text-emerald-900 font-bold leading-relaxed shadow-inner">
+                    <p class="mb-2">✔️ <b>Vectơ</b> là một đoạn thẳng có hướng.</p>
+                    <p class="mb-2">✔️ Vectơ có: Điểm đầu, Điểm cuối, Hướng, và Độ dài.</p>
+                    <p>✔️ Vectơ là công cụ Toán học chuyên biệt để biểu diễn các đại lượng có hướng trong Vật lý và thực tiễn.</p>
+                </div>
+
+                <div class="text-center mt-10">
+                    <button onclick="toggleTeacherMode()" class="bg-slate-800 hover:bg-slate-700 text-white px-10 py-4 rounded-2xl text-2xl font-black transition shadow-xl">Đóng Hướng Dẫn</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- TRẠNG THÁI & HỆ TỌA ĐỘ ---
+        let currentStep = 1;
+        // Quy ước: Hệ tọa độ màn hình SVG (y hướng xuống).
+        // Góc 0 độ (Đông - E) dọc trục +x.
+        // Góc -90 độ (Bắc - N) dọc trục -y.
+        // Góc 90 độ (Nam - S) dọc trục +y.
+        let windState = { speed: 18, angle: -45 }; // -45 là Đông Bắc. Nhưng đề bài Đông Nam -> Góc = 45.
+        // Chỉnh lại: 0: E, 90: S, 180: W, -90: N.
+        windState.angle = 45; // Đông Nam
+        
+        // Tỷ lệ mô phỏng: 1 km/h = 5 pixel chiều dài mũi tên.
+        const scaleFactor = 6; 
+
+        const sliderSpeed = document.getElementById('slider-speed');
+        const sliderAngle = document.getElementById('slider-angle');
+        const arrow = document.getElementById('wind-arrow');
+        const lblMag = document.getElementById('lbl-magnitude');
+
+        // --- HÀM TÍNH TOÁN & VẼ ---
+        function getDirectionName(deg) {
+            // Chuẩn hóa góc về [0, 360)
+            let a = (deg % 360 + 360) % 360;
+            // 0:E, 90:S, 180:W, 270:N
+            if (a >= 337.5 || a < 22.5) return "Đông";
+            if (a >= 22.5 && a < 67.5) return "Đông Nam";
+            if (a >= 67.5 && a < 112.5) return "Nam";
+            if (a >= 112.5 && a < 157.5) return "Tây Nam";
+            if (a >= 157.5 && a < 202.5) return "Tây";
+            if (a >= 202.5 && a < 247.5) return "Tây Bắc";
+            if (a >= 247.5 && a < 292.5) return "Bắc";
+            if (a >= 292.5 && a < 337.5) return "Đông Bắc";
+            return "Không xác định";
+        }
+
+        function updateWindArrow() {
+            let speed = windState.speed;
+            let angle = windState.angle;
+            
+            // Tính toán Điểm cuối (End Point)
+            let r = speed * scaleFactor;
+            let rad = angle * Math.PI / 180;
+            let ex = r * Math.cos(rad);
+            let ey = r * Math.sin(rad);
+
+            // Cập nhật SVG Mũi tên
+            arrow.setAttribute('x2', ex);
+            arrow.setAttribute('y2', ey);
+
+            // Cập nhật Nhãn Độ lớn trên mũi tên (Nằm giữa mũi tên)
+            lblMag.setAttribute('x', ex / 2);
+            lblMag.setAttribute('y', (ey / 2) - 15);
+            
+            // Cập nhật Góc quay của text để dễ đọc
+            let textAngle = angle;
+            if (textAngle > 90 && textAngle <= 270) textAngle -= 180;
+            else if (textAngle < -90 && textAngle >= -270) textAngle += 180;
+            lblMag.setAttribute('transform', `rotate(${textAngle} ${ex/2} ${ey/2})`);
+            lblMag.textContent = `${speed} km/h`;
+
+            // Cập nhật UI Texts
+            document.getElementById('val-speed').textContent = speed;
+            document.getElementById('wid-speed').innerHTML = `${speed} <span class="text-lg">km/h</span>`;
+            
+            let dirName = getDirectionName(angle);
+            document.getElementById('val-dir-txt').textContent = dirName;
+            document.getElementById('wid-dir').textContent = dirName;
+
+            // Cập nhật giải phẫu Vectơ (nếu đang hiển thị)
+            let endGroup = document.getElementById('vector-end-group');
+            endGroup.setAttribute('transform', `translate(${ex}, ${ey})`);
+        }
+
+        // Cập nhật từ Sliders (Hoạt động 2)
+        function handleSliderChange() {
+            if(currentStep !== 2) return;
+            windState.speed = parseInt(sliderSpeed.value);
+            windState.angle = parseInt(sliderAngle.value);
+            updateWindArrow();
+        }
+        sliderSpeed.addEventListener('input', handleSliderChange);
+        sliderAngle.addEventListener('input', handleSliderChange);
+
+        // Gọi từ các Nút So sánh (Hoạt động 1)
+        function setWind(angle, speed, type) {
+            windState.angle = angle;
+            windState.speed = speed;
+            
+            // Cập nhật Sliders (dù đang ẩn)
+            sliderAngle.value = angle;
+            sliderSpeed.value = speed;
+            
+            updateWindArrow();
+
+            // Hiệu ứng highlight mũi tên
+            arrow.setAttribute('stroke', '#f59e0b');
+            arrow.setAttribute('marker-end', 'url(#arrowhead-highlight)');
+            arrow.classList.add('glow-effect');
+            
+            setTimeout(() => {
+                arrow.setAttribute('stroke', '#2563eb');
+                arrow.setAttribute('marker-end', 'url(#arrowhead)');
+                arrow.classList.remove('glow-effect');
+            }, 500);
+        }
+
+        // --- QUẢN LÝ TIẾN TRÌNH (STEPS) ---
+        function activateStep(step) {
+            currentStep = step;
+            
+            // Xử lý Sidebar Cards
+            [1, 2, 3].forEach(i => {
+                let card = document.getElementById(`card-${i}`);
+                if(i < step) {
+                    card.classList.remove('hidden', 'inactive');
+                    card.classList.add('inactive'); // Làm mờ
+                } else if (i === step) {
+                    card.classList.remove('hidden', 'inactive');
+                }
+            });
+
+            // Nếu quay lại bước 2, khôi phục tương tác
+            if(step === 2) {
+                arrow.setAttribute('stroke', '#2563eb');
+                arrow.setAttribute('marker-end', 'url(#arrowhead)');
+                document.getElementById('vector-anatomy').classList.add('hidden', 'opacity-0');
+            }
+
+            // Cuộn sidebar xuống cuối
+            setTimeout(() => {
+                let sidebar = document.getElementById('sidebar');
+                sidebar.scrollTop = sidebar.scrollHeight;
+            }, 100);
+        }
+
+        function showConclusion() {
+            // Hiện phần mâu thuẫn
+            document.getElementById('final-conflict').classList.remove('hidden');
+            
+            // Hiện anatomy của vector trên SVG
+            document.getElementById('vector-anatomy').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('vector-anatomy').classList.remove('opacity-0');
+            }, 50);
+            
+            // Highlight mũi tên
+            arrow.setAttribute('stroke', '#f59e0b');
+            arrow.setAttribute('marker-end', 'url(#arrowhead-highlight)');
+            
+            // Đổi nút thành kết luận cuối
+            let btn = document.getElementById('btn-show-conclusion');
+            btn.textContent = "Công bố Định nghĩa Toán học";
+            btn.onclick = () => {
+                btn.classList.add('hidden');
+                document.getElementById('final-conclusion').classList.remove('hidden');
+                setTimeout(() => {
+                    let sidebar = document.getElementById('sidebar');
+                    sidebar.scrollTop = sidebar.scrollHeight;
+                }, 100);
+            };
+
+            setTimeout(() => {
+                let sidebar = document.getElementById('sidebar');
+                sidebar.scrollTop = sidebar.scrollHeight;
+            }, 100);
+        }
+
+        function resetModel() {
+            [1, 2, 3].forEach(i => document.getElementById(`card-${i}`).classList.add('hidden', 'inactive'));
+            
+            document.getElementById('final-conflict').classList.add('hidden');
+            document.getElementById('final-conclusion').classList.add('hidden');
+            document.getElementById('vector-anatomy').classList.add('hidden', 'opacity-0');
+            
+            let btn = document.getElementById('btn-show-conclusion');
+            btn.classList.remove('hidden');
+            btn.textContent = "Phát hiện khái niệm mới";
+            btn.onclick = showConclusion;
+
+            windState.angle = 45;
+            windState.speed = 18;
+            sliderAngle.value = 45;
+            sliderSpeed.value = 18;
+            updateWindArrow();
+            
+            arrow.setAttribute('stroke', '#2563eb');
+            arrow.setAttribute('marker-end', 'url(#arrowhead)');
+            arrow.classList.remove('glow-effect');
+
+            activateStep(1);
+            document.getElementById('sidebar').scrollTop = 0;
+        }
+
+        function toggleTeacherMode() {
+            const modal = document.getElementById('teacher-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        // --- SCRIPT TRÌNH CHIẾU TỰ ĐỘNG ---
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+        async function runScript() {
+            resetModel();
+            await sleep(1000);
+            
+            // HĐ1: Trình diễn các cơn gió
+            setWind(45, 18, 'A'); await sleep(2000);
+            setWind(45, 30, 'B'); await sleep(2500);
+            setWind(-135, 18, 'C'); await sleep(2500);
+            
+            // HĐ2: Khám phá Slider
+            activateStep(2);
+            await sleep(1000);
+            
+            // Kéo slider tốc độ
+            for(let v = 18; v <= 40; v+=2) {
+                sliderSpeed.value = v; sliderSpeed.dispatchEvent(new Event('input'));
+                await sleep(50);
+            }
+            await sleep(1000);
+            for(let v = 40; v >= 10; v-=2) {
+                sliderSpeed.value = v; sliderSpeed.dispatchEvent(new Event('input'));
+                await sleep(50);
+            }
+            sliderSpeed.value = 25; sliderSpeed.dispatchEvent(new Event('input'));
+            await sleep(1000);
+
+            // Kéo slider hướng
+            for(let a = -135; a <= 45; a+=5) {
+                sliderAngle.value = a; sliderAngle.dispatchEvent(new Event('input'));
+                await sleep(50);
+            }
+            await sleep(1500);
+
+            // HĐ3: Vấn đề trung tâm & Kết luận
+            activateStep(3);
+            await sleep(2000);
+            showConclusion();
+            await sleep(3000);
+            document.getElementById('btn-show-conclusion').click(); // Auto click kết luận
+        }
+
+        // Chức năng Fullscreen
+        document.getElementById('btnFullscreen').addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(e => console.log(e));
+                document.getElementById('txtFullscreen').innerHTML = '✖ Thu nhỏ';
+            } else {
+                document.exitFullscreen();
+                document.getElementById('txtFullscreen').innerHTML = '⛶ Toàn màn hình';
+            }
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) document.getElementById('txtFullscreen').innerHTML = '⛶ Toàn màn hình';
+        });
+
+        // INIT
+        window.onload = () => {
+            updateWindArrow();
+            activateStep(1);
+        };
+    </script>
+</body>
+</html>
