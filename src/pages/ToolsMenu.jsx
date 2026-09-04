@@ -37,6 +37,12 @@ const ToolsMenu = () => {
     'chung': [
       ...parsedTools.filter(m => m.grade === 'chung'),
       {
+        id: 'cong-cu-toan-hoc',
+        title: 'CÔNG CỤ TOÁN HỌC',
+        path: `/tools/view/external/${encodeURIComponent('https://www.congcutoanhoc.com/')}`,
+        isExternal: false
+      },
+      {
         id: 'mathda-calculator',
         title: 'MÁY TÍNH MATHDA',
         path: 'https://mathda.com/calculator/vi',

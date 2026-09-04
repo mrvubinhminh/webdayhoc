@@ -9,7 +9,7 @@ const ToolIframeWrapper = () => {
     const iframeRef = useRef(null);
     const [key, setKey] = useState(0);
 
-    const url = `/tools/${grade}/${encodeURIComponent(id)}.html`;
+    const url = grade === 'external' ? decodeURIComponent(id) : `/tools/${grade}/${encodeURIComponent(id)}.html`;
 
     const toggleFullScreen = () => {
         if (!document.fullscreenElement) {
