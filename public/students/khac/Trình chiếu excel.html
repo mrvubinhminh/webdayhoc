@@ -121,6 +121,13 @@
   .timer-pop-custom{display:flex;gap:6px;align-items:center;}
   .timer-pop-custom input{width:52px;border:1.5px solid var(--border);border-radius:8px;padding:5px;text-align:center;font-size:.85rem;}
 
+  .dice-pop{position:absolute;top:54px;right:16px;background:#fff;border-radius:14px;box-shadow:0 8px 30px rgba(20,30,60,.2);padding:14px;z-index:15;width:220px;}
+  .dice-pop-title{font-weight:800;font-size:.85rem;color:var(--ink-soft);margin:0 0 10px;}
+  .dice-pop-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+  .dice-pop-row label{font-size:.8rem;font-weight:700;color:var(--ink-soft);flex:none;}
+  .dice-pop-row input{flex:1;min-width:0;border:1.5px solid var(--border);border-radius:8px;padding:6px 8px;text-align:center;font-size:.9rem;}
+  .dice-pop .btn{width:100%;justify-content:center;}
+
   .present-body{flex:1;min-height:0;display:flex;flex-direction:row;overflow:hidden;}
   .slide-area{flex:1;min-width:0;overflow:auto;position:relative;padding:26px clamp(14px,2vw,32px) 30px;}
   .slide-area.compact .slide-content{font-size:calc(18px * var(--scale,1));}
@@ -197,6 +204,60 @@
   .nav-arrow:disabled{opacity:.35;cursor:not-allowed;}
   .slide-counter{padding:9px 16px;border-radius:999px;border:2px solid var(--border);font-weight:800;background:#fff;cursor:pointer;color:var(--ink);font-size:.85rem;white-space:nowrap;}
 
+  /* ---- dark presentation theme (nền đen, chữ trắng khi trình chiếu) ---- */
+  #presentScreen.theme-dark{background:#06080f;}
+  #presentScreen.theme-dark .toolbar{background:#10141f;box-shadow:0 2px 14px rgba(0,0,0,.5);}
+  #presentScreen.theme-dark .sep{background:#2a3348;}
+  #presentScreen.theme-dark .icon-btn{background:#1b2130;color:#c7d0e3;}
+  #presentScreen.theme-dark .icon-btn:hover{background:#252c40;}
+  #presentScreen.theme-dark .icon-btn.active{background:var(--blue1);color:#fff;}
+  #presentScreen.theme-dark .fontsize-btn{background:#1b2130;color:#c7d0e3;}
+  #presentScreen.theme-dark .color-dot{box-shadow:0 0 0 1.5px #2a3348;}
+  #presentScreen.theme-dark .color-dot.sel{box-shadow:0 0 0 2.5px #fff;}
+  #presentScreen.theme-dark .timer-btn{background:#241d10;border-color:#5c4218;color:#f0c979;}
+  #presentScreen.theme-dark .timer-btn.running{background:#0f2419;border-color:#215c38;color:#6fcf97;}
+  #presentScreen.theme-dark .timer-btn.low{background:#2a1414;border-color:#5c2323;color:#f08a8a;}
+  #presentScreen.theme-dark .exit-btn{background:#1b2130;border-color:#4a2323;color:#f08a8a;}
+  #presentScreen.theme-dark .exit-btn:hover{background:#2a1414;}
+
+  #presentScreen.theme-dark .slide-area{background:#06080f;}
+  #presentScreen.theme-dark .slide-content,
+  #presentScreen.theme-dark .q-stem{color:#eef1f7;}
+  #presentScreen.theme-dark .q-image{background:#fff;}
+
+  #presentScreen.theme-dark .opt{background:#161b29;border-color:#2a3348;box-shadow:none;}
+  #presentScreen.theme-dark .opt:hover{border-color:#3a4966;}
+  #presentScreen.theme-dark .opt.selected{border-color:var(--blue1);background:#132a4a;}
+  #presentScreen.theme-dark .opt-text{color:#eef1f7;}
+  #presentScreen.theme-dark .options.reveal .opt.correct{border-color:var(--green2);background:#0f2b1c;}
+  #presentScreen.theme-dark .options.reveal .opt.wrong{border-color:var(--red2);background:#331414;}
+
+  #presentScreen.theme-dark .stmt{background:#161b29;border-color:#2a3348;box-shadow:none;}
+  #presentScreen.theme-dark .stmt-text{color:#eef1f7;}
+  #presentScreen.theme-dark .ds-btn{background:#1b2130;border-color:#2a3348;color:#c7d0e3;}
+  #presentScreen.theme-dark .ds-btn:hover{border-color:#3a4966;}
+  #presentScreen.theme-dark .ds-btn.selected{border-color:var(--blue1);background:var(--blue1);color:#fff;}
+  #presentScreen.theme-dark .stmt.reveal .ds-btn.correct-answer{border-color:var(--green2);background:var(--green2);color:#fff;}
+  #presentScreen.theme-dark .stmt.reveal .ds-btn.wrong-selected{border-color:var(--red2);background:var(--red2);color:#fff;}
+
+  #presentScreen.theme-dark .ans-box{background:#161b29;border-color:#2a3348;color:#eef1f7;}
+  #presentScreen.theme-dark .ans-boxes.correct .ans-box{border-color:var(--green2);background:#0f2b1c;color:#6fcf97;}
+  #presentScreen.theme-dark .ans-boxes.wrong .ans-box{border-color:var(--red2);background:#331414;color:#f08a8a;}
+  #presentScreen.theme-dark .correct-note{color:#6fcf97;}
+
+  #presentScreen.theme-dark .bottombar{background:#10141f;box-shadow:0 -2px 14px rgba(0,0,0,.5);}
+  #presentScreen.theme-dark .nav-arrow{background:#1b2130;color:#c7d0e3;}
+  #presentScreen.theme-dark .slide-counter{background:#1b2130;border-color:#2a3348;color:#eef1f7;}
+
+  #presentScreen.theme-dark .calc-panel{background:#10141f;}
+  #presentScreen.theme-dark .calc-panel-head{background:#161b29;border-bottom-color:#2a3348;}
+  #presentScreen.theme-dark .calc-panel-title{color:#eef1f7;}
+  #presentScreen.theme-dark .calc-panel-link,
+  #presentScreen.theme-dark .calc-panel-close{background:#1b2130;color:#c7d0e3;}
+  #presentScreen.theme-dark .calc-panel-link:hover,
+  #presentScreen.theme-dark .calc-panel-close:hover{background:#252c40;}
+  #presentScreen.theme-dark .calc-frame-wrap{background:#161b29;}
+
   /* solution panel */
   .solution-panel{position:fixed;right:0;left:0;bottom:0;margin:0 auto;max-width:none;width:100%;height:50vh;max-height:100vh;background:#000;border-radius:18px 18px 0 0;box-shadow:0 -8px 34px rgba(0,0,0,.5);transform:translateY(105%);transition:transform .25s ease,height .05s linear;z-index:25;display:flex;flex-direction:column;overflow:hidden;}
   .solution-panel.open{transform:translateY(0);}
@@ -210,6 +271,14 @@
   .solution-body{padding:18px 14px 40px;overflow-y:auto;-webkit-overflow-scrolling:touch;font-size:2.3rem;line-height:1.6;color:#f2f2f5;width:100%;}
   .solution-body .katex{color:#f2f2f5;}
   .solution-body b{color:#fff;}
+
+  /* dice / random student picker overlay */
+  .dice-overlay{position:fixed;inset:0;background:rgba(6,8,15,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:50;opacity:0;pointer-events:none;transition:opacity .25s ease;}
+  .dice-overlay.show{opacity:1;pointer-events:auto;cursor:pointer;}
+  .dice-overlay-label{color:#fff;font-weight:800;font-size:clamp(1.1rem,2.6vw,1.7rem);letter-spacing:.4px;opacity:.9;}
+  .dice-overlay-number{font-weight:900;font-size:clamp(7rem,26vw,16rem);line-height:1;color:#ffd166;text-shadow:0 10px 40px rgba(0,0,0,.5);transform:scale(.82);transition:transform .2s cubic-bezier(.34,1.56,.64,1),color .06s linear;}
+  .dice-overlay.settled .dice-overlay-number{transform:scale(1);color:#6fcf97;}
+  .dice-overlay-hint{color:rgba(255,255,255,.55);font-size:.85rem;margin-top:6px;}
 
   /* jump modal */
   .jump-modal{position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;z-index:30;padding:20px;}
@@ -440,7 +509,10 @@
         <button class="icon-btn" id="btnClock" title="Đặt thời gian">🕐</button>
       </div>
       <button class="timer-btn" id="timerBtn">⏳ Bắt đầu (01:00)</button>
+      <button class="icon-btn" id="btnDice" title="Quay số ngẫu nhiên gọi học sinh">🎲</button>
       <button class="icon-btn" id="btnCalc" title="Máy tính MathDA">🧮</button>
+      <button class="icon-btn" id="btnBoard" title="Bảng viết">📝</button>
+      <button class="icon-btn" id="btnDarkTheme" title="Nền đen, chữ trắng">🌙</button>
       <button class="icon-btn" id="btnFullscreen" title="Toàn màn hình">⛶</button>
     </div>
     <button class="exit-btn" id="btnExit">✕ Thoát</button>
@@ -454,10 +526,10 @@
     <div class="calc-resizer" id="calcResizer" title="Kéo để thay đổi kích thước"></div>
     <div class="calc-panel" id="calcPanel">
       <div class="calc-panel-head">
-        <span class="calc-panel-title">🧮 Máy tính MathDA</span>
+        <span class="calc-panel-title" id="calcPanelTitle">🧮 Máy tính MathDA</span>
         <div class="calc-panel-actions">
           <a class="calc-panel-link" id="calcOpenNewTab" href="https://mathda.com/calculator/vi" target="_blank" rel="noopener" title="Mở trong tab mới">↗</a>
-          <button class="calc-panel-close" id="btnCalcClose" title="Đóng máy tính">✕</button>
+          <button class="calc-panel-close" id="btnCalcClose" title="Đóng">✕</button>
         </div>
       </div>
       <div class="calc-frame-wrap" id="calcFrameWrap">
@@ -483,6 +555,12 @@
       <button class="solution-close" id="solutionClose">✕</button>
     </div>
     <div class="solution-body" id="solutionBody"></div>
+  </div>
+
+  <div class="dice-overlay" id="diceOverlay">
+    <div class="dice-overlay-label">🎉 Số may mắn</div>
+    <div class="dice-overlay-number" id="diceOverlayNumber">--</div>
+    <div class="dice-overlay-hint">Chạm để đóng</div>
   </div>
 </div>
 
@@ -1501,17 +1579,28 @@ function clearCanvas(){
 }
 
 /* ============================================================
-   CALCULATOR PANEL (MathDA)
+   TOOL PANEL (Máy tính MathDA + Bảng viết) — dùng chung 1 khung bên phải
    ============================================================ */
-const CALC_URL = 'https://mathda.com/calculator/vi';
-// Kích thước gốc (px) mà trang MathDA hiển thị đúng CHỈ phần máy tính (không sidebar/Solver) —
-// dựa theo ảnh chụp màn hình thực tế của trang ở độ rộng hẹp. Ta cố định iframe ở kích thước
-// này rồi thu nhỏ bằng transform:scale() để luôn khớp gọn trong khung, không bị cắt xén.
-const CALC_IFRAME_W = 854;
-const CALC_IFRAME_H = 1166;
+const TOOL_DEFS = {
+  calc: {
+    title: '🧮 Máy tính MathDA',
+    url: 'https://mathda.com/calculator/vi',
+    // 'fit': trang chỉ hiển thị ĐÚNG phần máy tính (ẩn sidebar/Solver) ở kích thước gốc này —
+    // dựa theo ảnh chụp thực tế ở độ rộng hẹp — nên ta cố định iframe ở kích thước đó rồi thu
+    // nhỏ bằng transform:scale() để luôn khớp gọn trong khung, không bị cắt xén.
+    mode: 'fit', refW: 854, refH: 1166
+  },
+  board: {
+    title: '📝 Bảng viết',
+    url: 'https://boardtienluc.vercel.app/',
+    // 'fill': ứng dụng bảng tự responsive theo khung chứa, chỉ cần lấp đầy 100%.
+    mode: 'fill'
+  }
+};
 const CALC_PANEL_STORAGE_KEY = 'mathCalcPanelWidthPct';
 const CALC_PANEL_DEFAULT_PCT = 50;
-let calcOpen = false;
+let toolOpen = false;
+let activeTool = null; // 'calc' | 'board' | null
 
 function isDesktopSplit(){
   return window.matchMedia('(min-width:721px)').matches;
@@ -1527,14 +1616,27 @@ function saveCalcWidthPct(pct){
   try{ localStorage.setItem(CALC_PANEL_STORAGE_KEY, String(Math.round(pct*10)/10)); }catch(e){}
 }
 
-function toggleCalculator(){
-  calcOpen = !calcOpen;
+function openTool(key){
+  const def = TOOL_DEFS[key];
+  if(!def) return;
   const panel = document.getElementById('calcPanel');
   const resizer = document.getElementById('calcResizer');
   const area = document.getElementById('slideArea');
-  const btn = document.getElementById('btnCalc');
-  const desktop = isDesktopSplit();
-  if(calcOpen){
+  const iframe = document.getElementById('calcIframe');
+  const titleEl = document.getElementById('calcPanelTitle');
+  const linkEl = document.getElementById('calcOpenNewTab');
+
+  const switchingTool = (activeTool !== key);
+  activeTool = key;
+  titleEl.textContent = def.title;
+  linkEl.href = def.url;
+  if(switchingTool || !iframe.src || iframe.src==='about:blank'){
+    iframe.src = def.url;
+  }
+
+  if(!toolOpen){
+    toolOpen = true;
+    const desktop = isDesktopSplit();
     if(desktop){
       panel.style.flexBasis = getSavedCalcWidthPct()+'%';
       resizer.classList.add('active');
@@ -1544,28 +1646,33 @@ function toggleCalculator(){
     }
     panel.classList.add('open');
     area.classList.add('compact');
-    btn.classList.add('active');
-    loadCalcIframeOnce();
-  } else {
-    panel.style.flexBasis = '0%';
-    panel.classList.remove('open');
-    resizer.classList.remove('active');
-    area.classList.remove('compact');
-    btn.classList.remove('active');
   }
+  syncToolButtonsActiveState();
   animateCalcFit();
 }
-function closeCalculator(){
-  if(!calcOpen) return;
-  toggleCalculator();
+function closeToolPanel(){
+  if(!toolOpen) return;
+  toolOpen = false;
+  activeTool = null;
+  const panel = document.getElementById('calcPanel');
+  const resizer = document.getElementById('calcResizer');
+  const area = document.getElementById('slideArea');
+  panel.style.flexBasis = '0%';
+  panel.classList.remove('open');
+  resizer.classList.remove('active');
+  area.classList.remove('compact');
+  syncToolButtonsActiveState();
+  animateCalcFit();
 }
-function loadCalcIframeOnce(){
-  const iframe = document.getElementById('calcIframe');
-  if(iframe && (!iframe.src || iframe.src==='about:blank')){
-    iframe.src = CALC_URL;
-  }
+function toggleTool(key){
+  if(toolOpen && activeTool===key) closeToolPanel();
+  else openTool(key);
 }
-// Trong suốt thời gian trượt (mở/đóng) panel, liên tục cập nhật canvas vẽ + tỉ lệ máy tính
+function syncToolButtonsActiveState(){
+  document.getElementById('btnCalc').classList.toggle('active', toolOpen && activeTool==='calc');
+  document.getElementById('btnBoard').classList.toggle('active', toolOpen && activeTool==='board');
+}
+// Trong suốt thời gian trượt (mở/đóng) panel, liên tục cập nhật canvas vẽ + tỉ lệ khung công cụ
 // để chuyển động mượt, chuyên nghiệp thay vì giật cục ở khung hình cuối.
 function animateCalcFit(){
   const start = performance.now();
@@ -1581,19 +1688,28 @@ function fitCalcFrame(){
   const panel = document.getElementById('calcPanel');
   const wrap = document.getElementById('calcFrameWrap');
   const iframe = document.getElementById('calcIframe');
-  if(!panel || !wrap || !iframe || !panel.classList.contains('open')) return;
+  if(!panel || !wrap || !iframe || !panel.classList.contains('open') || !activeTool) return;
+  const def = TOOL_DEFS[activeTool];
+  if(def.mode === 'fill'){
+    iframe.style.transform = 'none';
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.left = '0';
+    iframe.style.top = '0';
+    return;
+  }
   const availW = wrap.clientWidth, availH = wrap.clientHeight;
   if(availW<=0 || availH<=0) return;
-  const scale = Math.min(availW/CALC_IFRAME_W, availH/CALC_IFRAME_H);
-  const scaledW = CALC_IFRAME_W*scale, scaledH = CALC_IFRAME_H*scale;
-  iframe.style.width = CALC_IFRAME_W+'px';
-  iframe.style.height = CALC_IFRAME_H+'px';
+  const scale = Math.min(availW/def.refW, availH/def.refH);
+  const scaledW = def.refW*scale, scaledH = def.refH*scale;
+  iframe.style.width = def.refW+'px';
+  iframe.style.height = def.refH+'px';
   iframe.style.transform = 'scale('+scale+')';
   iframe.style.left = Math.max(0,(availW-scaledW)/2)+'px';
   iframe.style.top = Math.max(0,(availH-scaledH)/2)+'px';
 }
 function syncCalcPanelForViewport(){
-  if(!calcOpen) return;
+  if(!toolOpen) return;
   const panel = document.getElementById('calcPanel');
   const resizer = document.getElementById('calcResizer');
   if(isDesktopSplit()){
@@ -1634,7 +1750,7 @@ function initCalcResizer(){
     document.removeEventListener('touchend', onUp);
   }
   function onDown(e){
-    if(!calcOpen || !isDesktopSplit()) return;
+    if(!toolOpen || !isDesktopSplit()) return;
     dragging = true;
     resizer.classList.add('dragging');
     body.classList.add('dragging');
@@ -1795,6 +1911,107 @@ function closeTimerPopover(){
 }
 
 /* ============================================================
+   11b. DICE / QUAY SỐ NGẪU NHIÊN GỌI HỌC SINH
+   ============================================================ */
+const DICE_RANGE_STORAGE_KEY = 'mathDiceRange';
+const DICE_SPIN_MS = 3000;   // thời gian hiệu ứng quay trước khi chốt số
+const DICE_SHOW_MS = 3000;   // thời gian giữ số hiển thị sau khi chốt
+const DICE_TICK_MS = 70;     // tốc độ đổi số khi đang quay
+const DICE_COLORS = ['#ffd166','#eb5757','#56ccf2','#a78bfa','#6fcf97','#f2994a'];
+let diceSpinInterval = null;
+let diceSettleTimeout = null;
+let diceHideTimeout = null;
+let diceSpinning = false;
+
+function getSavedDiceRange(){
+  try{
+    const obj = JSON.parse(localStorage.getItem(DICE_RANGE_STORAGE_KEY));
+    if(obj && Number.isFinite(obj.min) && Number.isFinite(obj.max) && obj.min>=1 && obj.max>=obj.min){
+      return obj;
+    }
+  }catch(e){}
+  return { min:1, max:48 };
+}
+function saveDiceRange(min, max){
+  try{ localStorage.setItem(DICE_RANGE_STORAGE_KEY, JSON.stringify({min:min, max:max})); }catch(e){}
+}
+function openDicePopover(){
+  closeDicePopover();
+  const range = getSavedDiceRange();
+  const pop = document.createElement('div');
+  pop.className = 'dice-pop';
+  pop.id = 'dicePop';
+  pop.innerHTML =
+    '<p class="dice-pop-title">🎲 Quay số gọi học sinh</p>'+
+    '<div class="dice-pop-row"><label>Từ</label><input type="number" min="1" id="diceMin" value="'+range.min+'"></div>'+
+    '<div class="dice-pop-row"><label>Đến</label><input type="number" min="1" id="diceMax" value="'+range.max+'"></div>'+
+    '<button class="btn btn-primary btn-sm" id="diceSpinBtn">🎲 Quay số</button>';
+  document.querySelector('.toolbar').appendChild(pop);
+  document.getElementById('diceSpinBtn').addEventListener('click', spinDice);
+  setTimeout(()=>{ document.addEventListener('click', outsideDicePop); }, 0);
+}
+function outsideDicePop(e){
+  const pop = document.getElementById('dicePop');
+  if(pop && !pop.contains(e.target) && e.target.id!=='btnDice'){
+    closeDicePopover();
+  }
+}
+function closeDicePopover(){
+  const pop = document.getElementById('dicePop');
+  if(pop) pop.remove();
+  document.removeEventListener('click', outsideDicePop);
+}
+function randomIntInRange(min, max){
+  return Math.floor(Math.random()*(max-min+1))+min;
+}
+function spinDice(){
+  if(diceSpinning) return;
+  let min = parseInt(document.getElementById('diceMin').value, 10);
+  let max = parseInt(document.getElementById('diceMax').value, 10);
+  if(!Number.isFinite(min)) min = 1;
+  if(!Number.isFinite(max)) max = 48;
+  if(min < 1) min = 1;
+  if(max < min) max = min;
+  saveDiceRange(min, max);
+  closeDicePopover();
+
+  diceSpinning = true;
+  const overlay = document.getElementById('diceOverlay');
+  const numEl = document.getElementById('diceOverlayNumber');
+  const hintEl = overlay.querySelector('.dice-overlay-hint');
+  overlay.classList.remove('settled');
+  hintEl.style.visibility = 'hidden';
+  requestAnimationFrame(()=>{ overlay.classList.add('show'); });
+
+  clearInterval(diceSpinInterval);
+  clearTimeout(diceSettleTimeout);
+  clearTimeout(diceHideTimeout);
+
+  diceSpinInterval = setInterval(()=>{
+    numEl.textContent = randomIntInRange(min, max);
+    numEl.style.color = DICE_COLORS[Math.floor(Math.random()*DICE_COLORS.length)];
+  }, DICE_TICK_MS);
+
+  diceSettleTimeout = setTimeout(()=>{
+    clearInterval(diceSpinInterval);
+    numEl.textContent = randomIntInRange(min, max);
+    numEl.style.color = '';
+    overlay.classList.add('settled');
+    hintEl.style.visibility = '';
+    diceHideTimeout = setTimeout(hideDiceOverlay, DICE_SHOW_MS);
+  }, DICE_SPIN_MS);
+}
+function hideDiceOverlay(){
+  clearInterval(diceSpinInterval);
+  clearTimeout(diceSettleTimeout);
+  clearTimeout(diceHideTimeout);
+  diceSpinning = false;
+  const overlay = document.getElementById('diceOverlay');
+  overlay.classList.remove('show');
+  overlay.classList.remove('settled');
+}
+
+/* ============================================================
    12. TOUCH SWIPE + KEYBOARD
    ============================================================ */
 function setupSwipe(){
@@ -1827,6 +2044,33 @@ function setupKeyboard(){
 }
 
 /* ============================================================
+   12b. DARK PRESENTATION THEME (nền đen, chữ trắng)
+   ============================================================ */
+const DARK_THEME_STORAGE_KEY = 'mathPresentDarkTheme';
+function isDarkThemeSaved(){
+  try{ return localStorage.getItem(DARK_THEME_STORAGE_KEY) === '1'; }catch(e){ return false; }
+}
+function saveDarkThemePref(on){
+  try{ localStorage.setItem(DARK_THEME_STORAGE_KEY, on ? '1' : '0'); }catch(e){}
+}
+function applyDarkTheme(on){
+  const screen = document.getElementById('presentScreen');
+  const btn = document.getElementById('btnDarkTheme');
+  if(!screen) return;
+  screen.classList.toggle('theme-dark', on);
+  if(btn){
+    btn.classList.toggle('active', on);
+    btn.textContent = on ? '☀️' : '🌙';
+    btn.title = on ? 'Nền sáng, chữ đen' : 'Nền đen, chữ trắng';
+  }
+}
+function toggleDarkTheme(){
+  const on = !document.getElementById('presentScreen').classList.contains('theme-dark');
+  applyDarkTheme(on);
+  saveDarkThemePref(on);
+}
+
+/* ============================================================
    13. WIRE UP PRESENTATION TOOLBAR
    ============================================================ */
 function initPresentScreen(){
@@ -1844,14 +2088,19 @@ function initPresentScreen(){
   document.getElementById('toolClear').addEventListener('click', clearCanvas);
   document.getElementById('btnClock').addEventListener('click', (e)=>{ e.stopPropagation(); openTimerPopover(); });
   document.getElementById('timerBtn').addEventListener('click', timerToggle);
+  document.getElementById('btnDice').addEventListener('click', (e)=>{ e.stopPropagation(); openDicePopover(); });
+  document.getElementById('diceOverlay').addEventListener('click', hideDiceOverlay);
   document.getElementById('btnFullscreen').addEventListener('click', ()=>{
     if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
     else document.exitFullscreen().catch(()=>{});
   });
   document.getElementById('btnExit').addEventListener('click', exitPresentation);
-  document.getElementById('btnCalc').addEventListener('click', toggleCalculator);
-  document.getElementById('btnCalcClose').addEventListener('click', closeCalculator);
+  document.getElementById('btnCalc').addEventListener('click', ()=>toggleTool('calc'));
+  document.getElementById('btnBoard').addEventListener('click', ()=>toggleTool('board'));
+  document.getElementById('btnCalcClose').addEventListener('click', closeToolPanel);
   initCalcResizer();
+  document.getElementById('btnDarkTheme').addEventListener('click', toggleDarkTheme);
+  applyDarkTheme(isDarkThemeSaved());
 
   document.getElementById('btnShowAnswer').addEventListener('click', toggleAnswer);
   document.getElementById('btnShowSolution').addEventListener('click', toggleSolution);
