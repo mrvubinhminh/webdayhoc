@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Sinh Thái Ngân Hàng Đề Thi - Thầy Vũ Tiến Lực</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- SheetJS (xlsx) for Excel generation -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+        .radio-active { border-color: #3b82f6; background-color: #eff6ff; }
+        .tab-active { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: bold; }
+        .tab-inactive { color: #6b7280; }
+        .tab-inactive:hover { color: #374151; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        const defaultJSON = `{\n  "questions": []\n  // Hãy Tải lên file LaTeX (.tex) của bạn, \n  // hoặc dán mã JSON vào đây!\n}`;
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('converter');
+            const [jsonInput, setJsonInput] = useState(defaultJSON);
+            const [status, setStatus] = useState({ type: '', message: '' });
+            const [exportType, setExportType] = useState('format1');
+            const [fileMeta, setFileMeta] = useState({ grade: 'Lop12', chapter: 'Chuong1', lesson: 'Bai1', customName: '' });
+            
+            const [tikzData, setTikzData] = useState([]);
+
+            // ==========================================
+            // LOGIC XỬ LÝ ĐỌC FILE LATEX (THUẬT TOÁN INDEX-BASED + BẮT LỖI NHẦM FILE)
+            // ==========================================
+            const handleFileUpload = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // Bắt lỗi chọn nhầm file .log, .pdf, .aux
+                const fileName = file.name.toLowerCase();
+                if (fileName.endsWith('.log')) {
+                    setStatus({ type: 'error', message: `⚠️ <b>Thầy Lực nhắc nhở:</b> Bạn vừa vô tình chọn nhầm file <code>${file.name}</code> (Đây là file nhật ký biên dịch của TeX, không chứa câu hỏi).<br>Vui lòng ấn tải lên lại và chọn đúng file có đuôi <b>.tex</b> nhé!` });
+                    e.target.value = null;
+                    return;
+                }
+                if (fileName.endsWith('.pdf') || fileName.endsWith('.aux')) {
+                    setStatus({ type: 'error', message: `⚠️ <b>Thầy Lực nhắc nhở:</b> File <code>${file.name}</code> không hợp lệ. Bạn cần chọn file mã nguồn có đuôi <b>.tex</b>!` });
+                    e.target.value = null;
+                    return;
+                }
+
+                setStatus({ type: 'info', message: 'Đang xử lý file bằng Động cơ Quét Chỉ Mục...' });
+                setTikzData([]); 
+                
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const rawText = event.target.result;
+                    if (!rawText || rawText.trim().length === 0) {
+                        setStatus({ type: 'error', message: '⚠️ Lỗi: File tải lên rỗng hoặc không đọc được. Vui lòng kiểm tra lại.' });
+                        return;
+                    }
+                    
+                    try {
+                        const parsedResult = parseLatex(rawText);
+                        setJsonInput(JSON.stringify({ questions: parsedResult.questions }, null, 2));
+                        setTikzData(parsedResult.tikzList);
+                        
+                        if (parsedResult.questions.length === 0) {
+                            let sample = rawText.substring(0, 150).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                            setStatus({ 
+                                type: 'error', 
+                                message: `⚠️ Hệ thống đã quét toàn bộ file nhưng KHÔNG TÌM THẤY môi trường \\begin{ex} hoặc \\begin{bt}.<br>
+                                          <b>Đây là 150 ký tự đầu tiên hệ thống đọc được từ file của bạn:</b><br>
+                                          <code class="bg-red-50 px-2 py-1 rounded text-red-600 block mt-2 text-xs border border-red-200">${sample}...</code><br>
+                                          <em>Mẹo: Đảm bảo file được lưu với chuẩn mã hóa UTF-8.</em>`
+                            });
+                        } else {
+                            let msg = `Tuyệt vời! Thầy đã đọc và chuyển đổi tự động <b>${parsedResult.questions.length}</b> câu hỏi từ file <code>${file.name}</code>.`;
+                            if (parsedResult.tikzList.length > 0) {
+                                msg += ` <br/>🚀 Phát hiện và bóc tách thành công <b>${parsedResult.tikzList.length} hình vẽ TikZ</b>!`;
+                            }
+                            setStatus({ type: 'success', message: msg });
+                        }
+                    } catch (error) {
+                        setStatus({ type: 'error', message: '⚠️ Lỗi khi phân tích file LaTeX: ' + error.message });
+                    }
+                };
+                reader.readAsText(file); // Default utf-8
+                e.target.value = null; 
+            };
+
+            const parseLatex = (rawText) => {
+                // Bước 1: Chuẩn hóa toàn bộ dấu xuống dòng về \n để xử lý an toàn
+                const text = rawText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+                
+                const questions = [];
+                let localTikzList = [];
+                let qCount = 1;
+                let tikzCounter = 1;
+
+                // Hàm trích xuất an toàn KHÔNG dùng Regex
+                const getBlocks = (envName) => {
+                    let blocks = [];
+                    let startTag = `\\begin{${envName}}`;
+                    let endTag = `\\end{${envName}}`;
+                    let idx = 0;
+                    while (true) {
+                        let startIdx = text.indexOf(startTag, idx);
+                        if (startIdx === -1) break;
+                        let endIdx = text.indexOf(endTag, startIdx);
+                        if (endIdx === -1) break; 
+                        blocks.push(text.substring(startIdx, endIdx + endTag.length));
+                        idx = endIdx + endTag.length;
+                    }
+                    return blocks;
+                };
+
+                const extractArguments = (str, keyword, count) => {
+                    let startIndex = str.indexOf(keyword);
+                    if (startIndex === -1) return null;
+                    
+                    let current = startIndex + keyword.length;
+                    let args = [];
+                    for (let i = 0; i < count; i++) {
+                        let braceStartIndex = str.indexOf('{', current);
+                        if (braceStartIndex === -1) break;
+                        
+                        let braceCount = 1;
+                        let startArg = braceStartIndex + 1;
+                        current = startArg;
+                        
+                        while (current < str.length && braceCount > 0) {
+                            if (str[current] === '{') braceCount++;
+                            else if (str[current] === '}') braceCount--;
+                            current++;
+                        }
+                        args.push(str.substring(startArg, current - 1));
+                    }
+                    return args.length === count ? args : null;
+                };
+
+                const extractAndReplaceTikz = (str, qId) => {
+                    if (!str) return "";
+                    let result = str;
+                    let startStr = "\\begin{tikzpicture}";
+                    let endStr = "\\end{tikzpicture}";
+                    let idx = 0;
+                    while (true) {
+                        let startIdx = result.indexOf(startStr, idx);
+                        if (startIdx === -1) break;
+                        let endIdx = result.indexOf(endStr, startIdx);
+                        if (endIdx === -1) break;
+                        
+                        let matchStart = startIdx;
+                        let matchEnd = endIdx + endStr.length;
+                        let tikzCode = result.substring(matchStart, matchEnd);
+
+                        localTikzList.push({ qId: qId, picNumber: tikzCounter, code: tikzCode });
+                        
+                        let placeholder = ` [Hình vẽ TikZ số ${tikzCounter}] `;
+                        result = result.substring(0, matchStart) + placeholder + result.substring(matchEnd);
+                        tikzCounter++;
+                        idx = matchStart + placeholder.length;
+                    }
+                    return result;
+                };
+
+                const cleanText = (str) => {
+                    if (!str) return "";
+                    let s = str.trim();
+                    s = s.replace(/\\begin\{itemchoice\}/g, '');
+                    s = s.replace(/\\end\{itemchoice\}/g, '');
+                    s = s.replace(/\\begin\{center\}/g, '');
+                    s = s.replace(/\\end\{center\}/g, '');
+                    s = s.replace(/\\itemch/g, '\\\\newline'); 
+                    s = s.replace(/\\break/g, '\\\\newline');
+                    s = s.replace(/\n/g, ' '); // Quan trọng: chống vỡ khung Excel
+                    s = s.replace(/\s+/g, ' ');
+                    s = s.replace(/(?:\\\\newline\s*)+/g, '\\\\newline ');
+                    s = s.replace(/^\\\\newline\s*/, '');
+                    s = s.replace(/\\\\newline\s*$/, '');
+                    return s.trim();
+                };
+
+                const exBlocks = getBlocks("ex");
+                const btBlocks = getBlocks("bt");
+
+                // ===================================
+                // QUÉT CÂU TRẮC NGHIỆM VÀ ĐÚNG/SAI
+                // ===================================
+                exBlocks.forEach(block => {
+                    let id = "Q_" + String(qCount++).padStart(3, '0');
+                    
+                    let firstLine = block.split('\n')[0];
+                    let topicMatch = firstLine.match(/\[(.*?)\]/);
+                    let topic = topicMatch ? topicMatch[1] : "Chưa phân loại";
+                    
+                    let lines = block.split('\n');
+                    let cleanBlock = lines.map(line => {
+                        let idx = line.indexOf('%');
+                        if (idx === -1) return line;
+                        let isEscaped = false;
+                        for(let i = idx - 1; i >= 0; i--) {
+                            if (line[i] === '\\') isEscaped = !isEscaped;
+                            else break;
+                        }
+                        if (isEscaped) return line;
+                        return line.substring(0, idx);
+                    }).join('\n');
+                    
+                    let solutionArgs = extractArguments(cleanBlock, '\\loigiai', 1);
+                    let rawSolution = solutionArgs ? solutionArgs[0] : "";
+                    rawSolution = extractAndReplaceTikz(rawSolution, id);
+                    let solution = cleanText(rawSolution);
+
+                    let qStart = cleanBlock.indexOf(']');
+                    if (qStart === -1 || qStart > cleanBlock.indexOf('\\choice')) {
+                        qStart = cleanBlock.indexOf('}') + 1;
+                    } else {
+                        qStart = qStart + 1;
+                    }
+                    
+                    let qEnd = cleanBlock.indexOf('\\choiceTF');
+                    if (qEnd === -1) qEnd = cleanBlock.indexOf('\\choice');
+                    if (qEnd === -1) qEnd = cleanBlock.indexOf('\\loigiai');
+                    if (qEnd === -1) qEnd = cleanBlock.indexOf('\\end{ex}');
+                    
+                    let rawQText = cleanBlock.substring(qStart, qEnd);
+                    rawQText = extractAndReplaceTikz(rawQText, id);
+                    let qText = cleanText(rawQText);
+
+                    if (cleanBlock.includes('\\choiceTF')) {
+                        let options = extractArguments(cleanBlock, '\\choiceTF', 4);
+                        let statements = [];
+                        if (options) {
+                            const labels = ['a', 'b', 'c', 'd'];
+                            options.forEach((opt, idx) => {
+                                let isTrue = opt.includes('\\True');
+                                let content = cleanText(opt.replace('\\True', ''));
+                                statements.push({ label: labels[idx], content: content, isTrue: isTrue });
+                            });
+                        }
+                        questions.push({ id, type: "true_false", topic, questionText: qText, imageUrl: null, statements, solution });
+                    
+                    } else if (cleanBlock.includes('\\choice')) {
+                        let optionsArgs = extractArguments(cleanBlock, '\\choice', 4);
+                        let options = [];
+                        let correctAnswer = "";
+                        if (optionsArgs) {
+                            const labels = ['A', 'B', 'C', 'D'];
+                            optionsArgs.forEach((opt, idx) => {
+                                let isCorrect = opt.includes('\\True');
+                                let rawOptContent = opt.replace('\\True', '');
+                                rawOptContent = extractAndReplaceTikz(rawOptContent, id);
+                                let content = cleanText(rawOptContent);
+                                options.push({ label: labels[idx], content: content });
+                                if (isCorrect) correctAnswer = labels[idx];
+                            });
+                        }
+                        questions.push({ id, type: "multiple_choice", topic, questionText: qText, imageUrl: null, options, correctAnswer, solution });
+                    }
+                });
+
+                // ===================================
+                // QUÉT CÂU TRẢ LỜI NGẮN (MÔI TRƯỜNG BT)
+                // ===================================
+                btBlocks.forEach(block => {
+                    let id = "Q_" + String(qCount++).padStart(3, '0');
+                    
+                    let firstLine = block.split('\n')[0];
+                    let topicMatch = firstLine.match(/\[(.*?)\]/);
+                    let topic = topicMatch ? topicMatch[1] : "Chưa phân loại";
+
+                    let cleanBlock = block.split('\n').map(line => {
+                        let idx = line.indexOf('%');
+                        if (idx === -1) return line;
+                        let isEscaped = false;
+                        for(let i = idx - 1; i >= 0; i--) {
+                            if (line[i] === '\\') isEscaped = !isEscaped;
+                            else break;
+                        }
+                        if (isEscaped) return line;
+                        return line.substring(0, idx);
+                    }).join('\n');
+
+                    let qStart = cleanBlock.indexOf(']');
+                    if (qStart === -1 || qStart > cleanBlock.indexOf('\\shortans')) {
+                        qStart = cleanBlock.indexOf('}') + 1;
+                    } else {
+                        qStart = qStart + 1;
+                    }
+
+                    let qEnd = cleanBlock.indexOf('\\shortans');
+                    if (qEnd === -1) qEnd = cleanBlock.indexOf('\\loigiai');
+                    if (qEnd === -1) qEnd = cleanBlock.indexOf('\\end{bt}');
+
+                    let rawQText = cleanBlock.substring(qStart, qEnd);
+                    rawQText = extractAndReplaceTikz(rawQText, id);
+                    let qText = cleanText(rawQText);
+
+                    let ansArgs = extractArguments(cleanBlock, '\\shortans', 1);
+                    let correctAnswer = ansArgs ? cleanText(extractAndReplaceTikz(ansArgs[0], id)) : "";
+
+                    let solutionArgs = extractArguments(cleanBlock, '\\loigiai', 1);
+                    let rawSolution = solutionArgs ? solutionArgs[0] : "";
+                    rawSolution = extractAndReplaceTikz(rawSolution, id);
+                    let solution = cleanText(rawSolution);
+
+                    questions.push({ id, type: "short_answer", topic, questionText: qText, imageUrl: null, correctAnswer, solution });
+                });
+
+                return { questions, tikzList: localTikzList };
+            };
+
+            const handleDownloadTikz = () => {
+                if (tikzData.length === 0) return;
+                
+                let content = "=== DANH SÁCH MÃ VẼ HÌNH TIKZ ===\n";
+                content += "Hệ sinh thái Ngân hàng đề thi - Thầy Vũ Tiến Lực\n";
+                content += "------------------------------------------------\n\n";
+
+                tikzData.forEach(item => {
+                    content += `--- [Hình vẽ TikZ số ${item.picNumber}] - (Thuộc câu hỏi: ${item.qId}) ---\n`;
+                    content += item.code + "\n\n";
+                });
+
+                const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.setAttribute("download", `HinhVe_TikZ_BocTach.txt`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            const mapAnswerToNumber = (ans) => {
+                if (!ans) return "";
+                const u = ans.toString().toUpperCase().trim();
+                return u === 'A' ? 1 : u === 'B' ? 2 : u === 'C' ? 3 : u === 'D' ? 4 : "";
+            };
+
+            const generateFileName = () => {
+                let baseName = fileMeta.grade !== 'Khac' ? `${fileMeta.grade}_` : "";
+                const safeChapter = fileMeta.chapter.replace(/[^a-zA-Z0-9-]/g, '');
+                const safeLesson = fileMeta.lesson.replace(/[^a-zA-Z0-9-]/g, '');
+                const safeCustom = fileMeta.customName.replace(/[^a-zA-Z0-9-_]/g, '');
+
+                if (safeChapter) baseName += `${safeChapter}_`;
+                if (safeLesson) baseName += `${safeLesson}_`;
+                if (safeCustom) baseName += `${safeCustom}_`;
+
+                let suffix = exportType === 'format2' ? "TracNghiem" : exportType === 'format3' ? "TraLoiNgan" : "GopChung";
+                return `${baseName || "DanhSachCauHoi_"}${suffix}.xlsx`;
+            };
+
+            const handleExport = () => {
+                setStatus({ type: '', message: '' });
+                try {
+                    const parsedData = JSON.parse(jsonInput);
+                    const questions = parsedData.questions;
+                    
+                    if (!questions || !Array.isArray(questions)) {
+                        throw new Error("Không tìm thấy mảng 'questions' hợp lệ.");
+                    }
+
+                    if (questions.length === 0) {
+                        setStatus({ type: 'error', message: '⚠️ Lỗi: Không có dữ liệu câu hỏi trong chuỗi JSON. Hãy đảm bảo bạn đã tải lên file .tex thành công!' });
+                        return;
+                    }
+
+                    let excelRows = [];
+                    let wscols = [];
+                    let sheetName = "";
+                    let fileName = generateFileName(); 
+
+                    if (exportType === 'format1') {
+                        sheetName = "NganHang_GopChung";
+                        excelRows = questions.map(q => {
+                            let typeLabel = q.type === 'multiple_choice' ? "Trắc nghiệm" : q.type === 'true_false' ? "Đúng/Sai" : q.type === 'short_answer' ? "Trả lời ngắn" : "Khác";
+                            let row = {
+                                "Mã Câu": q.id || "", "Loại": typeLabel, "Chuyên đề": q.topic || "", "Nội dung": q.questionText || "", "Link Ảnh": q.imageUrl || "",
+                                "Lựa chọn A / Mệnh đề a": "", "Lựa chọn B / Mệnh đề b": "", "Lựa chọn C / Mệnh đề c": "", "Lựa chọn D / Mệnh đề d": "",
+                                "Đáp án đúng": "", "Lời giải": q.solution || ""
+                            };
+                            if (q.type === 'multiple_choice' && q.options) {
+                                if(q.options[0]) row["Lựa chọn A / Mệnh đề a"] = q.options[0].content;
+                                if(q.options[1]) row["Lựa chọn B / Mệnh đề b"] = q.options[1].content;
+                                if(q.options[2]) row["Lựa chọn C / Mệnh đề c"] = q.options[2].content;
+                                if(q.options[3]) row["Lựa chọn D / Mệnh đề d"] = q.options[3].content;
+                                row["Đáp án đúng"] = q.correctAnswer || "";
+                            } else if (q.type === 'true_false' && q.statements) {
+                                let correctAnsArr = [];
+                                if(q.statements[0]) { row["Lựa chọn A / Mệnh đề a"] = q.statements[0].content; correctAnsArr.push(`a-${q.statements[0].isTrue ? 'Đúng' : 'Sai'}`); }
+                                if(q.statements[1]) { row["Lựa chọn B / Mệnh đề b"] = q.statements[1].content; correctAnsArr.push(`b-${q.statements[1].isTrue ? 'Đúng' : 'Sai'}`); }
+                                if(q.statements[2]) { row["Lựa chọn C / Mệnh đề c"] = q.statements[2].content; correctAnsArr.push(`c-${q.statements[2].isTrue ? 'Đúng' : 'Sai'}`); }
+                                if(q.statements[3]) { row["Lựa chọn D / Mệnh đề d"] = q.statements[3].content; correctAnsArr.push(`d-${q.statements[3].isTrue ? 'Đúng' : 'Sai'}`); }
+                                row["Đáp án đúng"] = correctAnsArr.join(", ");
+                            } else if (q.type === 'short_answer') {
+                                row["Đáp án đúng"] = q.correctAnswer || "";
+                            }
+                            return row;
+                        });
+                        wscols = [{wch: 12}, {wch: 15}, {wch: 15}, {wch: 50}, {wch: 10}, {wch: 30}, {wch: 30}, {wch: 30}, {wch: 30}, {wch: 15}, {wch: 50}];
+                    
+                    } else if (exportType === 'format2') {
+                        sheetName = "TracNghiem";
+                        const mcQuestions = questions.filter(q => q.type === 'multiple_choice');
+                        
+                        if (mcQuestions.length === 0) {
+                            setStatus({ type: 'error', message: '⚠️ Lỗi Xuất Dữ liệu: File của bạn KHÔNG CÓ câu Trắc nghiệm nào (multiple_choice). Vui lòng chọn Dạng xuất Excel khác!' });
+                            return;
+                        }
+
+                        excelRows = mcQuestions.map(q => ({
+                            "Nội dung": q.questionText || "", "A": q.options?.[0]?.content || "", "B": q.options?.[1]?.content || "",
+                            "C": q.options?.[2]?.content || "", "D": q.options?.[3]?.content || "", "Kí hiệu Đ/A": mapAnswerToNumber(q.correctAnswer),
+                            "Lời giải": q.solution || "", "Link ảnh": q.imageUrl || ""
+                        }));
+                        wscols = [{wch: 50}, {wch: 30}, {wch: 30}, {wch: 30}, {wch: 30}, {wch: 15}, {wch: 50}, {wch: 15}];
+                    
+                    } else if (exportType === 'format3') {
+                        sheetName = "TraLoiNgan";
+                        const saQuestions = questions.filter(q => q.type === 'short_answer');
+                        
+                        if (saQuestions.length === 0) {
+                            setStatus({ type: 'error', message: '⚠️ Lỗi Xuất Dữ liệu: File của bạn KHÔNG CÓ câu Trả lời ngắn nào (short_answer). Vui lòng chọn Dạng xuất Excel khác!' });
+                            return;
+                        }
+
+                        excelRows = saQuestions.map(q => ({
+                            "Nội dung câu hỏi": q.questionText || "",
+                            "Lời giải chi tiết": (q.solution || "") + (q.correctAnswer ? `\\\\newline Đáp án cuối cùng: ${q.correctAnswer}` : ""),
+                            "Link ảnh": q.imageUrl || ""
+                        }));
+                        wscols = [{wch: 60}, {wch: 70}, {wch: 20}];
+                    }
+
+                    const worksheet = XLSX.utils.json_to_sheet(excelRows);
+                    worksheet['!cols'] = wscols;
+                    const workbook = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+                    XLSX.writeFile(workbook, fileName);
+                    
+                    setStatus({ type: 'success', message: `🎉 Xuất sắc! Thầy đã tải xuống thành công file: <b>${fileName}</b>` });
+
+                } catch (error) {
+                    setStatus({ type: 'error', message: '⚠️ Lỗi hệ thống: ' + error.message });
+                }
+            };
+
+            return (
+                <div className="min-h-screen p-4 md:p-8">
+                    <div className="max-w-7xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden flex flex-col md:h-[90vh]">
+                        {/* Header */}
+                        <div className="bg-blue-700 p-6 text-white text-center flex-shrink-0">
+                            <h1 className="text-2xl font-bold mb-2">Hệ Sinh Thái Ngân Hàng Đề Thi - Thầy Lực (v11)</h1>
+                            <p className="text-blue-100 text-sm">Cập nhật: Mở khóa chọn mọi file (chống lỗi mờ file trên hệ điều hành).</p>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-6 flex-grow overflow-auto flex flex-col md:flex-row gap-6">
+                            
+                            {/* CỘT TRÁI: Nhập Dữ liệu */}
+                            <div className="md:w-5/12 flex flex-col h-full border-r border-gray-100 pr-4">
+                                <div className="flex justify-between items-end mb-2">
+                                    <label className="font-semibold text-gray-700 flex items-center">
+                                        <svg className="w-5 h-5 mr-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                                        Dữ liệu nguồn (JSON):
+                                    </label>
+                                    
+                                    {/* NÚT UPLOAD FILE LATEX - Đã XÓA THUỘC TÍNH ACCEPT ĐỂ KHÔNG BỊ MỜ FILE */}
+                                    <label htmlFor="tex-upload" className="cursor-pointer bg-green-100 hover:bg-green-200 text-green-700 text-sm font-bold py-1.5 px-3 rounded-md flex items-center transition shadow-sm border border-green-300">
+                                        <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                        Tải lên File .tex
+                                    </label>
+                                    <input id="tex-upload" type="file" className="hidden" onChange={handleFileUpload} />
+                                </div>
+                                
+                                <textarea 
+                                    className="w-full flex-grow p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none custom-scrollbar text-sm font-mono bg-gray-50 min-h-[250px]"
+                                    value={jsonInput}
+                                    onChange={(e) => setJsonInput(e.target.value)}
+                                    spellCheck="false"
+                                ></textarea>
+
+                                {/* PANEL HIỂN THỊ TRẠNG THÁI TIKZ */}
+                                {tikzData.length > 0 && (
+                                    <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg flex justify-between items-center shadow-inner">
+                                        <div>
+                                            <span className="font-bold text-purple-800 block text-sm flex items-center">
+                                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                                Đã bóc tách {tikzData.length} mã TikZ
+                                            </span>
+                                            <span className="text-xs text-purple-600">Đã thay thế bằng thẻ [Hình vẽ TikZ số ...]</span>
+                                        </div>
+                                        <button onClick={handleDownloadTikz} className="bg-purple-600 hover:bg-purple-700 text-white text-sm font-bold py-2 px-3 rounded shadow transition">
+                                            Tải File .txt
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* CỘT PHẢI: Xuất Excel */}
+                            <div className="md:w-7/12 flex flex-col h-full pl-2">
+                                {/* Metadata */}
+                                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                                    <h3 className="text-sm font-bold text-blue-800 mb-3">Phân loại & Đặt tên File (Metadata)</h3>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                                        <div>
+                                            <label className="block text-gray-600 mb-1 text-xs">Khối lớp</label>
+                                            <select className="w-full p-2 border border-blue-300 rounded" value={fileMeta.grade} onChange={e => setFileMeta({...fileMeta, grade: e.target.value})}>
+                                                <option value="Lop9">Lớp 9</option><option value="Lop10">Lớp 10</option><option value="Lop11">Lớp 11</option><option value="Lop12">Lớp 12</option><option value="Khac">Khác (Bỏ qua)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-gray-600 mb-1 text-xs">Chương</label>
+                                            <input type="text" placeholder="Chuong1" className="w-full p-2 border border-blue-300 rounded" value={fileMeta.chapter} onChange={e => setFileMeta({...fileMeta, chapter: e.target.value})} />
+                                        </div>
+                                        <div>
+                                            <label className="block text-gray-600 mb-1 text-xs">Bài</label>
+                                            <input type="text" placeholder="Bai1" className="w-full p-2 border border-blue-300 rounded" value={fileMeta.lesson} onChange={e => setFileMeta({...fileMeta, lesson: e.target.value})} />
+                                        </div>
+                                        <div>
+                                            <label className="block text-gray-600 mb-1 text-xs">Thêm thông tin</label>
+                                            <input type="text" placeholder="KiemTra" className="w-full p-2 border border-blue-300 rounded" value={fileMeta.customName} onChange={e => setFileMeta({...fileMeta, customName: e.target.value})} />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Formats */}
+                                <div className="mb-4">
+                                    <label className="font-semibold text-gray-700 mb-2 block">Cấu trúc xuất Excel:</label>
+                                    <div className="space-y-2 text-sm">
+                                        <div onClick={() => setExportType('format1')} className={`p-3 rounded-lg border-2 cursor-pointer flex items-center ${exportType === 'format1' ? 'radio-active' : 'border-gray-200'}`}>
+                                            <input type="radio" checked={exportType === 'format1'} readOnly className="mr-3 text-blue-600 w-4 h-4" />
+                                            <div><span className="font-bold text-gray-800 block">Dạng 1: Đề Hỗn Hợp</span><span className="text-gray-500 text-xs">Gộp 3 loại câu (Trắc nghiệm, Đ/S, Trả lời ngắn).</span></div>
+                                        </div>
+                                        <div onClick={() => setExportType('format2')} className={`p-3 rounded-lg border-2 cursor-pointer flex items-center ${exportType === 'format2' ? 'radio-active' : 'border-gray-200'}`}>
+                                            <input type="radio" checked={exportType === 'format2'} readOnly className="mr-3 text-blue-600 w-4 h-4" />
+                                            <div><span className="font-bold text-gray-800 block">Dạng 2: Dành riêng Trắc Nghiệm</span><span className="text-gray-500 text-xs">Quy ước đáp án dạng số (1=A, 2=B, 3=C, 4=D).</span></div>
+                                        </div>
+                                        <div onClick={() => setExportType('format3')} className={`p-3 rounded-lg border-2 cursor-pointer flex items-center ${exportType === 'format3' ? 'radio-active' : 'border-gray-200'}`}>
+                                            <input type="radio" checked={exportType === 'format3'} readOnly className="mr-3 text-blue-600 w-4 h-4" />
+                                            <div><span className="font-bold text-gray-800 block">Dạng 3: Dành riêng Trả Lời Ngắn</span><span className="text-gray-500 text-xs">Cấu trúc 3 cột: Câu hỏi | Lời giải | Link ảnh.</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-auto">
+                                    {status.message && (
+                                        <div className={`mb-3 p-3 rounded text-sm flex items-start ${status.type === 'success' ? 'bg-green-100 text-green-800' : status.type === 'info' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}>
+                                            <span dangerouslySetInnerHTML={{__html: status.message}}></span>
+                                        </div>
+                                    )}
+
+                                    <button onClick={handleExport} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-lg shadow-md flex justify-center items-center text-lg">
+                                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                        Tải xuống File Excel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
