@@ -1,0 +1,1888 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Trình chiếu Bài tập Toán</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<style>
+  :root{
+    --page-bg:#eef2f9;
+    --ink:#16233f;
+    --ink-soft:#4a5578;
+    --border:#e2e8f0;
+    --orange1:#f2994a; --orange2:#f2c94c;
+    --green1:#1e8449; --green2:#27ae60; --green3:#6fcf97;
+    --red1:#c0392b; --red2:#eb5757;
+    --blue1:#2f80ed; --blue2:#56ccf2;
+    --violet1:#7c3aed; --violet2:#a78bfa;
+    --teal1:#0d9488; --teal2:#34d399;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
+    background:var(--page-bg);
+    color:var(--ink);
+    -webkit-tap-highlight-color:transparent;
+  }
+  button{font-family:inherit;}
+  [hidden]{display:none !important;}
+  img{max-width:100%;}
+
+  /* ---------- generic buttons ---------- */
+  .btn{border:none;border-radius:999px;padding:9px 18px;font-weight:700;font-size:.92rem;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:6px;}
+  .btn:active{transform:scale(.97);}
+  .btn-primary{background:linear-gradient(135deg,var(--blue1),var(--blue2));color:#fff;box-shadow:0 4px 14px rgba(47,128,237,.3);}
+  .btn-ghost{background:#f1f4fa;color:var(--ink-soft);}
+  .btn-ghost:hover{background:#e4eaf7;}
+  .btn-outline{background:#fff;color:var(--ink-soft);border:1.5px solid var(--border);}
+  .btn-outline:hover{border-color:#bcd4f7;}
+  .btn-red{background:#fff;color:var(--red2);border:1.5px solid #f2b8b8;}
+  .btn-red:hover{background:#fdeded;}
+  .btn-sm{padding:6px 13px;font-size:.8rem;}
+
+  /* ================= SETUP SCREEN ================= */
+  #setupScreen{min-height:100vh;}
+  .setup-wrap{max-width:980px;margin:0 auto;padding:28px 16px 140px;}
+  .setup-header{text-align:center;margin-bottom:26px;}
+  .setup-header h1{font-size:1.7rem;margin:0 0 6px;font-weight:800;}
+  .setup-header p{color:var(--ink-soft);margin:0;font-size:.95rem;}
+  .setup-toprow{display:flex;justify-content:flex-end;gap:8px;max-width:980px;margin:0 auto 14px;padding:0 16px;}
+
+  .global-card{background:#fff;border-radius:18px;padding:18px 20px;margin-bottom:20px;box-shadow:0 4px 20px rgba(20,30,60,.06);}
+  .auto-upload-card{border:2px dashed var(--blue1);background:#f5f9ff;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;padding:26px 20px;transition:background .15s,border-color .15s;}
+  .auto-upload-card.dragover{background:#e7f0ff;border-color:var(--blue1);}
+  .auto-upload-icon{font-size:2.1rem;line-height:1;}
+  .auto-upload-text b{display:block;font-size:1.05rem;margin-bottom:4px;color:var(--ink);}
+  .auto-upload-text .hint{margin:0;max-width:560px;}
+  .auto-upload-result{width:100%;max-width:640px;text-align:left;}
+  .auto-result-line{font-size:.84rem;padding:7px 12px;border-radius:8px;margin-top:6px;font-weight:600;}
+  .auto-result-line.ok{background:#eafaf0;color:var(--green1);}
+  .auto-result-line.warn{background:#fff7ec;color:#b06a12;}
+  .global-row{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;}
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field label{font-size:.8rem;font-weight:700;color:var(--ink-soft);}
+  .field input[type=text]{border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;font-size:.9rem;min-width:220px;}
+  .field select{border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;font-size:.9rem;}
+
+  .part-card{background:#fff;border-radius:20px;padding:20px 22px;margin-bottom:20px;box-shadow:0 4px 20px rgba(20,30,60,.06);border-top:6px solid #ccc;}
+  .part-card.pI{border-top-color:var(--blue1);}
+  .part-card.pII{border-top-color:var(--violet1);}
+  .part-card.pIII{border-top-color:var(--teal1);}
+  .part-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:6px;}
+  .part-title-wrap{display:flex;align-items:center;gap:10px;}
+  .part-check{width:20px;height:20px;accent-color:var(--blue1);cursor:pointer;}
+  .part-title{font-weight:800;font-size:1.1rem;}
+  .badge-count{background:#eef2f9;color:var(--ink-soft);padding:4px 12px;border-radius:999px;font-size:.8rem;font-weight:700;white-space:nowrap;}
+  .part-desc{color:var(--ink-soft);font-size:.82rem;margin:2px 0 12px;}
+  .part-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+  .paste-area{width:100%;min-height:80px;border-radius:12px;border:1.5px solid var(--border);padding:10px 12px;font-family:'SFMono-Regular',Consolas,monospace;font-size:.78rem;resize:vertical;}
+  .hint{font-size:.76rem;color:#8b95ab;margin-top:6px;line-height:1.5;}
+  .preview-wrap{overflow-x:auto;margin-top:12px;}
+  table.preview-table{width:100%;border-collapse:collapse;font-size:.78rem;}
+  table.preview-table th,table.preview-table td{padding:6px 8px;border-bottom:1px solid var(--border);text-align:left;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  table.preview-table th{color:var(--ink-soft);font-weight:700;background:#f7f9fc;}
+  input[type=file]{display:none;}
+
+  .start-bar{position:fixed;left:0;right:0;bottom:0;background:#fff;box-shadow:0 -4px 20px rgba(20,30,60,.1);padding:14px 16px;display:flex;justify-content:center;align-items:center;gap:14px;z-index:10;}
+  .start-bar .total{font-weight:700;color:var(--ink-soft);font-size:.9rem;}
+  .btn-start{background:linear-gradient(135deg,#2f80ed,#43e97b);color:#fff;padding:14px 30px;font-size:1.05rem;box-shadow:0 6px 20px rgba(47,128,237,.35);}
+
+  /* ================= PRESENT SCREEN ================= */
+  #presentScreen{position:fixed;inset:0;background:#fff;display:flex;flex-direction:column;z-index:1;}
+  .accent-bar{height:5px;background:linear-gradient(90deg,#4facfe,#43e97b);flex:none;}
+  .toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 16px;background:#fff;box-shadow:0 2px 10px rgba(20,30,60,.08);flex-wrap:wrap;flex:none;position:relative;z-index:6;}
+  .part-pill{padding:8px 18px;border-radius:999px;color:#fff;font-weight:800;font-size:.88rem;letter-spacing:.3px;white-space:nowrap;}
+  .part-pill.I{background:linear-gradient(90deg,var(--blue1),var(--blue2));}
+  .part-pill.II{background:linear-gradient(90deg,var(--violet1),var(--violet2));}
+  .part-pill.III{background:linear-gradient(90deg,var(--teal1),var(--teal2));}
+  .tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;}
+  .sep{width:1px;height:22px;background:var(--border);margin:0 2px;}
+  .icon-btn{width:36px;height:36px;border-radius:10px;background:#f1f4fa;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.02rem;color:#38507a;flex:none;}
+  .icon-btn:hover{background:#e4eaf7;}
+  .icon-btn.active{background:var(--blue1);color:#fff;}
+  .fontsize-btn{width:32px;height:32px;border-radius:10px;background:#f1f4fa;border:none;font-weight:800;cursor:pointer;color:#38507a;flex:none;font-size:.85rem;}
+  .color-dot{width:22px;height:22px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1.5px var(--border);cursor:pointer;padding:0;flex:none;}
+  .color-dot.sel{box-shadow:0 0 0 2.5px var(--ink);}
+  .timer-btn{display:flex;align-items:center;gap:6px;background:#fff7ec;border:1.5px solid #f4c98a;color:#b06a12;padding:7px 15px;border-radius:999px;font-weight:700;cursor:pointer;font-size:.85rem;white-space:nowrap;}
+  .timer-btn.running{background:#eafaf0;border-color:#8fe0b3;color:var(--green1);}
+  .timer-btn.low{background:#fdeaea;border-color:#f0a3a3;color:var(--red1);animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.55;}}
+  .exit-btn{background:#fff;border:1.5px solid #f2b8b8;color:var(--red2);padding:8px 16px;border-radius:999px;font-weight:700;cursor:pointer;font-size:.85rem;white-space:nowrap;}
+  .exit-btn:hover{background:#fdeded;}
+
+  .timer-pop{position:absolute;top:54px;right:16px;background:#fff;border-radius:14px;box-shadow:0 8px 30px rgba(20,30,60,.2);padding:14px;z-index:15;width:230px;}
+  .timer-pop-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;}
+  .timer-pop-grid button{border:1.5px solid var(--border);background:#f7f9fc;border-radius:8px;padding:6px 4px;font-size:.78rem;font-weight:700;cursor:pointer;color:var(--ink);}
+  .timer-pop-grid button:hover{border-color:var(--blue1);}
+  .timer-pop-custom{display:flex;gap:6px;align-items:center;}
+  .timer-pop-custom input{width:52px;border:1.5px solid var(--border);border-radius:8px;padding:5px;text-align:center;font-size:.85rem;}
+
+  .present-body{flex:1;min-height:0;display:flex;flex-direction:row;overflow:hidden;}
+  .slide-area{flex:1;min-width:0;overflow:auto;position:relative;padding:26px clamp(14px,2vw,32px) 30px;}
+  .slide-area.compact .slide-content{font-size:calc(18px * var(--scale,1));}
+  .draw-canvas{position:absolute;left:0;top:0;pointer-events:none;touch-action:none;z-index:4;}
+  .draw-canvas.drawmode{pointer-events:auto;cursor:crosshair;}
+
+  .calc-resizer{flex:none;width:0;position:relative;z-index:5;}
+  .calc-resizer.active{width:10px;margin:0 -5px;cursor:col-resize;}
+  .calc-resizer.active::after{content:'';position:absolute;top:0;bottom:0;left:50%;width:4px;margin-left:-2px;background:var(--border);border-radius:2px;transition:background .15s ease;}
+  .calc-resizer.active:hover::after,.calc-resizer.active.dragging::after{background:var(--blue1);}
+  .present-body.dragging{cursor:col-resize;}
+  .present-body.dragging *{user-select:none;}
+  .present-body.dragging .calc-panel{transition:none;}
+
+  .calc-panel{display:flex;flex-direction:column;flex:0 0 0%;min-width:0;min-height:0;overflow:hidden;border-left:2px solid transparent;background:#e9ebef;transition:flex-basis .32s cubic-bezier(.4,0,.2,1),border-color .32s ease;}
+  .calc-panel.open{border-left-color:var(--border);}
+  .calc-panel-head{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#fff;border-bottom:1px solid var(--border);flex:none;white-space:nowrap;}
+  .calc-panel-title{font-weight:800;color:var(--ink);font-size:.92rem;}
+  .calc-panel-actions{display:flex;align-items:center;gap:8px;}
+  .calc-panel-link{width:30px;height:30px;border-radius:8px;background:#f1f4fa;display:flex;align-items:center;justify-content:center;color:#38507a;text-decoration:none;font-size:.95rem;}
+  .calc-panel-link:hover{background:#e4eaf7;}
+  .calc-panel-close{width:30px;height:30px;border-radius:8px;background:#f1f4fa;border:none;cursor:pointer;color:#38507a;font-size:.95rem;}
+  .calc-panel-close:hover{background:#e4eaf7;}
+  .calc-frame-wrap{position:relative;flex:1;overflow:hidden;background:#e9ebef;}
+  #calcIframe{position:absolute;top:0;left:0;border:0;background:#eef0dc;transform-origin:top left;}
+
+  .slide-content{max-width:none;width:100%;margin:0 auto;font-size:calc(32px * var(--scale,1));line-height:1.55;position:relative;z-index:1;}
+  .q-head{display:flex;gap:12px;align-items:flex-start;margin-bottom:18px;}
+  .q-badge{flex:none;background:linear-gradient(135deg,var(--orange1),var(--orange2));color:#fff;font-weight:800;padding:7px 14px;border-radius:12px;font-size:1em;box-shadow:0 3px 10px rgba(242,153,74,.35);}
+  .q-stem{font-weight:700;font-size:1.15em;line-height:1.5;color:var(--ink);padding-top:5px;}
+
+  .q-body{display:flex;gap:22px;align-items:stretch;}
+  .q-main{flex:1;min-width:0;}
+  .q-image-wrap{flex:0 0 40%;max-width:460px;min-height:220px;}
+  .q-image{width:100%;height:100%;object-fit:contain;border-radius:14px;margin:0;border:1px solid var(--border);display:block;background:#fff;}
+
+  .options{display:grid;gap:10px;}
+  .opt{display:flex;gap:12px;align-items:center;background:#fff;border:2px solid var(--border);border-radius:14px;padding:10px 16px;cursor:pointer;transition:.15s;box-shadow:0 2px 10px rgba(20,30,60,.04);}
+  .opt:hover{border-color:#bcd4f7;}
+  .opt.selected{border-color:var(--blue1);background:#eef5ff;}
+  .opt-badge{flex:none;width:1.9em;height:1.9em;border-radius:50%;background:linear-gradient(135deg,var(--green1),var(--green3));color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:1em;}
+  .opt-text{font-size:1.04em;color:var(--ink);font-weight:600;}
+  .options.reveal .opt.correct{border-color:var(--green2);background:#eafaf0;}
+  .options.reveal .opt.correct .opt-badge{background:linear-gradient(135deg,var(--green1),var(--green2));}
+  .options.reveal .opt.wrong{border-color:var(--red2);background:#fdeded;}
+  .options.reveal .opt.wrong .opt-badge{background:linear-gradient(135deg,var(--red1),var(--red2));}
+  .options.reveal .opt:not(.correct):not(.wrong){opacity:.55;}
+
+  .statements{display:flex;flex-direction:column;gap:10px;}
+  .stmt{display:flex;gap:12px;align-items:center;background:#fff;border:2px solid var(--border);border-radius:14px;padding:10px 16px;box-shadow:0 2px 10px rgba(20,30,60,.04);}
+  .stmt-label{flex:none;font-weight:800;color:var(--violet1);font-size:1em;}
+  .stmt-text{flex:1;font-size:1em;font-weight:600;color:var(--ink);}
+  .ds-buttons{display:flex;gap:6px;flex:none;}
+  .ds-btn{width:2.2em;height:1.8em;border-radius:9px;border:2px solid var(--border);background:#fff;font-weight:800;cursor:pointer;color:#38507a;font-size:1em;}
+  .ds-btn:hover{border-color:#bcd4f7;}
+  .ds-btn.selected{border-color:var(--blue1);background:var(--blue1);color:#fff;}
+  .stmt.reveal .ds-btn.correct-answer{border-color:var(--green2);background:var(--green2);color:#fff;}
+  .stmt.reveal .ds-btn.wrong-selected{border-color:var(--red2);background:var(--red2);color:#fff;}
+
+  .short-wrap{margin-top:4px;}
+  .ans-boxes{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+  .ans-box{width:1.7em;height:1.9em;border:2px solid var(--border);border-radius:10px;text-align:center;font-size:1.15em;font-weight:800;background:#fff;color:var(--ink);font-family:inherit;}
+  .ans-box:focus{outline:none;border-color:var(--blue1);}
+  .ans-boxes.correct .ans-box{border-color:var(--green2);background:#eafaf0;color:var(--green1);}
+  .ans-boxes.wrong .ans-box{border-color:var(--red2);background:#fdeded;color:var(--red1);}
+  .correct-note{margin-top:12px;font-weight:700;color:var(--green1);font-size:1em;}
+
+  .bottombar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:#fff;box-shadow:0 -2px 10px rgba(20,30,60,.06);gap:10px;flex-wrap:wrap;flex:none;z-index:6;position:relative;}
+  .btn-answer{background:linear-gradient(135deg,var(--orange1),var(--orange2));color:#fff;border:none;padding:11px 20px;border-radius:999px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(242,153,74,.35);font-size:.88rem;white-space:nowrap;}
+  .btn-solution{background:linear-gradient(135deg,var(--green1),var(--green3));color:#fff;border:none;padding:11px 20px;border-radius:999px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(39,174,96,.3);font-size:.88rem;white-space:nowrap;}
+  .btn-solution:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;}
+  .nav-center{display:flex;align-items:center;gap:10px;}
+  .nav-arrow{width:36px;height:36px;border-radius:50%;border:none;background:#f1f4fa;font-size:1.05rem;cursor:pointer;color:#38507a;flex:none;}
+  .nav-arrow:disabled{opacity:.35;cursor:not-allowed;}
+  .slide-counter{padding:9px 16px;border-radius:999px;border:2px solid var(--border);font-weight:800;background:#fff;cursor:pointer;color:var(--ink);font-size:.85rem;white-space:nowrap;}
+
+  /* solution panel */
+  .solution-panel{position:fixed;right:0;left:0;bottom:0;margin:0 auto;max-width:none;width:100%;height:50vh;max-height:100vh;background:#000;border-radius:18px 18px 0 0;box-shadow:0 -8px 34px rgba(0,0,0,.5);transform:translateY(105%);transition:transform .25s ease,height .05s linear;z-index:25;display:flex;flex-direction:column;overflow:hidden;}
+  .solution-panel.open{transform:translateY(0);}
+  .solution-panel.dragging{transition:none;}
+  .solution-drag{width:100%;display:flex;justify-content:center;align-items:center;padding:10px 0 6px;cursor:ns-resize;touch-action:none;flex:none;}
+  .solution-drag-handle{width:52px;height:5px;border-radius:3px;background:rgba(255,255,255,.35);}
+  .solution-head{display:flex;justify-content:space-between;align-items:center;padding:2px 20px 14px;border-bottom:1px solid rgba(255,255,255,.14);flex:none;}
+  .solution-head h3{margin:0;font-size:1.15rem;color:#6fcf97;}
+  .solution-close{background:rgba(255,255,255,.12);border:none;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:1.05rem;color:#fff;flex:none;}
+  .solution-close:hover{background:rgba(255,255,255,.22);}
+  .solution-body{padding:18px 14px 40px;overflow-y:auto;-webkit-overflow-scrolling:touch;font-size:2.3rem;line-height:1.6;color:#f2f2f5;width:100%;}
+  .solution-body .katex{color:#f2f2f5;}
+  .solution-body b{color:#fff;}
+
+  /* jump modal */
+  .jump-modal{position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;z-index:30;padding:20px;}
+  .jump-modal.hidden{display:none;}
+  .jump-card{background:#fff;border-radius:20px;max-width:760px;width:100%;max-height:80vh;overflow:auto;padding:22px;}
+  .jump-card h3{margin:0 0 4px;}
+  .jump-group{margin-top:16px;}
+  .jump-group h4{margin:0 0 8px;font-size:.85rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.4px;}
+  .jump-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:8px;}
+  .jump-btn{border:2px solid var(--border);background:#f7f9fc;border-radius:10px;padding:8px 0;font-weight:800;cursor:pointer;font-size:.85rem;color:var(--ink);}
+  .jump-btn.cur{border-color:var(--blue1);background:#eef5ff;color:var(--blue1);}
+  .jump-close{position:absolute;top:14px;right:14px;}
+  .jump-wrap{position:relative;}
+
+  .empty-state{text-align:center;color:var(--ink-soft);padding:60px 20px;}
+
+  /* ---- cover / intro screen ---- */
+  #coverScreen{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;overflow:hidden;
+    background:linear-gradient(135deg,#4f46e5,#7c3aed,#2563eb,#0ea5e9);background-size:300% 300%;animation:coverGradient 14s ease infinite;}
+  @keyframes coverGradient{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
+  .cover-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+  .cover-float{position:absolute;color:rgba(255,255,255,.16);font-weight:800;font-family:Georgia,'Times New Roman',serif;animation:coverFloat 9s ease-in-out infinite;user-select:none;}
+  .cover-float.f1{top:8%;left:6%;font-size:5rem;animation-delay:0s;}
+  .cover-float.f2{top:16%;right:9%;font-size:6.2rem;animation-delay:1.2s;}
+  .cover-float.f3{bottom:16%;left:9%;font-size:4.4rem;animation-delay:2.1s;}
+  .cover-float.f4{bottom:10%;right:13%;font-size:5.4rem;animation-delay:.6s;}
+  .cover-float.f5{top:46%;left:3%;font-size:3.6rem;animation-delay:1.8s;}
+  .cover-float.f6{top:62%;right:4%;font-size:3.8rem;animation-delay:2.6s;}
+  .cover-float.f7{top:5%;left:45%;font-size:3rem;animation-delay:.9s;}
+  .cover-float.f8{bottom:5%;left:47%;font-size:4.4rem;animation-delay:1.5s;}
+  @keyframes coverFloat{0%,100%{transform:translateY(0) rotate(0deg);}50%{transform:translateY(-22px) rotate(6deg);}}
+  .cover-back{position:absolute;top:22px;left:22px;background:rgba(255,255,255,.16);border:1.5px solid rgba(255,255,255,.4);color:#fff;padding:9px 16px;border-radius:999px;font-weight:700;cursor:pointer;font-size:.85rem;backdrop-filter:blur(4px);z-index:2;}
+  .cover-back:hover{background:rgba(255,255,255,.28);}
+  .cover-content{position:relative;z-index:1;text-align:center;padding:40px 24px;max-width:1000px;}
+  .cover-icon-badge{font-size:4.2rem;margin-bottom:14px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.25));letter-spacing:10px;}
+  .cover-title{margin:0 0 30px;color:#fff;font-size:clamp(2.8rem,6.2vw,5.2rem);font-weight:800;line-height:1.2;text-shadow:0 6px 24px rgba(0,0,0,.3);}
+  .cover-sub{display:flex;flex-direction:column;gap:12px;color:#fff;font-size:1.75rem;font-weight:600;margin-bottom:30px;text-shadow:0 2px 10px rgba(0,0,0,.25);}
+  .cover-sub b{color:#fff176;}
+  .cover-quote{max-width:820px;margin:0 auto 40px;padding:20px 30px;background:rgba(255,255,255,.12);border-left:5px solid #ffd166;border-radius:14px;backdrop-filter:blur(4px);}
+  .cover-quote-text{color:#fff;font-size:1.4rem;font-weight:600;font-style:italic;line-height:1.5;text-shadow:0 2px 10px rgba(0,0,0,.2);}
+  .cover-quote-author{margin-top:10px;color:#ffe28a;font-weight:700;font-size:1.1rem;}
+  .cover-start-btn{background:linear-gradient(135deg,#ffd166,#fca311);color:#3a2000;border:none;padding:20px 52px;border-radius:999px;font-weight:800;font-size:1.6rem;cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,.3);transition:transform .15s ease,box-shadow .15s ease;}
+  .cover-start-btn:hover{transform:translateY(-3px) scale(1.03);box-shadow:0 14px 36px rgba(0,0,0,.35);}
+  .cover-start-btn:active{transform:translateY(0) scale(.98);}
+
+  /* ---- responsive ---- */
+  @media (max-width:720px){
+    .toolbar{padding:8px 10px;gap:6px;}
+    .part-pill{font-size:.72rem;padding:6px 12px;}
+    .icon-btn{width:32px;height:32px;font-size:.9rem;}
+    .fontsize-btn{width:28px;height:28px;font-size:.75rem;}
+    .color-dot{width:19px;height:19px;}
+    .timer-btn{padding:6px 10px;font-size:.75rem;}
+    .exit-btn{padding:7px 12px;font-size:.75rem;}
+    .slide-area{padding:16px 14px 20px;}
+    .slide-content{font-size:calc(13px * var(--scale,1));}
+    .bottombar{padding:10px 10px;}
+    .btn-answer,.btn-solution{padding:9px 14px;font-size:.78rem;}
+    .slide-counter{padding:7px 12px;font-size:.78rem;}
+    .nav-arrow{width:32px;height:32px;}
+    .q-badge{padding:6px 12px;font-size:.9em;}
+    .setup-wrap{padding:20px 10px 150px;}
+    .q-body{flex-direction:column;}
+    .q-image-wrap{order:-1;flex:none;max-width:100%;width:100%;min-height:0;}
+    .q-image{height:auto;max-height:42vh;}
+    .cover-title{font-size:2.2rem;}
+    .cover-sub{font-size:1.2rem;}
+    .cover-quote{padding:14px 18px;margin-bottom:28px;}
+    .cover-quote-text{font-size:1.05rem;}
+    .cover-quote-author{font-size:.9rem;}
+    .cover-start-btn{font-size:1.15rem;padding:14px 34px;}
+    .cover-icon-badge{font-size:2.6rem;}
+    .cover-back{top:14px;left:14px;padding:7px 12px;font-size:.75rem;}
+    .cover-float.f2,.cover-float.f4,.cover-float.f6{display:none;}
+    .present-body{flex-direction:column;}
+    .calc-resizer{display:none;}
+    .calc-panel{max-width:100%;width:100%;border-left:none;border-top:2px solid transparent;}
+    .calc-panel.open{border-top-color:var(--border);flex-basis:48%;}
+    .slide-area.compact .slide-content{font-size:calc(12px * var(--scale,1));}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============= SETUP SCREEN ============= -->
+<div id="setupScreen">
+  <div class="setup-toprow">
+    <button class="btn btn-red btn-sm" id="btnClearAll">🗑 Xóa toàn bộ dữ liệu đã lưu</button>
+  </div>
+  <div class="setup-wrap">
+    <div class="setup-header">
+      <h1>🎓 Trình chiếu Bài tập Toán</h1>
+      <p>Nhập câu hỏi cho 3 dạng bài (Trắc nghiệm · Đúng-Sai · Trả lời ngắn) để tạo bài trình chiếu tương tác — hiển thị sắc nét cho máy chiếu và điện thoại.</p>
+    </div>
+
+    <div class="global-card auto-upload-card" id="autoUploadZone">
+      <div class="auto-upload-icon">🧠📂</div>
+      <div class="auto-upload-text">
+        <b>Tải file Excel — tự động nhận diện loại câu hỏi</b>
+        <div class="hint">Kéo-thả hoặc bấm để chọn một hoặc nhiều file .xlsx (đọc tất cả các sheet). Hỗ trợ <b>file chuẩn dạng ngân hàng câu hỏi</b> — một bảng gộp chung với cột <b>"Loại"</b> (Trắc nghiệm / Đúng-Sai / Trả lời ngắn) tự phân loại từng dòng — hoặc file chia riêng theo từng phần. Không cần chọn thủ công.</div>
+      </div>
+      <button class="btn btn-primary" id="btnAutoUpload" type="button">📂 Chọn file...</button>
+      <button class="btn btn-outline" id="btnUnifiedTemplate" type="button">⬇ Tải file mẫu chuẩn (gộp 3 loại)</button>
+      <input type="file" id="autoFileInput" accept=".xlsx,.xls" multiple style="display:none">
+      <div class="auto-upload-result" id="autoUploadResult"></div>
+    </div>
+
+    <div class="global-card">
+      <div class="global-row">
+        <div class="field">
+          <label>Tên bài / chủ đề (tuỳ chọn)</label>
+          <input type="text" id="deckTitle" placeholder="VD: Ôn tập Chương 1 - Toạ độ Oxyz">
+        </div>
+        <div class="field">
+          <label>Thời gian đếm ngược mỗi câu</label>
+          <select id="defaultTimer">
+            <option value="30">30 giây</option>
+            <option value="60" selected>1 phút</option>
+            <option value="90">1 phút 30</option>
+            <option value="120">2 phút</option>
+            <option value="180">3 phút</option>
+            <option value="300">5 phút</option>
+          </select>
+        </div>
+      </div>
+      <div class="global-row">
+        <div class="field">
+          <label>Giáo viên</label>
+          <input type="text" id="deckTeacher" placeholder="VD: Vũ Tiến Lực">
+        </div>
+        <div class="field">
+          <label>Trường</label>
+          <input type="text" id="deckSchool" placeholder="VD: Trường THPT Nguyễn Hữu Cảnh">
+        </div>
+      </div>
+    </div>
+
+    <!-- PHẦN I -->
+    <div class="part-card pI" data-part="I">
+      <div class="part-head">
+        <div class="part-title-wrap">
+          <input type="checkbox" class="part-check" id="checkI" checked>
+          <span class="part-title">Phần I — Trắc nghiệm 4 đáp án</span>
+        </div>
+        <span class="badge-count" id="countI">0 câu</span>
+      </div>
+      <div class="part-desc">Cột dữ liệu: <b>Nội dung, A, B, C, D, Kí hiệu Đ/A (1-4 hoặc A-D), Lời giải, Link ảnh</b> (Link ảnh không bắt buộc).</div>
+      <div class="part-actions">
+        <button class="btn btn-outline btn-sm" data-action="upload" data-part="I">📂 Tải thủ công vào Phần I</button>
+        <input type="file" class="file-input" data-part="I" accept=".xlsx,.xls">
+        <button class="btn btn-outline btn-sm" data-action="template" data-part="I">⬇ Tải file mẫu</button>
+        <button class="btn btn-red btn-sm" data-action="clear" data-part="I">Xoá dữ liệu phần này</button>
+      </div>
+      <textarea class="paste-area" data-part="I" placeholder="Hoặc dán dữ liệu sao chép trực tiếp từ Excel (Ctrl+C rồi Ctrl+V) vào đây, dòng đầu là tiêu đề cột..."></textarea>
+      <button class="btn btn-ghost btn-sm" style="margin-top:8px;" data-action="ingestPaste" data-part="I">✅ Nhập dữ liệu vừa dán</button>
+      <div class="hint">Mẹo: mở file Excel, bôi đen toàn bộ vùng dữ liệu (kể cả dòng tiêu đề), Ctrl+C rồi dán vào ô trên.</div>
+      <div class="preview-wrap" id="previewI"></div>
+    </div>
+
+    <!-- PHẦN II -->
+    <div class="part-card pII" data-part="II">
+      <div class="part-head">
+        <div class="part-title-wrap">
+          <input type="checkbox" class="part-check" id="checkII" checked>
+          <span class="part-title">Phần II — Đúng / Sai (4 ý a,b,c,d)</span>
+        </div>
+        <span class="badge-count" id="countII">0 câu</span>
+      </div>
+      <div class="part-desc">Cột dữ liệu: <b>Nội dung, a, b, c, d, Đáp án a, Đáp án b, Đáp án c, Đáp án d (ghi Đ hoặc S), Lời giải</b>.</div>
+      <div class="part-actions">
+        <button class="btn btn-outline btn-sm" data-action="upload" data-part="II">📂 Tải thủ công vào Phần II</button>
+        <input type="file" class="file-input" data-part="II" accept=".xlsx,.xls">
+        <button class="btn btn-outline btn-sm" data-action="template" data-part="II">⬇ Tải file mẫu</button>
+        <button class="btn btn-red btn-sm" data-action="clear" data-part="II">Xoá dữ liệu phần này</button>
+      </div>
+      <textarea class="paste-area" data-part="II" placeholder="Hoặc dán dữ liệu sao chép trực tiếp từ Excel vào đây..."></textarea>
+      <button class="btn btn-ghost btn-sm" style="margin-top:8px;" data-action="ingestPaste" data-part="II">✅ Nhập dữ liệu vừa dán</button>
+      <div class="hint">Mẹo: mở file Excel, bôi đen toàn bộ vùng dữ liệu (kể cả dòng tiêu đề), Ctrl+C rồi dán vào ô trên.</div>
+      <div class="preview-wrap" id="previewII"></div>
+    </div>
+
+    <!-- PHẦN III -->
+    <div class="part-card pIII" data-part="III">
+      <div class="part-head">
+        <div class="part-title-wrap">
+          <input type="checkbox" class="part-check" id="checkIII" checked>
+          <span class="part-title">Phần III — Trả lời ngắn</span>
+        </div>
+        <span class="badge-count" id="countIII">0 câu</span>
+      </div>
+      <div class="part-desc">Cột dữ liệu: <b>Nội dung, Đáp án, Lời giải</b>.</div>
+      <div class="part-actions">
+        <button class="btn btn-outline btn-sm" data-action="upload" data-part="III">📂 Tải thủ công vào Phần III</button>
+        <input type="file" class="file-input" data-part="III" accept=".xlsx,.xls">
+        <button class="btn btn-outline btn-sm" data-action="template" data-part="III">⬇ Tải file mẫu</button>
+        <button class="btn btn-red btn-sm" data-action="clear" data-part="III">Xoá dữ liệu phần này</button>
+      </div>
+      <textarea class="paste-area" data-part="III" placeholder="Hoặc dán dữ liệu sao chép trực tiếp từ Excel vào đây..."></textarea>
+      <button class="btn btn-ghost btn-sm" style="margin-top:8px;" data-action="ingestPaste" data-part="III">✅ Nhập dữ liệu vừa dán</button>
+      <div class="hint">Đáp án Phần III là một chuỗi ký tự (số, dấu trừ, dấu phẩy...), ví dụ: <code>-12,5</code>.</div>
+      <div class="preview-wrap" id="previewIII"></div>
+    </div>
+  </div>
+
+  <div class="start-bar">
+    <span class="total" id="totalCount">Tổng: 0 câu</span>
+    <button class="btn btn-start" id="btnStart">🚀 Bắt đầu trình chiếu</button>
+  </div>
+</div>
+
+<!-- ============= PRESENT SCREEN ============= -->
+<div id="presentScreen" hidden>
+  <div class="accent-bar"></div>
+  <div class="toolbar">
+    <span class="part-pill" id="partPill">PHẦN I (TRẮC NGHIỆM)</span>
+    <div class="tools">
+      <button class="fontsize-btn" id="fontMinus" title="Giảm cỡ chữ">A-</button>
+      <button class="fontsize-btn" id="fontPlus" title="Tăng cỡ chữ">A+</button>
+      <div class="sep"></div>
+      <button class="icon-btn" id="toolPencil" title="Bút vẽ">✏️</button>
+      <button class="icon-btn" id="toolEraser" title="Tẩy">🧹</button>
+      <button class="color-dot sel" id="colorRed" style="background:#eb5757" title="Màu đỏ"></button>
+      <button class="color-dot" id="colorBlue" style="background:#2f80ed" title="Màu xanh dương"></button>
+      <button class="color-dot" id="colorGreen" style="background:#27ae60" title="Màu xanh lá"></button>
+      <button class="icon-btn" id="toolClear" title="Xoá hết nét vẽ">🗑️</button>
+      <div class="sep"></div>
+      <div class="jump-wrap" style="position:relative;">
+        <button class="icon-btn" id="btnClock" title="Đặt thời gian">🕐</button>
+      </div>
+      <button class="timer-btn" id="timerBtn">⏳ Bắt đầu (01:00)</button>
+      <button class="icon-btn" id="btnCalc" title="Máy tính MathDA">🧮</button>
+      <button class="icon-btn" id="btnFullscreen" title="Toàn màn hình">⛶</button>
+    </div>
+    <button class="exit-btn" id="btnExit">✕ Thoát</button>
+  </div>
+
+  <div class="present-body" id="presentBody">
+    <div class="slide-area" id="slideArea">
+      <canvas class="draw-canvas" id="drawCanvas"></canvas>
+      <div class="slide-content" id="slideContent"></div>
+    </div>
+    <div class="calc-resizer" id="calcResizer" title="Kéo để thay đổi kích thước"></div>
+    <div class="calc-panel" id="calcPanel">
+      <div class="calc-panel-head">
+        <span class="calc-panel-title">🧮 Máy tính MathDA</span>
+        <div class="calc-panel-actions">
+          <a class="calc-panel-link" id="calcOpenNewTab" href="https://mathda.com/calculator/vi" target="_blank" rel="noopener" title="Mở trong tab mới">↗</a>
+          <button class="calc-panel-close" id="btnCalcClose" title="Đóng máy tính">✕</button>
+        </div>
+      </div>
+      <div class="calc-frame-wrap" id="calcFrameWrap">
+        <iframe id="calcIframe" src="about:blank" title="Máy tính MathDA" loading="lazy"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottombar">
+    <button class="btn-answer" id="btnShowAnswer">👁 HIỆN ĐÁP ÁN</button>
+    <div class="nav-center">
+      <button class="nav-arrow" id="navPrev">‹</button>
+      <button class="slide-counter" id="slideCounter">Câu 1 / 1</button>
+      <button class="nav-arrow" id="navNext">›</button>
+    </div>
+    <button class="btn-solution" id="btnShowSolution">💡 XEM LỜI GIẢI</button>
+  </div>
+
+  <div class="solution-panel" id="solutionPanel">
+    <div class="solution-drag" id="solutionDrag"><div class="solution-drag-handle"></div></div>
+    <div class="solution-head">
+      <h3>💡 Lời giải</h3>
+      <button class="solution-close" id="solutionClose">✕</button>
+    </div>
+    <div class="solution-body" id="solutionBody"></div>
+  </div>
+</div>
+
+<!-- ============= COVER / INTRO SCREEN ============= -->
+<div id="coverScreen" hidden>
+  <div class="cover-bg">
+    <span class="cover-float f1">∑</span>
+    <span class="cover-float f2">π</span>
+    <span class="cover-float f3">√x</span>
+    <span class="cover-float f4">∞</span>
+    <span class="cover-float f5">Δ</span>
+    <span class="cover-float f6">%</span>
+    <span class="cover-float f7">±</span>
+    <span class="cover-float f8">∫</span>
+  </div>
+  <button class="cover-back" id="coverBack">← Quay lại chỉnh sửa</button>
+  <div class="cover-content">
+    <div class="cover-icon-badge">📐 🧮 📊</div>
+    <h1 class="cover-title" id="coverTitle">Ôn tập Toán học</h1>
+    <div class="cover-sub">
+      <span class="cover-sub-line">👨‍🏫 Giáo viên: <b id="coverTeacher">Vũ Tiến Lực</b></span>
+      <span class="cover-sub-line">🏫 <b id="coverSchool">Trường THPT Nguyễn Hữu Cảnh</b></span>
+    </div>
+    <div class="cover-quote">
+      <div class="cover-quote-text" id="coverQuoteText"></div>
+      <div class="cover-quote-author" id="coverQuoteAuthor"></div>
+    </div>
+    <button class="cover-start-btn" id="btnCoverStart">🚀 Bắt đầu</button>
+  </div>
+</div>
+
+<div class="jump-modal hidden" id="jumpModal">
+  <div class="jump-card jump-wrap">
+    <button class="icon-btn jump-close" id="jumpClose">✕</button>
+    <h3>Chuyển nhanh đến câu</h3>
+    <div id="jumpBody"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   1. DATA MODEL & PERSISTENCE
+   ============================================================ */
+const STORAGE_KEY = 'mathSlidesDeck_v1';
+const DEFAULT_TEACHER = 'Vũ Tiến Lực';
+const DEFAULT_SCHOOL = 'Trường THPT Nguyễn Hữu Cảnh';
+let deck = { title:'', teacher:DEFAULT_TEACHER, school:DEFAULT_SCHOOL, defaultTimer:60, parts:{ I:[], II:[], III:[] } };
+
+/* 50 câu danh ngôn / tục ngữ hay nhất về học tập, hiển thị ngẫu nhiên trên slide mở đầu. */
+const LEARNING_QUOTES = [
+  {q:'Học, học nữa, học mãi.', a:'V. I. Lênin'},
+  {q:'Đi một ngày đàng, học một sàng khôn.', a:'Tục ngữ Việt Nam'},
+  {q:'Học thầy không tày học bạn.', a:'Tục ngữ Việt Nam'},
+  {q:'Không thầy đố mày làm nên.', a:'Tục ngữ Việt Nam'},
+  {q:'Học ăn, học nói, học gói, học mở.', a:'Tục ngữ Việt Nam'},
+  {q:'Muốn biết phải hỏi, muốn giỏi phải học.', a:'Tục ngữ Việt Nam'},
+  {q:'Học tập là hạt giống của kiến thức, kiến thức là hạt giống của hạnh phúc.', a:'Ngạn ngữ Gruzia'},
+  {q:'Sự học như con thuyền đi ngược nước, không tiến ắt lùi.', a:'Ngạn ngữ Trung Hoa'},
+  {q:'Bác học không có nghĩa là ngừng học.', a:'Charles Darwin'},
+  {q:'Đường đời là chiếc thang không nấc chót, việc học là quyển sách không trang cuối.', a:'Danh ngôn'},
+  {q:'Học vấn không có quê hương, nhưng người học phải có Tổ quốc.', a:'Louis Pasteur'},
+  {q:'Ai ngừng học tập, người đó già đi, dù đang ở tuổi hai mươi.', a:'Henry Ford'},
+  {q:'Học tập là công việc suốt đời.', a:'Hồ Chí Minh'},
+  {q:'Non sông Việt Nam có trở nên tươi đẹp hay không, chính là nhờ một phần lớn ở công học tập của các em.', a:'Hồ Chí Minh'},
+  {q:'Ngọc không mài không sáng, người không học không hiểu lý lẽ.', a:'Khổng Tử'},
+  {q:'Học vấn có chùm rễ đắng cay nhưng hoa quả rất ngọt ngào.', a:'Aristotle'},
+  {q:'Tri thức là sức mạnh.', a:'Francis Bacon'},
+  {q:'Đầu tư vào tri thức luôn sinh lãi cao nhất.', a:'Benjamin Franklin'},
+  {q:'Học mà không suy nghĩ thì vô ích, suy nghĩ mà không học thì nguy hiểm.', a:'Khổng Tử'},
+  {q:'Nếu bạn nghĩ giáo dục là tốn kém, hãy thử sự ngu dốt xem.', a:'Derek Bok'},
+  {q:'Học để biết, học để làm, học để chung sống, học để tự khẳng định mình.', a:'UNESCO'},
+  {q:'Kiến thức chỉ có được qua tư duy của con người.', a:'Albert Einstein'},
+  {q:'Giáo dục là vũ khí mạnh nhất để thay đổi thế giới.', a:'Nelson Mandela'},
+  {q:'Người thầy trung bình chỉ biết nói, người thầy giỏi biết giải thích, người thầy xuất chúng biết minh họa, người thầy vĩ đại biết truyền cảm hứng.', a:'William A. Ward'},
+  {q:'Học không bao giờ là muộn.', a:'Ngạn ngữ'},
+  {q:'Kiến thức là kho báu, nhưng thực hành mới là chìa khóa mở kho báu đó.', a:'Lao Tử'},
+  {q:'Một chút kiến thức là điều nguy hiểm; hãy uống cho thật sâu.', a:'Alexander Pope'},
+  {q:'Tôi không bao giờ dạy học trò của mình, tôi chỉ cố gắng tạo điều kiện để các em tự học.', a:'Albert Einstein'},
+  {q:'Đọc sách không cốt lấy nhiều, quan trọng là phải suy xét kỹ càng.', a:'Chu Hy'},
+  {q:'Có công mài sắt, có ngày nên kim.', a:'Tục ngữ Việt Nam'},
+  {q:'Học phải đi đôi với hành.', a:'Hồ Chí Minh'},
+  {q:'Trên bước đường thành công không có dấu chân của kẻ lười biếng.', a:'Lỗ Tấn'},
+  {q:'Sách là ngọn đèn sáng bất diệt của trí tuệ con người.', a:'Ngạn ngữ'},
+  {q:'Người dốt nát không bao giờ biết mình dốt.', a:'Ngạn ngữ'},
+  {q:'Càng học càng biết mình biết ít.', a:'Ngạn ngữ'},
+  {q:'Trí tuệ không phải là sản phẩm của học vấn, mà là kết quả của cả một đời cố gắng tìm hiểu.', a:'Albert Einstein'},
+  {q:'Giáo dục không phải là đổ đầy một cái thùng, mà là thắp sáng một ngọn lửa.', a:'William Butler Yeats'},
+  {q:'Học vấn cũng như ngọc quý, dù vùi trong bùn cũng không mất đi ánh sáng.', a:'Ngạn ngữ'},
+  {q:'Ai không tiến ắt sẽ lùi.', a:'Ngạn ngữ'},
+  {q:'Kẻ thù lớn nhất của tri thức không phải là sự ngu dốt, mà là ảo tưởng về tri thức.', a:'Stephen Hawking'},
+  {q:'Học vấn là con đường ngắn nhất dẫn đến thành công.', a:'Ngạn ngữ'},
+  {q:'Người khôn học được nhiều điều từ người dại hơn là người dại học được từ người khôn.', a:'Cato'},
+  {q:'Đường tuy gần, không đi không đến; việc tuy nhỏ, không làm không nên.', a:'Tuân Tử'},
+  {q:'Học rộng, hỏi kỹ, nghĩ cẩn thận, phân biệt rõ ràng, làm hết sức.', a:'Trung Dung'},
+  {q:'Sự dốt nát là bóng tối, tri thức là ánh sáng.', a:'Tục ngữ Nga'},
+  {q:'Không có con đường nào trải đầy hoa hồng để đi đến khoa học.', a:'Karl Marx'},
+  {q:'Học vấn giống như một chiếc gương, càng mài càng sáng.', a:'Ngạn ngữ'},
+  {q:'Ngủ dậy muộn phí mất cả ngày, tuổi trẻ không học phí cả cuộc đời.', a:'Ngạn ngữ'},
+  {q:'Cây xanh nhờ có gốc bền, học tập nhờ có nền tảng vững.', a:'Ngạn ngữ'},
+  {q:'Tôi chỉ biết rằng tôi không biết gì cả.', a:'Socrates'}
+];
+function pickRandomQuote(){
+  return LEARNING_QUOTES[Math.floor(Math.random()*LEARNING_QUOTES.length)];
+}
+
+function saveDeck(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(deck)); }catch(e){}
+}
+function loadDeck(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(parsed && parsed.parts) deck = parsed;
+    }
+  }catch(e){}
+}
+
+/* ============================================================
+   2. TEXT / LATEX PROCESSING
+   ============================================================ */
+const katexMacros = {
+  "\\heva": "\\left\\{\\begin{aligned}#1\\end{aligned}\\right.",
+  "\\hoac": "\\left[\\begin{aligned}#1\\end{aligned}\\right."
+};
+
+function preprocessLatex(raw){
+  if(!raw) return '';
+  let s = String(raw);
+  s = s.replace(/\\begin\{eqnarray\*?\}/g, '\\begin{aligned}')
+       .replace(/\\end\{eqnarray\*?\}/g, '\\end{aligned}')
+       .replace(/&=&/g, '&=')
+       .replace(/&\\neq&/g, '&\\neq')
+       .replace(/&\\Leftrightarrow&/g, '&\\Leftrightarrow');
+  // wrap bare \begin{aligned}...\end{aligned} blocks that are not already opened by $ or \[ or \(
+  s = s.replace(/(\$|\\\[|\\\()?(\\begin\{aligned\}[\s\S]*?\\end\{aligned\})/g, function(match, pre, block){
+    if(pre) return match;
+    return '\\[' + block + '\\]';
+  });
+  return s;
+}
+
+const MATH_SPLIT_RE = /(\$\$[\s\S]+?\$\$|\$(?:[^$\\]|\\.)+\$|\\\[[\s\S]+?\\\]|\\\([\s\S]+?\\\))/g;
+
+function escapeAndBreak(t){
+  // Normalize "newline" / "\newline" / "\\newline" (any number of leading backslashes)
+  // into a real line break, same as plain LaTeX "\\".
+  let s = t.replace(/\\*newline/gi, '\n');
+  let esc = s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // Simple LaTeX text-formatting commands used outside math mode.
+  esc = esc.replace(/\\textbf\{([^{}]*)\}/g, '<b>$1</b>');
+  esc = esc.replace(/\\textit\{([^{}]*)\}/g, '<i>$1</i>');
+  esc = esc.replace(/\\underline\{([^{}]*)\}/g, '<u>$1</u>');
+  return esc.replace(/\\\\/g,'<br>').replace(/\n/g,'<br>');
+}
+
+function renderMixedText(raw){
+  if(!raw) return '';
+  const s = preprocessLatex(raw);
+  let result = '';
+  let lastIndex = 0;
+  let m;
+  MATH_SPLIT_RE.lastIndex = 0;
+  while((m = MATH_SPLIT_RE.exec(s)) !== null){
+    result += escapeAndBreak(s.slice(lastIndex, m.index));
+    result += m[0];
+    lastIndex = m.index + m[0].length;
+  }
+  result += escapeAndBreak(s.slice(lastIndex));
+  return result;
+}
+
+function renderMathIn(el){
+  if(typeof renderMathInElement !== 'function') return;
+  try{
+    renderMathInElement(el, {
+      delimiters: [
+        {left:'$$', right:'$$', display:true},
+        {left:'\\[', right:'\\]', display:true},
+        {left:'$', right:'$', display:false},
+        {left:'\\(', right:'\\)', display:false}
+      ],
+      macros: katexMacros,
+      throwOnError:false,
+      strict:false
+    });
+  }catch(e){ /* best effort */ }
+}
+
+/* ============================================================
+   3. IMPORT: normalize headers + ingest rows
+   ============================================================ */
+const DIACRITICS_RE = /[̀-ͯ]/g;
+// Note: "Đ/đ" (D with stroke) has NO Unicode canonical decomposition, so NFD alone
+// does not turn it into a plain "d" the way "á" turns into "a" + accent. Replace it
+// explicitly first, otherwise headers/values like "Đáp án" or "Đ" get mangled.
+function stripDStroke(s){ return s.replace(/Đ/g,'D').replace(/đ/g,'d'); }
+function normHeader(h){
+  return stripDStroke(String(h||'')).normalize('NFD').replace(DIACRITICS_RE,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+}
+function normVal(v){
+  return stripDStroke(String(v||'')).normalize('NFD').replace(DIACRITICS_RE,'').toLowerCase().trim();
+}
+function findKey(rowObj, pred){
+  return Object.keys(rowObj).find(k=>pred(normHeader(k)));
+}
+
+function ingestPartI(rows){
+  const list=[];
+  for(const r of rows){
+    const kContent = findKey(r, n=>n.includes('noidung')||n.includes('cauhoi')||n.includes('debai'));
+    const kA = findKey(r, n=>n==='a');
+    const kB = findKey(r, n=>n==='b');
+    const kC = findKey(r, n=>n==='c');
+    const kD = findKey(r, n=>n==='d');
+    const kAns = findKey(r, n=>n.includes('dapan')||n.includes('kihieu'));
+    const kSol = findKey(r, n=>n.includes('loigiai'));
+    const kImg = findKey(r, n=>n.includes('linkanh')||n.includes('hinhanh')||n.includes('image'));
+    const stem = kContent ? String(r[kContent]||'').trim() : '';
+    if(!stem) continue;
+    const keys = [kA,kB,kC,kD];
+    const options = ['A','B','C','D'].map((lab,i)=>({label:lab, text: keys[i] ? String(r[keys[i]]||'').trim() : ''}));
+    let ansRaw = kAns ? String(r[kAns]||'').trim() : '';
+    let correctIndex = -1;
+    if(/^[1-4]$/.test(ansRaw)) correctIndex = parseInt(ansRaw,10)-1;
+    else{
+      const letter = ansRaw.replace(/[^a-dA-D]/g,'').toUpperCase();
+      if(letter) correctIndex = ['A','B','C','D'].indexOf(letter[0]);
+    }
+    list.push({
+      stem, options, correctIndex,
+      solution: kSol ? String(r[kSol]||'').trim() : '',
+      image: kImg ? String(r[kImg]||'').trim() : '',
+      _selected:-1, _revealed:false
+    });
+  }
+  return list;
+}
+
+function ingestPartII(rows){
+  const list=[];
+  const letters=['a','b','c','d'];
+  for(const r of rows){
+    const kContent = findKey(r, n=>n.includes('noidung')||n.includes('cauhoi')||n.includes('debai'));
+    const stem = kContent ? String(r[kContent]||'').trim() : '';
+    if(!stem) continue;
+    const kStmt = letters.map(l=>findKey(r, n=>n===l));
+    const kAns = letters.map(l=>findKey(r, n=>n==='dapan'+l || n==='dap'+l));
+    const kSol = findKey(r, n=>n.includes('loigiai'));
+    const kImg = findKey(r, n=>n.includes('linkanh')||n.includes('hinhanh')||n.includes('image'));
+    const items = letters.map((l,i)=>{
+      const text = kStmt[i] ? String(r[kStmt[i]]||'').trim() : '';
+      const raw = kAns[i] ? String(r[kAns[i]]||'').trim() : '';
+      const rn = normVal(raw);
+      let correct = null;
+      if(rn){
+        if(rn[0]==='d' || rn==='1' || rn==='true' || rn==='x') correct=true;
+        else if(rn[0]==='s' || rn==='0' || rn==='false') correct=false;
+      }
+      return {label:l, text, correct, _selected:null};
+    });
+    list.push({stem, items, solution: kSol ? String(r[kSol]||'').trim() : '', image: kImg ? String(r[kImg]||'').trim() : '', _revealed:false});
+  }
+  return list;
+}
+
+function ingestPartIII(rows){
+  const list=[];
+  for(const r of rows){
+    const kContent = findKey(r, n=>n.includes('noidung')||n.includes('cauhoi')||n.includes('debai'));
+    const kAns = findKey(r, n=>n.includes('dapan'));
+    const kSol = findKey(r, n=>n.includes('loigiai'));
+    const kImg = findKey(r, n=>n.includes('linkanh')||n.includes('hinhanh')||n.includes('image'));
+    const stem = kContent ? String(r[kContent]||'').trim() : '';
+    if(!stem) continue;
+    list.push({
+      stem,
+      answer: kAns ? String(r[kAns]||'').trim() : '',
+      solution: kSol ? String(r[kSol]||'').trim() : '',
+      image: kImg ? String(r[kImg]||'').trim() : '',
+      _typed:'', _revealed:false
+    });
+  }
+  return list;
+}
+
+function ingestRows(rows, partKey){
+  let list;
+  if(partKey==='I') list = ingestPartI(rows);
+  else if(partKey==='II') list = ingestPartII(rows);
+  else list = ingestPartIII(rows);
+  deck.parts[partKey] = deck.parts[partKey].concat(list);
+  saveDeck();
+  updatePreview(partKey);
+  updateTotal();
+}
+
+/* ---- paste TSV ---- */
+function parsePastedText(text){
+  const lines = text.split(/\r\n|\r|\n/).filter(l=>l.trim().length>0);
+  if(lines.length<2) return [];
+  if(!lines[0].includes('\t')){
+    alert('Không phát hiện dữ liệu dạng cột (tab). Hãy sao chép trực tiếp từ Excel (Ctrl+C) rồi dán vào ô, hoặc dùng cách tải file Excel.');
+    return [];
+  }
+  const headers = lines[0].split('\t').map(h=>h.trim());
+  return lines.slice(1).map(line=>{
+    const cells = line.split('\t');
+    const obj = {};
+    headers.forEach((h,i)=>{ obj[h] = (cells[i]!==undefined?cells[i]:'').trim(); });
+    return obj;
+  });
+}
+
+/* ---- xlsx upload ---- */
+function handleFileUpload(file, partKey){
+  if(typeof XLSX === 'undefined'){
+    alert('Chưa tải được thư viện đọc Excel (cần kết nối Internet). Vui lòng kiểm tra mạng rồi thử lại, hoặc dùng cách dán dữ liệu trực tiếp.');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+      ingestRows(rows, partKey);
+    }catch(err){
+      alert('Không đọc được file Excel. Vui lòng kiểm tra lại định dạng file.');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+/* ---- auto-detect question type from a header row (legacy: 1 sheet = 1 type) ---- */
+function classifyHeaders(headerList){
+  const norm = headerList.map(normHeader);
+  const letters = ['a','b','c','d'];
+  const hasLetterCols = letters.every(l => norm.includes(l));
+  const hasPerLetterAnswers = letters.every(l => norm.some(n => n===('dapan'+l) || n===('dap'+l)));
+  const hasSingleAnswer = norm.some(n => (n.includes('dapan') || n.includes('kihieu')) &&
+    !letters.some(l => n===('dapan'+l) || n===('dap'+l)));
+  const hasContent = norm.some(n => n.includes('noidung') || n.includes('cauhoi') || n.includes('debai'));
+  if(!hasContent) return null;
+  if(hasLetterCols && hasPerLetterAnswers) return 'II';
+  if(hasLetterCols && hasSingleAnswer) return 'I';
+  if(!hasLetterCols && hasSingleAnswer) return 'III';
+  if(hasLetterCols) return 'I';
+  return null;
+}
+
+/* ---- unified "ngân hàng câu hỏi" format: one table, a "Loại" column
+   tells the type of each individual row (Trắc nghiệm / Đúng-Sai / Trả lời ngắn) ---- */
+function classifyLoai(raw){
+  const n = normVal(raw).replace(/\s+/g,'');
+  if(!n) return null;
+  if(n.includes('tracnghiem')) return 'I';
+  if(n.includes('dung') && n.includes('sai')) return 'II';
+  if(n.includes('traloingan')) return 'III';
+  return null;
+}
+
+// Parses answer strings like "a-Đúng, b-Đúng, c-Sai, d-Sai" into {a:true,b:true,c:false,d:false}
+function parseDSAnswer(raw){
+  const result = {a:null,b:null,c:null,d:null};
+  String(raw||'').split(',').forEach(seg=>{
+    const m = seg.trim().match(/^([abcdABCD])\s*[-:.]\s*(.+)$/);
+    if(!m) return;
+    const letter = m[1].toLowerCase();
+    const vn = normVal(m[2]);
+    if(vn.startsWith('d')) result[letter] = true;      // "đúng" -> "dung"
+    else if(vn.startsWith('s')) result[letter] = false; // "sai"
+  });
+  return result;
+}
+
+function hasUnifiedLoaiColumn(headerList){
+  return headerList.some(h => normHeader(h)==='loai');
+}
+
+// Ingests rows from the unified format directly into deck.parts (caller must saveDeck()/refresh UI).
+function ingestUnifiedRows(rows){
+  const summary = {I:0, II:0, III:0, skipped:0};
+  for(const r of rows){
+    const kLoai = findKey(r, n=>n==='loai');
+    const kContent = findKey(r, n=>n.includes('noidung')||n.includes('cauhoi')||n.includes('debai'));
+    const kImg = findKey(r, n=>n.includes('linkanh')||n.includes('hinhanh')||n.includes('image'));
+    const kA = findKey(r, n=>n.includes('luachona')||n.includes('menhdea'));
+    const kB = findKey(r, n=>n.includes('luachonb')||n.includes('menhdeb'));
+    const kC = findKey(r, n=>n.includes('luachonc')||n.includes('menhdec'));
+    const kD = findKey(r, n=>n.includes('luachond')||n.includes('menhded'));
+    const kAns = findKey(r, n=>n.includes('dapan'));
+    const kSol = findKey(r, n=>n.includes('loigiai'));
+
+    const stem = kContent ? String(r[kContent]||'').trim() : '';
+    const type = kLoai ? classifyLoai(r[kLoai]) : null;
+    if(!stem || !type){ if(stem||kLoai) summary.skipped++; continue; }
+
+    const ansRaw = kAns ? String(r[kAns]||'').trim() : '';
+    const solution = kSol ? String(r[kSol]||'').trim() : '';
+    const image = kImg ? String(r[kImg]||'').trim() : '';
+    const keys = [kA,kB,kC,kD];
+
+    if(type==='I'){
+      const options = ['A','B','C','D'].map((lab,i)=>({label:lab, text: keys[i] ? String(r[keys[i]]||'').trim() : ''}));
+      let correctIndex = -1;
+      if(/^[1-4]$/.test(ansRaw)) correctIndex = parseInt(ansRaw,10)-1;
+      else{
+        const letter = ansRaw.replace(/[^a-dA-D]/g,'').toUpperCase();
+        if(letter) correctIndex = ['A','B','C','D'].indexOf(letter[0]);
+      }
+      deck.parts.I.push({stem, options, correctIndex, solution, image, _selected:-1, _revealed:false});
+      summary.I++;
+    } else if(type==='II'){
+      const parsed = parseDSAnswer(ansRaw);
+      const items = ['a','b','c','d'].map((l,i)=>({
+        label:l,
+        text: keys[i] ? String(r[keys[i]]||'').trim() : '',
+        correct: parsed[l],
+        _selected:null
+      }));
+      deck.parts.II.push({stem, items, solution, image, _revealed:false});
+      summary.II++;
+    } else {
+      deck.parts.III.push({stem, answer:ansRaw, solution, image, _typed:'', _revealed:false});
+      summary.III++;
+    }
+  }
+  return summary;
+}
+
+function handleAutoFiles(fileList){
+  if(typeof XLSX === 'undefined'){
+    alert('Chưa tải được thư viện đọc Excel (cần kết nối Internet). Vui lòng kiểm tra mạng rồi thử lại.');
+    return;
+  }
+  const files = Array.from(fileList).filter(f=>/\.(xlsx|xls)$/i.test(f.name));
+  if(files.length===0) return;
+  const resultBox = document.getElementById('autoUploadResult');
+  resultBox.innerHTML = '<div class="auto-result-line">⏳ Đang xử lý '+files.length+' file...</div>';
+  const summary = {I:0, II:0, III:0, unknown:[]};
+  let pending = files.length;
+  files.forEach(file=>{
+    const reader = new FileReader();
+    reader.onload = function(e){
+      try{
+        const data = new Uint8Array(e.target.result);
+        const wb = XLSX.read(data, {type:'array'});
+        wb.SheetNames.forEach(sheetName=>{
+          const ws = wb.Sheets[sheetName];
+          const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+          if(!rows.length) return;
+          const headers = Object.keys(rows[0]);
+          if(hasUnifiedLoaiColumn(headers)){
+            // Standard unified format: each row carries its own "Loại".
+            const s = ingestUnifiedRows(rows);
+            summary.I += s.I; summary.II += s.II; summary.III += s.III;
+            if(s.skipped>0) summary.unknown.push(file.name+' / '+sheetName+' ('+s.skipped+' dòng thiếu Nội dung hoặc Loại không hợp lệ)');
+            saveDeck();
+            updatePreview('I'); updatePreview('II'); updatePreview('III'); updateTotal();
+          } else {
+            // Legacy format: the whole sheet is a single question type.
+            const type = classifyHeaders(headers);
+            if(!type){ summary.unknown.push(file.name+' — '+sheetName); return; }
+            const before = deck.parts[type].length;
+            ingestRows(rows, type);
+            summary[type] += deck.parts[type].length - before;
+          }
+        });
+      }catch(err){
+        summary.unknown.push(file.name+' (không đọc được file)');
+      }
+      pending--;
+      if(pending===0) renderAutoResult(summary);
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function renderAutoResult(summary){
+  const resultBox = document.getElementById('autoUploadResult');
+  let html='';
+  const names = {I:'Phần I (Trắc nghiệm)', II:'Phần II (Đúng-Sai)', III:'Phần III (Trả lời ngắn)'};
+  ['I','II','III'].forEach(t=>{
+    if(summary[t]>0) html += '<div class="auto-result-line ok">✅ Nhận diện '+names[t]+': +'+summary[t]+' câu</div>';
+  });
+  if(summary.unknown.length>0){
+    html += '<div class="auto-result-line warn">⚠️ Không nhận diện được định dạng ở: '+summary.unknown.map(escapeHtml).join(', ')+'. Hãy kiểm tra lại tên cột, hoặc dùng nút "Tải file Excel" thủ công ngay bên dưới từng phần.</div>';
+  }
+  if(!html) html = '<div class="auto-result-line warn">⚠️ Không tìm thấy câu hỏi hợp lệ trong file đã chọn.</div>';
+  resultBox.innerHTML = html;
+}
+
+/* ---- template download ---- */
+function downloadTemplate(partKey){
+  if(typeof XLSX === 'undefined'){
+    alert('Chưa tải được thư viện Excel (cần kết nối Internet). Vui lòng kiểm tra mạng rồi thử lại.');
+    return;
+  }
+  let headers, sample;
+  if(partKey==='I'){
+    headers=['Nội dung','A','B','C','D','Kí hiệu Đ/A','Lời giải','Link ảnh'];
+    sample=['Ví dụ: Nghiệm của phương trình $x^2-4=0$ là','$x=2$','$x=\\pm 2$','$x=-2$','$x=4$',2,'Vì $x^2=4 \\Leftrightarrow x=\\pm 2$.',''];
+  }else if(partKey==='II'){
+    headers=['Nội dung','a','b','c','d','Đáp án a','Đáp án b','Đáp án c','Đáp án d','Lời giải'];
+    sample=['Ví dụ: Cho hàm số $y=x^2$.','Hàm số đồng biến trên $(0;+\\infty)$.','Hàm số nghịch biến trên $(0;+\\infty)$.','Đồ thị là một đường parabol.','Đồ thị đi qua gốc toạ độ.','Đ','S','Đ','Đ','Giải thích...'];
+  }else{
+    headers=['Nội dung','Đáp án','Lời giải'];
+    sample=['Ví dụ: Tính $\\displaystyle\\int_0^1 x\\,dx$.','0,5','Ta có ...'];
+  }
+  const ws = XLSX.utils.aoa_to_sheet([headers, sample]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Mau');
+  XLSX.writeFile(wb, 'Mau_PhanThuong_'+partKey+'.xlsx');
+}
+
+function downloadUnifiedTemplate(){
+  if(typeof XLSX === 'undefined'){
+    alert('Chưa tải được thư viện Excel (cần kết nối Internet). Vui lòng kiểm tra mạng rồi thử lại.');
+    return;
+  }
+  const headers = ['Mã Câu','Loại','Chuyên đề','Nội dung','Link Ảnh','Lựa chọn A / Mệnh đề a','Lựa chọn B / Mệnh đề b','Lựa chọn C / Mệnh đề c','Lựa chọn D / Mệnh đề d','Đáp án đúng','Lời giải'];
+  const rows = [
+    ['Q_001','Trắc nghiệm','','Nghiệm của phương trình $x^2-4=0$ là','','$x=2$','$x=\\pm 2$','$x=-2$','$x=4$','B','Vì $x^2=4 \\Leftrightarrow x=\\pm 2$.'],
+    ['Q_002','Đúng/Sai','','Cho hàm số $y=x^2$. Các khẳng định sau đúng hay sai?','','Hàm số đồng biến trên $(0;+\\infty)$.','Hàm số nghịch biến trên $(0;+\\infty)$.','Đồ thị là một đường parabol.','Đồ thị đi qua gốc toạ độ.','a-Đúng, b-Sai, c-Đúng, d-Đúng','Giải thích từng ý...'],
+    ['Q_003','Trả lời ngắn','','Tính $\\displaystyle\\int_0^1 x\\,dx$.','','','','','','0,5','Ta có $\\int_0^1 x\\,dx = 0,5$.']
+  ];
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'NganHang_GopChung');
+  XLSX.writeFile(wb, 'Mau_NganHangCauHoi_Chuan.xlsx');
+}
+
+/* ---- setup preview UI ---- */
+function updatePreview(partKey){
+  const list = deck.parts[partKey];
+  document.getElementById('count'+partKey).textContent = list.length + ' câu';
+  const wrap = document.getElementById('preview'+partKey);
+  if(list.length===0){ wrap.innerHTML=''; return; }
+  let cols;
+  if(partKey==='I') cols=['#','Nội dung','Đáp án đúng'];
+  else if(partKey==='II') cols=['#','Nội dung','a','b','c','d'];
+  else cols=['#','Nội dung','Đáp án'];
+  let html = '<table class="preview-table"><thead><tr>'+cols.map(c=>'<th>'+c+'</th>').join('')+'</tr></thead><tbody>';
+  list.slice(0,5).forEach((q,i)=>{
+    const stemShort = (q.stem||'').replace(/\s+/g,' ').slice(0,60);
+    if(partKey==='I'){
+      const ansTxt = q.correctIndex>=0 ? ['A','B','C','D'][q.correctIndex] : '?';
+      html += '<tr><td>'+(i+1)+'</td><td>'+escapeHtml(stemShort)+'</td><td>'+ansTxt+'</td></tr>';
+    }else if(partKey==='II'){
+      const marks = q.items.map(it=> it.correct===true?'Đ':(it.correct===false?'S':'?'));
+      html += '<tr><td>'+(i+1)+'</td><td>'+escapeHtml(stemShort)+'</td><td>'+marks[0]+'</td><td>'+marks[1]+'</td><td>'+marks[2]+'</td><td>'+marks[3]+'</td></tr>';
+    }else{
+      html += '<tr><td>'+(i+1)+'</td><td>'+escapeHtml(stemShort)+'</td><td>'+escapeHtml(q.answer||'')+'</td></tr>';
+    }
+  });
+  html += '</tbody></table>';
+  if(list.length>5) html += '<div class="hint">... và '+(list.length-5)+' câu khác</div>';
+  wrap.innerHTML = html;
+}
+function escapeHtml(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function updateTotal(){
+  const n = deck.parts.I.length + deck.parts.II.length + deck.parts.III.length;
+  document.getElementById('totalCount').textContent = 'Tổng: '+n+' câu';
+}
+
+function clearPart(partKey){
+  if(!confirm('Xoá toàn bộ dữ liệu đã nhập cho phần này?')) return;
+  deck.parts[partKey] = [];
+  saveDeck();
+  updatePreview(partKey);
+  updateTotal();
+}
+
+/* ============================================================
+   4. SETUP SCREEN EVENTS
+   ============================================================ */
+function initSetupScreen(){
+  document.getElementById('deckTitle').value = deck.title || '';
+  document.getElementById('defaultTimer').value = deck.defaultTimer || 60;
+  document.getElementById('deckTeacher').value = deck.teacher || DEFAULT_TEACHER;
+  document.getElementById('deckSchool').value = deck.school || DEFAULT_SCHOOL;
+  deck.teacher = document.getElementById('deckTeacher').value;
+  deck.school = document.getElementById('deckSchool').value;
+  ['I','II','III'].forEach(p=>updatePreview(p));
+  updateTotal();
+
+  document.getElementById('deckTitle').addEventListener('input', e=>{ deck.title = e.target.value; saveDeck(); });
+  document.getElementById('defaultTimer').addEventListener('change', e=>{ deck.defaultTimer = parseInt(e.target.value,10); saveDeck(); });
+  document.getElementById('deckTeacher').addEventListener('input', e=>{ deck.teacher = e.target.value; saveDeck(); });
+  document.getElementById('deckSchool').addEventListener('input', e=>{ deck.school = e.target.value; saveDeck(); });
+
+  const autoZone = document.getElementById('autoUploadZone');
+  const autoInput = document.getElementById('autoFileInput');
+  document.getElementById('btnAutoUpload').addEventListener('click', (e)=>{ e.stopPropagation(); autoInput.click(); });
+  document.getElementById('btnUnifiedTemplate').addEventListener('click', (e)=>{ e.stopPropagation(); downloadUnifiedTemplate(); });
+  autoZone.addEventListener('click', (e)=>{
+    if(e.target.id!=='btnAutoUpload' && e.target.id!=='btnUnifiedTemplate') autoInput.click();
+  });
+  autoInput.addEventListener('change', e=>{
+    if(e.target.files && e.target.files.length) handleAutoFiles(e.target.files);
+    e.target.value='';
+  });
+  autoZone.addEventListener('dragover', e=>{ e.preventDefault(); autoZone.classList.add('dragover'); });
+  autoZone.addEventListener('dragleave', ()=>autoZone.classList.remove('dragover'));
+  autoZone.addEventListener('drop', e=>{
+    e.preventDefault();
+    autoZone.classList.remove('dragover');
+    if(e.dataTransfer.files && e.dataTransfer.files.length) handleAutoFiles(e.dataTransfer.files);
+  });
+
+  document.querySelectorAll('[data-action="upload"]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const part = btn.getAttribute('data-part');
+      document.querySelector('.file-input[data-part="'+part+'"]').click();
+    });
+  });
+  document.querySelectorAll('.file-input').forEach(inp=>{
+    inp.addEventListener('change', e=>{
+      const part = inp.getAttribute('data-part');
+      if(e.target.files && e.target.files[0]){
+        handleFileUpload(e.target.files[0], part);
+        e.target.value='';
+      }
+    });
+  });
+  document.querySelectorAll('[data-action="template"]').forEach(btn=>{
+    btn.addEventListener('click', ()=>downloadTemplate(btn.getAttribute('data-part')));
+  });
+  document.querySelectorAll('[data-action="clear"]').forEach(btn=>{
+    btn.addEventListener('click', ()=>clearPart(btn.getAttribute('data-part')));
+  });
+  document.querySelectorAll('[data-action="ingestPaste"]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const part = btn.getAttribute('data-part');
+      const ta = document.querySelector('.paste-area[data-part="'+part+'"]');
+      const rows = parsePastedText(ta.value);
+      if(rows.length>0){ ingestRows(rows, part); ta.value=''; }
+    });
+  });
+
+  document.getElementById('btnClearAll').addEventListener('click', ()=>{
+    if(!confirm('Xoá TOÀN BỘ dữ liệu đã lưu của cả 3 phần?')) return;
+    deck = { title:'', teacher:DEFAULT_TEACHER, school:DEFAULT_SCHOOL, defaultTimer:60, parts:{I:[],II:[],III:[]} };
+    saveDeck();
+    document.getElementById('deckTitle').value='';
+    document.getElementById('deckTeacher').value=DEFAULT_TEACHER;
+    document.getElementById('deckSchool').value=DEFAULT_SCHOOL;
+    ['I','II','III'].forEach(p=>updatePreview(p));
+    updateTotal();
+  });
+
+  document.getElementById('btnStart').addEventListener('click', startPresentation);
+}
+
+/* ============================================================
+   5. PRESENTATION STATE
+   ============================================================ */
+let slides = [];
+let currentSlide = 0;
+let scale = 1;
+
+function buildSlides(){
+  slides = [];
+  if(document.getElementById('checkI').checked){
+    deck.parts.I.forEach((q,i)=>slides.push({type:'I', local:i+1, data:q}));
+  }
+  if(document.getElementById('checkII').checked){
+    deck.parts.II.forEach((q,i)=>slides.push({type:'II', local:i+1, data:q}));
+  }
+  if(document.getElementById('checkIII').checked){
+    deck.parts.III.forEach((q,i)=>slides.push({type:'III', local:i+1, data:q}));
+  }
+}
+
+function startPresentation(){
+  buildSlides();
+  if(slides.length===0){
+    alert('Chưa có câu hỏi nào được nhập (hoặc bạn đã bỏ chọn hết các phần). Vui lòng nhập dữ liệu trước.');
+    return;
+  }
+  currentSlide = 0;
+  document.getElementById('setupScreen').hidden = true;
+  showCoverScreen();
+}
+
+function showCoverScreen(){
+  const title = (deck.title||'').trim() || 'Ôn tập Toán học';
+  document.getElementById('coverTitle').textContent = title;
+  document.getElementById('coverTeacher').textContent = deck.teacher || DEFAULT_TEACHER;
+  document.getElementById('coverSchool').textContent = deck.school || DEFAULT_SCHOOL;
+  const quote = pickRandomQuote();
+  document.getElementById('coverQuoteText').textContent = '“'+quote.q+'”';
+  document.getElementById('coverQuoteAuthor').textContent = '— '+quote.a;
+  document.getElementById('coverScreen').hidden = false;
+}
+
+function enterSlidesFromCover(){
+  document.getElementById('coverScreen').hidden = true;
+  document.getElementById('presentScreen').hidden = false;
+  resizeCanvas();
+  renderSlide();
+}
+
+function exitCoverToSetup(){
+  document.getElementById('coverScreen').hidden = true;
+  document.getElementById('setupScreen').hidden = false;
+}
+
+function exitPresentation(){
+  stopTimer();
+  closeSolution();
+  document.getElementById('presentScreen').hidden = true;
+  document.getElementById('setupScreen').hidden = false;
+}
+
+/* ============================================================
+   6. SLIDE RENDERING
+   ============================================================ */
+const PART_LABEL = {
+  I: 'PHẦN I (TRẮC NGHIỆM)',
+  II: 'PHẦN II (ĐÚNG-SAI)',
+  III: 'PHẦN III (TRẢ LỜI NGẮN)'
+};
+
+function renderSlide(){
+  const slide = slides[currentSlide];
+  const pill = document.getElementById('partPill');
+  pill.textContent = PART_LABEL[slide.type];
+  pill.className = 'part-pill ' + slide.type;
+
+  const content = document.getElementById('slideContent');
+  let html = '';
+  html += '<div class="q-head"><span class="q-badge">Câu '+slide.local+':</span>'+
+          '<div class="q-stem">'+renderMixedText(slide.data.stem)+'</div></div>';
+
+  let mainHtml = '';
+  if(slide.type==='I'){
+    mainHtml += '<div class="options'+(slide.data._revealed?' reveal':'')+'" id="optionsWrap">';
+    slide.data.options.forEach((opt,i)=>{
+      const sel = slide.data._selected===i ? ' selected' : '';
+      const cls = slide.data._revealed ? (i===slide.data.correctIndex ? ' correct' : (slide.data._selected===i ? ' wrong' : '')) : '';
+      mainHtml += '<div class="opt'+sel+cls+'" data-idx="'+i+'">'+
+              '<span class="opt-badge">'+opt.label+'</span>'+
+              '<span class="opt-text">'+renderMixedText(opt.text)+'</span></div>';
+    });
+    mainHtml += '</div>';
+  } else if(slide.type==='II'){
+    mainHtml += '<div class="statements" id="statementsWrap">';
+    slide.data.items.forEach((it,i)=>{
+      const revealCls = slide.data._revealed ? ' reveal' : '';
+      mainHtml += '<div class="stmt'+revealCls+'" data-idx="'+i+'">'+
+              '<span class="stmt-label">'+it.label+')</span>'+
+              '<span class="stmt-text">'+renderMixedText(it.text)+'</span>'+
+              '<div class="ds-buttons">'+
+                dsButtonHtml(it,'true','Đ')+dsButtonHtml(it,'false','S')+
+              '</div></div>';
+    });
+    mainHtml += '</div>';
+  } else {
+    const answer = slide.data.answer || '';
+    const n = Math.max(answer.length, 4);
+    const typed = slide.data._typed || '';
+    const revealed = slide.data._revealed;
+    let stateClass = '';
+    if(revealed){
+      stateClass = (typed.trim()===answer.trim()) ? ' correct' : ' wrong';
+    }
+    mainHtml += '<div class="short-wrap"><div class="ans-boxes'+stateClass+'" id="ansBoxes">';
+    for(let i=0;i<n;i++){
+      const ch = revealed ? (answer[i]||'') : (typed[i]||'');
+      mainHtml += '<input class="ans-box" maxlength="1" data-i="'+i+'" value="'+escapeHtml(ch)+'" '+(revealed?'readonly':'')+'>';
+    }
+    mainHtml += '</div>';
+    if(revealed){
+      mainHtml += '<div class="correct-note">Đáp án đúng: '+renderMixedText(answer)+'</div>';
+    }
+    mainHtml += '</div>';
+  }
+
+  const hasImage = !!(slide.data.image && slide.data.image.trim());
+  html += '<div class="q-body">';
+  html += '<div class="q-main">'+mainHtml+'</div>';
+  if(hasImage){
+    html += '<div class="q-image-wrap"><img class="q-image" src="'+escapeHtml(slide.data.image)+'" onerror="this.closest(\'.q-image-wrap\').style.display=\'none\'"></div>';
+  }
+  html += '</div>';
+
+  content.innerHTML = html;
+  renderMathIn(content);
+  attachSlideHandlers(slide);
+  clearCanvas();
+  updateFooter();
+  updateAnswerBtn();
+  updateSolutionBtnState();
+  closeSolution();
+}
+
+function dsButtonHtml(it, val, label){
+  const isSelected = (String(it._selected)===val);
+  let cls = 'ds-btn';
+  if(isSelected) cls += ' selected';
+  return '<button class="'+cls+'" data-val="'+val+'">'+label+'</button>';
+}
+
+function attachSlideHandlers(slide){
+  if(slide.type==='I'){
+    document.querySelectorAll('#optionsWrap .opt').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        if(slide.data._revealed) return;
+        const idx = parseInt(el.getAttribute('data-idx'),10);
+        slide.data._selected = (slide.data._selected===idx) ? -1 : idx;
+        renderSlide();
+      });
+    });
+  } else if(slide.type==='II'){
+    document.querySelectorAll('#statementsWrap .stmt').forEach(row=>{
+      const idx = parseInt(row.getAttribute('data-idx'),10);
+      row.querySelectorAll('.ds-btn').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          if(slide.data._revealed) return;
+          const val = btn.getAttribute('data-val')==='true';
+          const item = slide.data.items[idx];
+          item._selected = (item._selected===val) ? null : val;
+          renderSlide();
+        });
+      });
+    });
+  } else {
+    document.querySelectorAll('#ansBoxes .ans-box').forEach(inp=>{
+      inp.addEventListener('input', ()=>{
+        const boxes = Array.from(document.querySelectorAll('#ansBoxes .ans-box'));
+        slide.data._typed = boxes.map(b=>b.value).join('');
+        const i = parseInt(inp.getAttribute('data-i'),10);
+        if(inp.value && boxes[i+1]) boxes[i+1].focus();
+      });
+      inp.addEventListener('keydown', (e)=>{
+        if(e.key==='Backspace' && !inp.value){
+          const i = parseInt(inp.getAttribute('data-i'),10);
+          const boxes = Array.from(document.querySelectorAll('#ansBoxes .ans-box'));
+          if(boxes[i-1]) boxes[i-1].focus();
+        }
+      });
+    });
+  }
+  // apply reveal classes for II (needs per-button correct/wrong marking)
+  if(slide.type==='II' && slide.data._revealed){
+    document.querySelectorAll('#statementsWrap .stmt').forEach(row=>{
+      const idx = parseInt(row.getAttribute('data-idx'),10);
+      const item = slide.data.items[idx];
+      row.querySelectorAll('.ds-btn').forEach(btn=>{
+        const val = btn.getAttribute('data-val')==='true';
+        if(item.correct===val) btn.classList.add('correct-answer');
+        if(item._selected===val && item.correct!==val) btn.classList.add('wrong-selected');
+      });
+    });
+  }
+}
+
+function updateFooter(){
+  document.getElementById('slideCounter').textContent = 'Câu '+(currentSlide+1)+' / '+slides.length;
+  document.getElementById('navPrev').disabled = currentSlide===0;
+  document.getElementById('navNext').disabled = currentSlide===slides.length-1;
+}
+function updateAnswerBtn(){
+  const revealed = slides[currentSlide].data._revealed;
+  document.getElementById('btnShowAnswer').textContent = revealed ? '🙈 ẨN ĐÁP ÁN' : '👁 HIỆN ĐÁP ÁN';
+}
+function updateSolutionBtnState(){
+  const sol = slides[currentSlide].data.solution;
+  document.getElementById('btnShowSolution').disabled = !sol;
+}
+
+function toggleAnswer(){
+  const slide = slides[currentSlide];
+  slide.data._revealed = !slide.data._revealed;
+  renderSlide();
+}
+
+function goPrev(){ if(currentSlide>0){ currentSlide--; renderSlide(); } }
+function goNext(){ if(currentSlide<slides.length-1){ currentSlide++; renderSlide(); } }
+function goTo(i){ if(i>=0 && i<slides.length){ currentSlide=i; renderSlide(); closeJumpModal(); } }
+
+/* ============================================================
+   7. SOLUTION PANEL
+   ============================================================ */
+function openSolution(){
+  const sol = slides[currentSlide].data.solution;
+  if(!sol) return;
+  const body = document.getElementById('solutionBody');
+  body.innerHTML = renderMixedText(sol);
+  renderMathIn(body);
+  document.getElementById('solutionPanel').classList.add('open');
+}
+function closeSolution(){ document.getElementById('solutionPanel').classList.remove('open'); }
+function toggleSolution(){
+  const panel = document.getElementById('solutionPanel');
+  if(panel.classList.contains('open')) closeSolution(); else openSolution();
+}
+
+/* Drag the handle at the top of the solution panel to resize it (kéo lên để mở rộng). */
+function initSolutionDrag(){
+  const panel = document.getElementById('solutionPanel');
+  const handle = document.getElementById('solutionDrag');
+  if(!handle) return;
+  let dragging = false, startY = 0, startHeight = 0;
+  const minH = 140;
+  function clampHeight(h){
+    const maxH = window.innerHeight - 10;
+    return Math.min(maxH, Math.max(minH, h));
+  }
+  function onMove(e){
+    if(!dragging) return;
+    const y = (e.touches ? e.touches[0].clientY : e.clientY);
+    const delta = startY - y; // dragging up (finger moves up) => positive => grow
+    panel.style.height = clampHeight(startHeight + delta) + 'px';
+    e.preventDefault();
+  }
+  function onUp(){
+    if(!dragging) return;
+    dragging = false;
+    panel.classList.remove('dragging');
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onUp);
+  }
+  function onDown(e){
+    dragging = true;
+    startY = (e.touches ? e.touches[0].clientY : e.clientY);
+    startHeight = panel.getBoundingClientRect().height;
+    panel.classList.add('dragging');
+    document.addEventListener('mousemove', onMove, {passive:false});
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchmove', onMove, {passive:false});
+    document.addEventListener('touchend', onUp);
+    e.preventDefault();
+  }
+  handle.addEventListener('mousedown', onDown);
+  handle.addEventListener('touchstart', onDown, {passive:false});
+}
+
+/* ============================================================
+   8. JUMP MODAL
+   ============================================================ */
+function openJumpModal(){
+  const body = document.getElementById('jumpBody');
+  let html = '';
+  ['I','II','III'].forEach(type=>{
+    const idxs = [];
+    slides.forEach((s,i)=>{ if(s.type===type) idxs.push(i); });
+    if(idxs.length===0) return;
+    html += '<div class="jump-group"><h4>'+PART_LABEL[type]+'</h4><div class="jump-grid">';
+    idxs.forEach(i=>{
+      const cur = i===currentSlide ? ' cur' : '';
+      html += '<button class="jump-btn'+cur+'" data-i="'+i+'">'+slides[i].local+'</button>';
+    });
+    html += '</div></div>';
+  });
+  body.innerHTML = html;
+  body.querySelectorAll('.jump-btn').forEach(b=>{
+    b.addEventListener('click', ()=>goTo(parseInt(b.getAttribute('data-i'),10)));
+  });
+  document.getElementById('jumpModal').classList.remove('hidden');
+}
+function closeJumpModal(){ document.getElementById('jumpModal').classList.add('hidden'); }
+
+/* ============================================================
+   9. FONT SIZE
+   ============================================================ */
+function changeFontScale(delta){
+  scale = Math.min(1.6, Math.max(0.55, +(scale+delta).toFixed(2)));
+  document.getElementById('slideContent').style.setProperty('--scale', scale);
+}
+
+/* ============================================================
+   10. DRAWING (pencil / eraser)
+   ============================================================ */
+let drawMode = 'none'; // 'none' | 'pencil' | 'eraser'
+let currentColor = '#eb5757';
+let drawing = false;
+let lastX=0, lastY=0;
+let canvas, ctx;
+
+function setupCanvas(){
+  canvas = document.getElementById('drawCanvas');
+  ctx = canvas.getContext('2d');
+  canvas.addEventListener('pointerdown', onPointerDown);
+  canvas.addEventListener('pointermove', onPointerMove);
+  window.addEventListener('pointerup', onPointerUp);
+  window.addEventListener('resize', ()=>{ syncCalcPanelForViewport(); resizeCanvas(); fitCalcFrame(); });
+}
+function resizeCanvas(){
+  const area = document.getElementById('slideArea');
+  if(!canvas || !area) return;
+  const w = area.clientWidth, h = area.clientHeight;
+  const prev = (canvas.width>0 && canvas.height>0) ? canvas.toDataURL() : null;
+  canvas.width = w; canvas.height = h;
+  if(prev){
+    const img = new Image();
+    img.onload = ()=>ctx.drawImage(img,0,0,w,h);
+    img.src = prev;
+  }
+}
+function clearCanvas(){
+  if(!ctx || !canvas) return;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+}
+
+/* ============================================================
+   CALCULATOR PANEL (MathDA)
+   ============================================================ */
+const CALC_URL = 'https://mathda.com/calculator/vi';
+// Kích thước gốc (px) mà trang MathDA hiển thị đúng CHỈ phần máy tính (không sidebar/Solver) —
+// dựa theo ảnh chụp màn hình thực tế của trang ở độ rộng hẹp. Ta cố định iframe ở kích thước
+// này rồi thu nhỏ bằng transform:scale() để luôn khớp gọn trong khung, không bị cắt xén.
+const CALC_IFRAME_W = 854;
+const CALC_IFRAME_H = 1166;
+const CALC_PANEL_STORAGE_KEY = 'mathCalcPanelWidthPct';
+const CALC_PANEL_DEFAULT_PCT = 50;
+let calcOpen = false;
+
+function isDesktopSplit(){
+  return window.matchMedia('(min-width:721px)').matches;
+}
+function getSavedCalcWidthPct(){
+  try{
+    const v = parseFloat(localStorage.getItem(CALC_PANEL_STORAGE_KEY));
+    if(!isNaN(v) && v>=15 && v<=96) return v;
+  }catch(e){}
+  return CALC_PANEL_DEFAULT_PCT;
+}
+function saveCalcWidthPct(pct){
+  try{ localStorage.setItem(CALC_PANEL_STORAGE_KEY, String(Math.round(pct*10)/10)); }catch(e){}
+}
+
+function toggleCalculator(){
+  calcOpen = !calcOpen;
+  const panel = document.getElementById('calcPanel');
+  const resizer = document.getElementById('calcResizer');
+  const area = document.getElementById('slideArea');
+  const btn = document.getElementById('btnCalc');
+  const desktop = isDesktopSplit();
+  if(calcOpen){
+    if(desktop){
+      panel.style.flexBasis = getSavedCalcWidthPct()+'%';
+      resizer.classList.add('active');
+    } else {
+      panel.style.flexBasis = ''; // để CSS (xếp chồng dọc trên di động) tự quyết định
+      resizer.classList.remove('active');
+    }
+    panel.classList.add('open');
+    area.classList.add('compact');
+    btn.classList.add('active');
+    loadCalcIframeOnce();
+  } else {
+    panel.style.flexBasis = '0%';
+    panel.classList.remove('open');
+    resizer.classList.remove('active');
+    area.classList.remove('compact');
+    btn.classList.remove('active');
+  }
+  animateCalcFit();
+}
+function closeCalculator(){
+  if(!calcOpen) return;
+  toggleCalculator();
+}
+function loadCalcIframeOnce(){
+  const iframe = document.getElementById('calcIframe');
+  if(iframe && (!iframe.src || iframe.src==='about:blank')){
+    iframe.src = CALC_URL;
+  }
+}
+// Trong suốt thời gian trượt (mở/đóng) panel, liên tục cập nhật canvas vẽ + tỉ lệ máy tính
+// để chuyển động mượt, chuyên nghiệp thay vì giật cục ở khung hình cuối.
+function animateCalcFit(){
+  const start = performance.now();
+  const duration = 380;
+  function step(now){
+    resizeCanvas();
+    fitCalcFrame();
+    if(now-start < duration) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+function fitCalcFrame(){
+  const panel = document.getElementById('calcPanel');
+  const wrap = document.getElementById('calcFrameWrap');
+  const iframe = document.getElementById('calcIframe');
+  if(!panel || !wrap || !iframe || !panel.classList.contains('open')) return;
+  const availW = wrap.clientWidth, availH = wrap.clientHeight;
+  if(availW<=0 || availH<=0) return;
+  const scale = Math.min(availW/CALC_IFRAME_W, availH/CALC_IFRAME_H);
+  const scaledW = CALC_IFRAME_W*scale, scaledH = CALC_IFRAME_H*scale;
+  iframe.style.width = CALC_IFRAME_W+'px';
+  iframe.style.height = CALC_IFRAME_H+'px';
+  iframe.style.transform = 'scale('+scale+')';
+  iframe.style.left = Math.max(0,(availW-scaledW)/2)+'px';
+  iframe.style.top = Math.max(0,(availH-scaledH)/2)+'px';
+}
+function syncCalcPanelForViewport(){
+  if(!calcOpen) return;
+  const panel = document.getElementById('calcPanel');
+  const resizer = document.getElementById('calcResizer');
+  if(isDesktopSplit()){
+    resizer.classList.add('active');
+    if(!panel.style.flexBasis) panel.style.flexBasis = getSavedCalcWidthPct()+'%';
+  } else {
+    resizer.classList.remove('active');
+    panel.style.flexBasis = '';
+  }
+}
+function initCalcResizer(){
+  const resizer = document.getElementById('calcResizer');
+  const body = document.getElementById('presentBody');
+  const panel = document.getElementById('calcPanel');
+  if(!resizer || !body || !panel) return;
+  let dragging = false;
+  function onMove(e){
+    if(!dragging) return;
+    const x = (e.touches ? e.touches[0].clientX : e.clientX);
+    const rect = body.getBoundingClientRect();
+    let pct = ((rect.right - x) / rect.width) * 100;
+    pct = Math.min(96, Math.max(15, pct));
+    panel.style.flexBasis = pct+'%';
+    resizeCanvas();
+    fitCalcFrame();
+    e.preventDefault();
+  }
+  function onUp(){
+    if(!dragging) return;
+    dragging = false;
+    resizer.classList.remove('dragging');
+    body.classList.remove('dragging');
+    const pct = parseFloat(panel.style.flexBasis) || CALC_PANEL_DEFAULT_PCT;
+    saveCalcWidthPct(pct);
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onUp);
+  }
+  function onDown(e){
+    if(!calcOpen || !isDesktopSplit()) return;
+    dragging = true;
+    resizer.classList.add('dragging');
+    body.classList.add('dragging');
+    document.addEventListener('mousemove', onMove, {passive:false});
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchmove', onMove, {passive:false});
+    document.addEventListener('touchend', onUp);
+    e.preventDefault();
+  }
+  resizer.addEventListener('mousedown', onDown);
+  resizer.addEventListener('touchstart', onDown, {passive:false});
+}
+function getPos(e){
+  const rect = canvas.getBoundingClientRect();
+  return {x: e.clientX-rect.left, y: e.clientY-rect.top};
+}
+function onPointerDown(e){
+  if(drawMode==='none') return;
+  drawing = true;
+  canvas.setPointerCapture(e.pointerId);
+  const p = getPos(e);
+  lastX=p.x; lastY=p.y;
+}
+function onPointerMove(e){
+  if(!drawing || drawMode==='none') return;
+  const p = getPos(e);
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  if(drawMode==='pencil'){
+    ctx.globalCompositeOperation='source-over';
+    ctx.strokeStyle = currentColor;
+    ctx.lineWidth = 3.5;
+  }else{
+    ctx.globalCompositeOperation='destination-out';
+    ctx.lineWidth = 26;
+  }
+  ctx.beginPath();
+  ctx.moveTo(lastX,lastY);
+  ctx.lineTo(p.x,p.y);
+  ctx.stroke();
+  lastX=p.x; lastY=p.y;
+}
+function onPointerUp(){ drawing=false; }
+
+function setDrawMode(mode){
+  drawMode = (drawMode===mode) ? 'none' : mode;
+  document.getElementById('toolPencil').classList.toggle('active', drawMode==='pencil');
+  document.getElementById('toolEraser').classList.toggle('active', drawMode==='eraser');
+  canvas.classList.toggle('drawmode', drawMode!=='none');
+}
+function setColor(c, btnId){
+  currentColor = c;
+  document.querySelectorAll('.color-dot').forEach(d=>d.classList.remove('sel'));
+  document.getElementById(btnId).classList.add('sel');
+  if(drawMode!=='pencil'){
+    drawMode='pencil';
+    document.getElementById('toolPencil').classList.add('active');
+    document.getElementById('toolEraser').classList.remove('active');
+    canvas.classList.add('drawmode');
+  }
+}
+
+/* ============================================================
+   11. TIMER
+   ============================================================ */
+let timerDuration = 60;
+let timerRemaining = 60;
+let timerInterval = null;
+let timerRunning = false;
+
+function formatTime(sec){
+  sec = Math.max(0, sec);
+  const m = Math.floor(sec/60), s = sec%60;
+  return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+function updateTimerBtn(){
+  const btn = document.getElementById('timerBtn');
+  btn.classList.toggle('running', timerRunning);
+  btn.classList.toggle('low', timerRunning && timerRemaining<=10);
+  if(timerRunning){
+    btn.textContent = '⏸ '+formatTime(timerRemaining);
+  }else{
+    btn.textContent = '⏳ Bắt đầu ('+formatTime(timerDuration)+')';
+  }
+}
+function timerToggle(){
+  if(timerRunning){
+    pauseTimer();
+  }else{
+    if(timerRemaining<=0) timerRemaining = timerDuration;
+    startTimer();
+  }
+}
+function startTimer(){
+  timerRunning = true;
+  updateTimerBtn();
+  timerInterval = setInterval(()=>{
+    timerRemaining--;
+    if(timerRemaining<=0){
+      timerRemaining = 0;
+      updateTimerBtn();
+      stopTimer();
+      return;
+    }
+    updateTimerBtn();
+  },1000);
+}
+function pauseTimer(){
+  timerRunning=false;
+  clearInterval(timerInterval);
+  updateTimerBtn();
+}
+function stopTimer(){
+  timerRunning=false;
+  clearInterval(timerInterval);
+  timerRemaining = timerDuration;
+  updateTimerBtn();
+}
+function setTimerDuration(sec){
+  timerDuration = sec;
+  timerRemaining = sec;
+  stopTimer();
+  closeTimerPopover();
+}
+function openTimerPopover(){
+  closeTimerPopover();
+  const pop = document.createElement('div');
+  pop.className='timer-pop';
+  pop.id='timerPop';
+  const presets=[15,30,45,60,90,120,180,300];
+  let grid = '<div class="timer-pop-grid">'+presets.map(p=>'<button data-sec="'+p+'">'+formatTime(p)+'</button>').join('')+'</div>';
+  grid += '<div class="timer-pop-custom"><input type="number" min="0" max="59" id="customMin" placeholder="Phút" value="0">'+
+          '<span>:</span><input type="number" min="0" max="59" id="customSec" placeholder="Giây" value="0">'+
+          '<button class="btn btn-primary btn-sm" id="customApply">Đặt</button></div>';
+  pop.innerHTML = grid;
+  document.querySelector('.toolbar').appendChild(pop);
+  pop.querySelectorAll('[data-sec]').forEach(b=>{
+    b.addEventListener('click', ()=>setTimerDuration(parseInt(b.getAttribute('data-sec'),10)));
+  });
+  document.getElementById('customApply').addEventListener('click', ()=>{
+    const mm = parseInt(document.getElementById('customMin').value,10)||0;
+    const ss = parseInt(document.getElementById('customSec').value,10)||0;
+    setTimerDuration(mm*60+ss);
+  });
+  setTimeout(()=>{
+    document.addEventListener('click', outsideTimerPop);
+  },0);
+}
+function outsideTimerPop(e){
+  const pop = document.getElementById('timerPop');
+  if(pop && !pop.contains(e.target) && e.target.id!=='btnClock'){
+    closeTimerPopover();
+  }
+}
+function closeTimerPopover(){
+  const pop = document.getElementById('timerPop');
+  if(pop) pop.remove();
+  document.removeEventListener('click', outsideTimerPop);
+}
+
+/* ============================================================
+   12. TOUCH SWIPE + KEYBOARD
+   ============================================================ */
+function setupSwipe(){
+  const area = document.getElementById('slideArea');
+  let sx=0, sy=0, moved=false;
+  area.addEventListener('touchstart', e=>{
+    if(drawMode!=='none') return;
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY; moved=false;
+  }, {passive:true});
+  area.addEventListener('touchmove', ()=>{ moved=true; }, {passive:true});
+  area.addEventListener('touchend', e=>{
+    if(drawMode!=='none' || !moved) return;
+    const dx = e.changedTouches[0].clientX - sx;
+    const dy = e.changedTouches[0].clientY - sy;
+    if(Math.abs(dx)>60 && Math.abs(dx)>Math.abs(dy)*1.5){
+      if(dx<0) goNext(); else goPrev();
+    }
+  }, {passive:true});
+}
+function setupKeyboard(){
+  document.addEventListener('keydown', e=>{
+    if(document.getElementById('presentScreen').hidden) return;
+    if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+    if(e.key==='ArrowRight') goNext();
+    else if(e.key==='ArrowLeft') goPrev();
+    else if(e.code==='Space'){ e.preventDefault(); toggleAnswer(); }
+    else if(e.key==='l' || e.key==='L') toggleSolution();
+    else if(e.key==='Escape') exitPresentation();
+  });
+}
+
+/* ============================================================
+   13. WIRE UP PRESENTATION TOOLBAR
+   ============================================================ */
+function initPresentScreen(){
+  setupCanvas();
+  setupSwipe();
+  setupKeyboard();
+
+  document.getElementById('fontMinus').addEventListener('click', ()=>changeFontScale(-0.1));
+  document.getElementById('fontPlus').addEventListener('click', ()=>changeFontScale(0.1));
+  document.getElementById('toolPencil').addEventListener('click', ()=>setDrawMode('pencil'));
+  document.getElementById('toolEraser').addEventListener('click', ()=>setDrawMode('eraser'));
+  document.getElementById('colorRed').addEventListener('click', ()=>setColor('#eb5757','colorRed'));
+  document.getElementById('colorBlue').addEventListener('click', ()=>setColor('#2f80ed','colorBlue'));
+  document.getElementById('colorGreen').addEventListener('click', ()=>setColor('#27ae60','colorGreen'));
+  document.getElementById('toolClear').addEventListener('click', clearCanvas);
+  document.getElementById('btnClock').addEventListener('click', (e)=>{ e.stopPropagation(); openTimerPopover(); });
+  document.getElementById('timerBtn').addEventListener('click', timerToggle);
+  document.getElementById('btnFullscreen').addEventListener('click', ()=>{
+    if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
+    else document.exitFullscreen().catch(()=>{});
+  });
+  document.getElementById('btnExit').addEventListener('click', exitPresentation);
+  document.getElementById('btnCalc').addEventListener('click', toggleCalculator);
+  document.getElementById('btnCalcClose').addEventListener('click', closeCalculator);
+  initCalcResizer();
+
+  document.getElementById('btnShowAnswer').addEventListener('click', toggleAnswer);
+  document.getElementById('btnShowSolution').addEventListener('click', toggleSolution);
+  document.getElementById('solutionClose').addEventListener('click', closeSolution);
+  initSolutionDrag();
+  document.getElementById('navPrev').addEventListener('click', goPrev);
+  document.getElementById('navNext').addEventListener('click', goNext);
+  document.getElementById('slideCounter').addEventListener('click', openJumpModal);
+  document.getElementById('jumpClose').addEventListener('click', closeJumpModal);
+  document.getElementById('jumpModal').addEventListener('click', e=>{
+    if(e.target.id==='jumpModal') closeJumpModal();
+  });
+
+  document.getElementById('btnCoverStart').addEventListener('click', enterSlidesFromCover);
+  document.getElementById('coverBack').addEventListener('click', exitCoverToSetup);
+
+  document.getElementById('slideContent').style.setProperty('--scale', scale);
+}
+
+/* ============================================================
+   14. INIT
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', function(){
+  loadDeck();
+  timerDuration = deck.defaultTimer || 60;
+  timerRemaining = timerDuration;
+  initSetupScreen();
+  initPresentScreen();
+});
+
+})();
+</script>
+</body>
+</html>
