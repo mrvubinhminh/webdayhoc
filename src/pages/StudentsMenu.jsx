@@ -34,7 +34,33 @@ const StudentsMenu = () => {
     '10': parsedStudents.filter(m => m.grade === '10'),
     '11': parsedStudents.filter(m => m.grade === '11'),
     '12': parsedStudents.filter(m => m.grade === '12'),
-    'khac': parsedStudents.filter(m => m.grade === 'khac'),
+    'khac': [
+      ...parsedStudents.filter(m => m.grade === 'khac'),
+      {
+        id: 'dojovtl',
+        title: 'LỚP HỌC DOJO',
+        path: `/students/view/external/${encodeURIComponent('https://dojovtl.vercel.app')}`,
+        isExternal: false
+      },
+      {
+        id: 'bangdiem-delta',
+        title: 'QUẢN LÝ NHẬN XÉT ĐIỂM HỌC SINH',
+        path: `/students/view/external/${encodeURIComponent('https://bangdiem-delta.vercel.app')}`,
+        isExternal: false
+      },
+      {
+        id: 'phimtatimac',
+        title: 'PHÍM TẮT IMAC',
+        path: `/students/view/external/${encodeURIComponent('https://phimtatimac.vercel.app/')}`,
+        isExternal: false
+      },
+      {
+        id: 'sheetpdf',
+        title: 'VÒNG QUAY HỌC TẬP',
+        path: `/students/view/external/${encodeURIComponent('https://sheetpdf.vercel.app/')}`,
+        isExternal: false
+      }
+    ]
   };
 
   const tabs = [

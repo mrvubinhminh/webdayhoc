@@ -9,7 +9,7 @@ const StudentIframeWrapper = () => {
     const iframeRef = useRef(null);
     const [key, setKey] = useState(0);
 
-    const url = `/students/${grade}/${encodeURIComponent(id)}.html`;
+    const url = grade === 'external' ? decodeURIComponent(id) : `/students/${grade}/${encodeURIComponent(id)}.html`;
 
     const toggleFullScreen = () => {
         if (!document.fullscreenElement) {
