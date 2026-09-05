@@ -10,7 +10,10 @@ import 'katex/dist/katex.min.css';
 // Component render toán học LaTeX
 const MathText = ({ text }) => {
   const renderMath = (str) => {
-    const parts = str.split(/(\$.*?\$)/g);
+    if (!str) return null;
+    
+    // Tách các khối math bằng $...$ (hỗ trợ nhiều dòng với \s\S)
+    const parts = str.split(/(\$[\s\S]*?\$)/g);
     return parts.map((part, i) => {
       if (part.startsWith('$') && part.endsWith('$')) {
         const math = part.slice(1, -1);
@@ -20,7 +23,20 @@ const MathText = ({ text }) => {
           return <span key={i}>{part}</span>;
         }
       }
-      return <span key={i}>{part}</span>;
+      
+      // Xử lý xuống dòng cho phần text (không phải toán)
+      // \\newline, \newline, hoặc \\
+      const textParts = part.split(/\\\\newline|\\newline|\\\\/g);
+      return (
+        <span key={i}>
+          {textParts.map((t, idx) => (
+             <React.Fragment key={idx}>
+               {t}
+               {idx !== textParts.length - 1 && <br />}
+             </React.Fragment>
+          ))}
+        </span>
+      );
     });
   };
   return <div>{renderMath(text || '')}</div>;
@@ -266,23 +282,28 @@ const GameHost = () => {
           )}
 
           {roomData.status === 'REVEAL' && (
-            <div className="animate-fade-in">
-               <div className="bg-slate-800 p-8 rounded-3xl mb-8 text-center border-4 border-slate-700">
-                  <h2 className="text-3xl text-gray-400 mb-4">Đáp án đúng là:</h2>
-                  <div className="text-6xl font-black text-emerald-400 mb-6">
-                    {['A', 'B', 'C', 'D'][roomData.questions[roomData.currentQuestionIndex].correctOption - 1]}
+            <div className="animate-fade-in flex flex-col min-h-[70vh]">
+               <div className="bg-slate-800 p-8 rounded-3xl mb-8 border-4 border-slate-700 flex flex-col md:flex-row gap-8 flex-1">
+                  <div className="md:w-1/4 flex flex-col items-center justify-center text-center bg-slate-900/50 p-6 rounded-2xl border border-slate-700">
+                    <h2 className="text-3xl text-gray-400 mb-4">Đáp án đúng là:</h2>
+                    <div className="text-8xl font-black text-emerald-400 mb-6 drop-shadow-[0_0_20px_rgba(52,211,153,0.5)]">
+                      {['A', 'B', 'C', 'D'][roomData.questions[roomData.currentQuestionIndex].correctOption - 1]}
+                    </div>
                   </div>
+                  
                   {roomData.questions[roomData.currentQuestionIndex].explanation && (
-                    <div className="bg-slate-900 p-6 rounded-xl text-left border border-slate-700">
-                      <h3 className="text-xl font-bold text-gray-400 mb-2">Lời giải:</h3>
-                      <div className="text-xl leading-relaxed text-gray-200">
+                    <div className="flex-1 bg-slate-900 p-8 rounded-2xl text-left border border-slate-700 overflow-y-auto max-h-[60vh] shadow-inner">
+                      <h3 className="text-3xl font-bold text-emerald-400 mb-6 border-b-2 border-slate-700/50 pb-4 flex items-center gap-3">
+                        Lời giải chi tiết
+                      </h3>
+                      <div className="text-2xl leading-[1.8] text-gray-200">
                         <MathText text={roomData.questions[roomData.currentQuestionIndex].explanation} />
                       </div>
                     </div>
                   )}
                </div>
 
-               <div className="flex justify-between">
+               <div className="flex justify-between mt-auto">
                   <button onClick={showLeaderboard} className="bg-orange-600 hover:bg-orange-500 text-white px-8 py-4 rounded-xl font-bold text-2xl shadow-lg flex items-center gap-2">
                     <Trophy className="w-6 h-6" /> Xem Bảng Xếp Hạng
                   </button>
