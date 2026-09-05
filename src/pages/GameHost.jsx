@@ -46,11 +46,16 @@ const GameHost = () => {
   const navigate = useNavigate();
   const [questions, setQuestions] = useState([]);
   const [fileName, setFileName] = useState('');
-  const [localGameState, setLocalGameState] = useState('SETUP'); // SETUP, LOBBY, PLAYING
+  const [localGameState, setLocalGameState] = useState('SETUP');
   const [roomCode, setRoomCode] = useState('');
+  const [timeLimit, setTimeLimit] = useState(60); // Thời gian làm bài (giây)
+  const [revealTimeLimit, setRevealTimeLimit] = useState(60); // Thời gian xem đáp án (giây)
   
   // Realtime Data from Firebase
   const [roomData, setRoomData] = useState(null);
+
+  // Timer cho màn hình Host
+  const [timeLeft, setTimeLeft] = useState(0);
 
   useEffect(() => {
     if (roomCode) {
@@ -58,12 +63,49 @@ const GameHost = () => {
       const unsubscribe = onValue(roomRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
+          // Xử lý chuyển trạng thái để reset timer
+          if (roomData && roomData.status !== data.status) {
+             if (data.status === 'QUESTION') {
+               setTimeLeft(data.settings.timeLimit || 60);
+             } else if (data.status === 'REVEAL') {
+               setTimeLeft(data.settings.revealTimeLimit || 60);
+             }
+          }
+          // Lần đầu nhận dữ liệu (khôi phục timer nếu đang ở QUESTION/REVEAL)
+          if (!roomData && data) {
+             if (data.status === 'QUESTION') setTimeLeft(data.settings.timeLimit || 60);
+             else if (data.status === 'REVEAL') setTimeLeft(data.settings.revealTimeLimit || 60);
+          }
           setRoomData(data);
         }
       });
       return () => unsubscribe();
     }
-  }, [roomCode]);
+  }, [roomCode, roomData]);
+
+  // Bộ đếm thời gian
+  useEffect(() => {
+    let timer;
+    if ((roomData?.status === 'QUESTION' || roomData?.status === 'REVEAL') && timeLeft > 0) {
+      timer = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+             clearInterval(timer);
+             // Tự động chuyển trạng thái khi hết giờ
+             if (roomData.status === 'QUESTION') {
+                revealAnswer();
+             } else if (roomData.status === 'REVEAL') {
+                // Hết giờ xem đáp án -> Tự sang câu tiếp theo
+                nextQuestion(); 
+             }
+             return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [roomData?.status, timeLeft]);
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
@@ -107,10 +149,14 @@ const GameHost = () => {
     setLocalGameState('LOBBY');
     
     await set(ref(db, `rooms/${code}`), {
-      status: 'LOBBY', // LOBBY, QUESTION, REVEAL, LEADERBOARD
+      status: 'LOBBY', 
       currentQuestionIndex: 0,
       questions: questions,
-      players: {}
+      players: {},
+      settings: {
+        timeLimit: timeLimit,
+        revealTimeLimit: revealTimeLimit
+      }
     });
   };
 
@@ -194,6 +240,17 @@ const GameHost = () => {
             </label>
           </div>
 
+          <div className="flex gap-6 mb-8 justify-center">
+             <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 w-1/2">
+                <label className="block text-gray-400 mb-2 font-bold text-sm">Thời gian mỗi câu (giây)</label>
+                <input type="number" value={timeLimit} onChange={(e) => setTimeLimit(parseInt(e.target.value) || 0)} className="w-full bg-slate-900 text-white text-2xl font-bold text-center py-2 rounded-lg outline-none focus:border-emerald-500 border border-transparent" />
+             </div>
+             <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 w-1/2">
+                <label className="block text-gray-400 mb-2 font-bold text-sm">Thời gian xem đáp án (giây)</label>
+                <input type="number" value={revealTimeLimit} onChange={(e) => setRevealTimeLimit(parseInt(e.target.value) || 0)} className="w-full bg-slate-900 text-white text-2xl font-bold text-center py-2 rounded-lg outline-none focus:border-emerald-500 border border-transparent" />
+             </div>
+          </div>
+
           {fileName && (
             <div className="text-emerald-300 bg-emerald-900/30 p-4 rounded-lg mb-6">
               Đã tải: <strong>{fileName}</strong> ({questions.length} câu hỏi)
@@ -246,6 +303,13 @@ const GameHost = () => {
         <div className="max-w-6xl mx-auto mt-4">
           <div className="flex justify-between items-center mb-6">
             <div className="text-2xl font-bold text-gray-400">Câu hỏi {roomData.currentQuestionIndex + 1}/{roomData.questions.length}</div>
+            
+            {(roomData.status === 'QUESTION' || roomData.status === 'REVEAL') && (
+               <div className="text-3xl font-black bg-slate-800 px-6 py-2 rounded-xl border border-slate-700 flex items-center gap-3">
+                 ⏳ <span className={timeLeft <= 10 ? 'text-red-500 animate-pulse' : 'text-emerald-400'}>{timeLeft}s</span>
+               </div>
+            )}
+
             <div className="flex gap-4">
               <div className="bg-slate-800 px-6 py-2 rounded-lg text-xl font-bold text-emerald-400">
                 Đã trả lời: {answerCount}/{playersList.length}
