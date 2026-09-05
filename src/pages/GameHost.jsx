@@ -12,21 +12,34 @@ const MathText = ({ text }) => {
   const renderMath = (str) => {
     if (!str) return null;
     
-    // Tách các khối math bằng $...$ (hỗ trợ nhiều dòng với \s\S)
-    const parts = str.split(/(\$[\s\S]*?\$)/g);
+    // Tách các khối math bằng $$...$$ hoặc $...$
+    const parts = str.split(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$)/g);
     return parts.map((part, i) => {
-      if (part.startsWith('$') && part.endsWith('$')) {
-        const math = part.slice(1, -1);
+      let isDisplayMode = false;
+      let math = null;
+
+      if (part.startsWith('$$') && part.endsWith('$$')) {
+        isDisplayMode = true;
+        math = part.slice(2, -2);
+      } else if (part.startsWith('$') && part.endsWith('$')) {
+        math = part.slice(1, -1);
+      }
+
+      if (math !== null) {
+        // Nếu trong công thức có \\ nhưng không có \begin{...} thì bọc bằng aligned để katex không lỗi
+        if (math.includes('\\\\') && !math.includes('\\begin{')) {
+            math = `\\begin{aligned} ${math} \\end{aligned}`;
+        }
         try {
-          return <span key={i} dangerouslySetInnerHTML={{ __html: katex.renderToString(math, { throwOnError: false }) }} />;
+          return <span key={i} dangerouslySetInnerHTML={{ __html: katex.renderToString(math, { throwOnError: false, displayMode: isDisplayMode }) }} />;
         } catch (e) {
           return <span key={i}>{part}</span>;
         }
       }
       
       // Xử lý xuống dòng cho phần text (không phải toán)
-      // \\newline, \newline, hoặc \\
-      const textParts = part.split(/\\\\newline|\\newline|\\\\/g);
+      // \\newline, \newline, \\, hoặc xuống dòng thực sự (\n)
+      const textParts = part.split(/\\\\newline|\\newline|\\\\|\n/g);
       return (
         <span key={i}>
           {textParts.map((t, idx) => (
