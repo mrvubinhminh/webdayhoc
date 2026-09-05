@@ -106,8 +106,9 @@ const GameHost = () => {
   const [localGameState, setLocalGameState] = useState('SETUP');
   const [roomCode, setRoomCode] = useState('');
   const [timeLimit, setTimeLimit] = useState(60);
-  const [revealTimeLimit, setRevealTimeLimit] = useState(60);
+  const [revealTimeLimit, setRevealTimeLimit] = useState(30);
   const [selectedTheme, setSelectedTheme] = useState(THEMES[0]);
+  const [gameTitle, setGameTitle] = useState('ĐƯỜNG LÊN ĐỈNH OLYMPIA');
   
   // Realtime Data from Firebase
   const [roomData, setRoomData] = useState(null);
@@ -213,12 +214,17 @@ const GameHost = () => {
       players: {},
       settings: {
         timeLimit: timeLimit,
-        revealTimeLimit: revealTimeLimit
+        revealTimeLimit: revealTimeLimit,
+        gameTitle: gameTitle
       }
     });
   };
 
   const startGame = async () => {
+    // Phát âm thanh bắt đầu
+    const audio = new Audio('https://www.myinstants.com/media/sounds/epic.mp3'); // URL âm thanh hoành tráng (thầy có thể đổi link gốc)
+    audio.play().catch(e => console.log('Audio play failed', e));
+
     await update(ref(db, `rooms/${roomCode}`), { status: 'QUESTION' });
     setLocalGameState('PLAYING');
   };
@@ -339,35 +345,49 @@ const GameHost = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-6">
-            {/* Upload file */}
-            <div className="col-span-2 border-2 border-dashed border-emerald-500/30 p-8 rounded-xl hover:bg-emerald-500/10 transition-colors text-center">
-              <Upload className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
-              <p className="text-lg mb-4 text-gray-300">Tải lên file Excel chứa câu hỏi</p>
-              <label className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl font-bold cursor-pointer transition-colors inline-block">
-                Chọn File Excel
-                <input type="file" accept=".xlsx, .xls" onChange={handleFileUpload} className="hidden" />
-              </label>
-              {fileName && (
-                <div className="mt-4 text-emerald-300 bg-emerald-900/30 p-3 rounded-lg">
-                  ✅ <strong>{fileName}</strong> — {questions.length} câu hỏi
-                </div>
-              )}
+            {/* Cột trái: Tên bài & File */}
+            <div className="flex flex-col gap-6">
+              <div className="bg-slate-800 p-5 rounded-xl border border-slate-700">
+                <label className="block text-gray-400 mb-2 font-bold text-sm">📝 Tên bài trình chiếu</label>
+                <input 
+                  type="text" 
+                  value={gameTitle} 
+                  onChange={(e) => setGameTitle(e.target.value)} 
+                  className="w-full bg-slate-900 text-white text-xl font-bold px-4 py-3 rounded-lg outline-none border border-transparent focus:border-emerald-500" 
+                  placeholder="Nhập tên bài..."
+                />
+              </div>
+
+              <div className="flex-1 border-2 border-dashed border-emerald-500/30 p-8 rounded-xl hover:bg-emerald-500/10 transition-colors text-center flex flex-col justify-center">
+                <Upload className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
+                <p className="text-lg mb-4 text-gray-300">Tải lên file Excel chứa câu hỏi</p>
+                <label className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl font-bold cursor-pointer transition-colors inline-block">
+                  Chọn File Excel
+                  <input type="file" accept=".xlsx, .xls" onChange={handleFileUpload} className="hidden" />
+                </label>
+                {fileName && (
+                  <div className="mt-4 text-emerald-300 bg-emerald-900/30 p-3 rounded-lg border border-emerald-500/30">
+                    ✅ <strong>{fileName}</strong> — {questions.length} câu hỏi
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Thời gian */}
-            <div className="bg-slate-800 p-5 rounded-xl border border-slate-700">
-              <label className="block text-gray-400 mb-2 font-bold text-sm">⏱ Thời gian mỗi câu (giây)</label>
-              <input type="number" value={timeLimit} onChange={(e) => setTimeLimit(parseInt(e.target.value) || 0)} className="w-full bg-slate-900 text-white text-3xl font-bold text-center py-2 rounded-lg outline-none border border-transparent focus:border-emerald-500" />
-            </div>
-            <div className="bg-slate-800 p-5 rounded-xl border border-slate-700">
-              <label className="block text-gray-400 mb-2 font-bold text-sm">👀 Thời gian xem đáp án (giây)</label>
-              <input type="number" value={revealTimeLimit} onChange={(e) => setRevealTimeLimit(parseInt(e.target.value) || 0)} className="w-full bg-slate-900 text-white text-3xl font-bold text-center py-2 rounded-lg outline-none border border-transparent focus:border-emerald-500" />
+            {/* Cột phải: Cài đặt thời gian */}
+            <div className="flex flex-col gap-6">
+              <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 h-full flex flex-col justify-center">
+                <label className="block text-gray-400 mb-2 font-bold text-sm text-center">⏱ Thời gian mỗi câu (giây)</label>
+                <input type="number" value={timeLimit} onChange={(e) => setTimeLimit(parseInt(e.target.value) || 0)} className="w-full bg-slate-900 text-white text-4xl font-black text-center py-4 rounded-lg outline-none border border-transparent focus:border-emerald-500 mb-8" />
+                
+                <label className="block text-gray-400 mb-2 font-bold text-sm text-center">👀 Thời gian xem đáp án (giây)</label>
+                <input type="number" value={revealTimeLimit} onChange={(e) => setRevealTimeLimit(parseInt(e.target.value) || 0)} className="w-full bg-slate-900 text-white text-4xl font-black text-center py-4 rounded-lg outline-none border border-transparent focus:border-emerald-500" />
+              </div>
             </div>
           </div>
 
           <button 
-            onClick={createRoom} disabled={questions.length === 0}
-            className={`w-full mt-8 py-5 rounded-2xl font-black text-2xl transition-all ${questions.length > 0 ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/30 hover:scale-[1.02]' : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}
+            onClick={createRoom} disabled={questions.length === 0 || !gameTitle.trim()}
+            className={`w-full mt-8 py-5 rounded-2xl font-black text-2xl transition-all ${questions.length > 0 && gameTitle.trim() ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/30 hover:scale-[1.02]' : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}
           >
             🚀 TẠO PHÒNG CHƠI
           </button>
@@ -378,68 +398,77 @@ const GameHost = () => {
         const playUrl = 'https://webdayhoc.vercel.app/play';
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(playUrl)}&bgcolor=ffffff&color=000000&margin=10`;
         return (
-          <div className="max-w-5xl mx-auto mt-8">
-            {/* Tiêu đề */}
-            <h2 className="text-center text-2xl text-gray-300 mb-8 font-semibold">
-              📱 Học sinh quét mã hoặc truy cập để tham gia
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-              {/* Mã QR */}
-              <div className="bg-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/10 shadow-2xl flex flex-col items-center justify-center gap-4">
-                <p className="text-gray-400 text-lg font-semibold">📷 Quét mã QR</p>
-                <div className="bg-white p-3 rounded-2xl shadow-xl">
-                  <img
-                    src={qrUrl}
-                    alt="QR Code"
-                    className="w-52 h-52 rounded-xl"
-                  />
-                </div>
-                <p className="text-sm text-gray-500 font-mono">{playUrl}</p>
+          <div className="w-full min-h-screen relative overflow-hidden flex flex-col items-center pt-8">
+            {/* Olympia Light Rays Effect */}
+            <div className="absolute inset-0 z-0 olympia-rays animate-spin-slow pointer-events-none opacity-60"></div>
+            
+            <div className="max-w-5xl w-full mx-auto relative z-10">
+              {/* Tên Bài Trình Chiếu */}
+              <div className="text-center mb-10 animate-fade-in">
+                <h1 className="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] tracking-wide uppercase" style={{ WebkitTextStroke: '1.5px rgba(255,255,255,0.3)' }}>
+                  {roomData.settings.gameTitle || 'TRÒ CHƠI DẠY HỌC'}
+                </h1>
+                <h2 className="text-xl text-yellow-100/80 mt-4 font-semibold tracking-widest uppercase">
+                  Quét mã QR hoặc nhập PIN để tham gia
+                </h2>
               </div>
 
-              {/* PIN */}
-              <div className="bg-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/10 shadow-2xl flex flex-col items-center justify-center gap-4">
-                <p className="text-gray-400 text-lg font-semibold">🔑 Mã Phòng (PIN)</p>
-                <div className="text-8xl md:text-9xl font-black tracking-[0.15em] text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.3)] select-all">
-                  {roomCode}
-                </div>
-                <p className="text-gray-500 text-sm">Nhập PIN này vào trang tham gia</p>
-              </div>
-            </div>
-
-            {/* Học sinh đã vào */}
-            <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10 mb-6">
-              <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-3 text-2xl font-bold">
-                  <Users className="w-7 h-7 text-blue-400" />
-                  <span>{playersList.length} Học sinh đã vào phòng</span>
-                </div>
-                <button
-                  onClick={startGame}
-                  disabled={playersList.length === 0}
-                  className={`px-8 py-4 rounded-xl font-bold text-xl flex items-center gap-2 transition-all ${
-                    playersList.length > 0
-                      ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/30 shadow-lg text-white hover:scale-105'
-                      : 'bg-slate-700 text-gray-400 cursor-not-allowed'
-                  }`}
-                >
-                  <Play className="w-6 h-6" /> Bắt Đầu Trò Chơi
-                </button>
-              </div>
-
-              <div className="flex flex-wrap gap-3 justify-center min-h-[60px]">
-                {playersList.length === 0 && (
-                  <p className="text-gray-500 text-lg italic self-center">Đang chờ học sinh tham gia...</p>
-                )}
-                {playersList.map((p, i) => (
-                  <div key={i} className="bg-white/10 pr-5 pl-2 py-2 rounded-full text-base font-bold shadow-md flex items-center gap-2 border border-white/10">
-                    <div className="w-9 h-9 bg-white/10 rounded-full overflow-hidden">
-                      <img src={p.avatar} alt="avt" className="w-full h-full object-contain" />
-                    </div>
-                    {p.name}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                {/* Mã QR */}
+                <div className="bg-black/40 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-[0_0_40px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center gap-4 transform transition-transform hover:scale-105">
+                  <p className="text-yellow-400 text-xl font-black uppercase tracking-widest text-center w-full border-b border-white/10 pb-4 mb-2">Quét Mã QR</p>
+                  <div className="bg-white p-4 rounded-3xl shadow-2xl">
+                    <img
+                      src={qrUrl}
+                      alt="QR Code"
+                      className="w-56 h-56 rounded-2xl"
+                    />
                   </div>
-                ))}
+                  <p className="text-sm text-gray-300 font-mono mt-2 bg-black/50 px-4 py-2 rounded-full">{playUrl}</p>
+                </div>
+
+                {/* PIN */}
+                <div className="bg-black/40 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-[0_0_40px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center gap-4 transform transition-transform hover:scale-105">
+                  <p className="text-yellow-400 text-xl font-black uppercase tracking-widest text-center w-full border-b border-white/10 pb-4 mb-2">Mã Phòng (PIN)</p>
+                  <div className="text-8xl md:text-9xl font-black tracking-[0.15em] text-white drop-shadow-[0_0_40px_rgba(255,255,255,0.8)] select-all mt-4">
+                    {roomCode}
+                  </div>
+                </div>
+              </div>
+
+              {/* Học sinh đã vào */}
+              <div className="bg-black/60 backdrop-blur-xl rounded-3xl p-6 border border-white/20 mb-6 shadow-2xl">
+                <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
+                  <div className="flex items-center gap-4 text-3xl font-black text-white">
+                    <div className="bg-blue-600 p-3 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.6)]"><Users className="w-8 h-8 text-white" /></div>
+                    <span>{playersList.length} Học sinh</span>
+                  </div>
+                  <button
+                    onClick={startGame}
+                    disabled={playersList.length === 0}
+                    className={`px-10 py-5 rounded-2xl font-black text-2xl flex items-center gap-3 transition-all ${
+                      playersList.length > 0
+                        ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.5)] text-white hover:scale-105'
+                        : 'bg-slate-800 text-gray-500 cursor-not-allowed border border-slate-700'
+                    }`}
+                  >
+                    <Play className="w-8 h-8" /> BẮT ĐẦU TRÒ CHƠI
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap gap-4 justify-center min-h-[80px] p-2">
+                  {playersList.length === 0 && (
+                    <p className="text-gray-400 text-xl italic self-center animate-pulse">Đang chờ học sinh tham gia...</p>
+                  )}
+                  {playersList.map((p, i) => (
+                    <div key={i} className="bg-white/10 pr-6 pl-2 py-2 rounded-full text-lg font-bold shadow-lg flex items-center gap-3 border border-white/20 backdrop-blur-sm animate-bounce-in hover:bg-white/20 transition-colors cursor-default">
+                      <div className="w-10 h-10 bg-black/30 rounded-full overflow-hidden p-0.5 shadow-inner">
+                        <img src={p.avatar} alt="avt" className="w-full h-full object-contain" />
+                      </div>
+                      {p.name}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

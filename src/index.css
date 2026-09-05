@@ -107,3 +107,21 @@ body {
 }
 
 
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
+}
+
+.olympia-rays {
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(255, 215, 0, 0.15) 0deg 15deg,
+    transparent 15deg 30deg
+  );
+  mask-image: radial-gradient(circle, black 20%, transparent 80%);
+  -webkit-mask-image: radial-gradient(circle, black 20%, transparent 80%);
+}
