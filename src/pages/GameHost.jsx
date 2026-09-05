@@ -453,7 +453,7 @@ const GameHost = () => {
 
 
       {localGameState === 'PLAYING' && roomData && (
-        <div className="max-w-6xl mx-auto mt-4">
+        <div className="w-full px-4 mt-4">
           <div className="flex justify-between items-center mb-6">
             <div className="text-2xl font-bold text-gray-400">Câu hỏi {roomData.currentQuestionIndex + 1}/{roomData.questions.length}</div>
             
@@ -471,33 +471,57 @@ const GameHost = () => {
             </div>
           </div>
 
-          {roomData.status === 'QUESTION' && (
-            <div className="animate-fade-in">
-              <div className={`${theme.questionBg} p-8 md:p-12 rounded-3xl mb-8 text-2xl md:text-4xl font-bold shadow-xl border-b-8 border-black/20 text-center min-h-[200px] flex items-center justify-center backdrop-blur-md`}>
-                <MathText text={roomData.questions[roomData.currentQuestionIndex].question} />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 md:gap-6">
-                {[
-                  { text: roomData.questions[roomData.currentQuestionIndex].optionA, style: theme.optionColors[0] },
-                  { text: roomData.questions[roomData.currentQuestionIndex].optionB, style: theme.optionColors[1] },
-                  { text: roomData.questions[roomData.currentQuestionIndex].optionC, style: theme.optionColors[2] },
-                  { text: roomData.questions[roomData.currentQuestionIndex].optionD, style: theme.optionColors[3] }
-                ].map((opt, i) => (
-                  <div key={i} className={`${opt.style.split(' ')[0]} text-white p-6 md:p-8 rounded-2xl text-xl md:text-3xl font-bold shadow-lg border-b-8 ${opt.style.split(' ')[1]} flex items-center justify-center text-center`}>
-                    <span className="text-white/60 font-black mr-3">{['A','B','C','D'][i]}.</span>
-                    <MathText text={opt.text} />
-                  </div>
-                ))}
-              </div>
+          {roomData.status === 'QUESTION' && (() => {
+            const q = roomData.questions[roomData.currentQuestionIndex];
+            const hasImage = q.image && q.image.trim();
+            return (
+              <div className="animate-fade-in">
+                {/* Khung câu hỏi */}
+                <div className={`${theme.questionBg} rounded-3xl mb-6 shadow-xl border-b-8 border-black/20 backdrop-blur-md overflow-hidden ${
+                  hasImage ? 'flex flex-row min-h-[260px]' : 'p-8 md:p-10 text-2xl md:text-4xl font-bold text-center flex items-center justify-center min-h-[200px]'
+                }`}>
+                  {hasImage ? (
+                    <>
+                      <div className="flex-1 flex items-center justify-center p-8 text-2xl md:text-3xl font-bold text-left border-r border-white/10">
+                        <MathText text={q.question} />
+                      </div>
+                      <div className="flex-1 flex items-center justify-center p-4 bg-black/20">
+                        <img
+                          src={q.image.trim()}
+                          alt="Hình minh họa"
+                          className="max-h-64 object-contain rounded-2xl shadow-lg"
+                          onError={(e) => e.target.style.display='none'}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <MathText text={q.question} />
+                  )}
+                </div>
 
-              <div className="mt-8 flex justify-end">
-                <button onClick={revealAnswer} className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-xl font-bold text-2xl shadow-lg flex items-center gap-2">
-                  Hiển Thị Đáp Án <ChevronRight />
-                </button>
+                {/* 4 ô đáp án */}
+                <div className="grid grid-cols-2 gap-4 md:gap-5">
+                  {[
+                    { text: q.optionA, style: theme.optionColors[0] },
+                    { text: q.optionB, style: theme.optionColors[1] },
+                    { text: q.optionC, style: theme.optionColors[2] },
+                    { text: q.optionD, style: theme.optionColors[3] }
+                  ].map((opt, i) => (
+                    <div key={i} className={`${opt.style.split(' ')[0]} text-white p-5 md:p-7 rounded-2xl text-xl md:text-3xl font-bold shadow-lg border-b-8 ${opt.style.split(' ')[1]} flex items-center justify-center text-center gap-3`}>
+                      <span className="text-white/60 font-black shrink-0">{['A','B','C','D'][i]}.</span>
+                      <MathText text={opt.text} />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-6 flex justify-end">
+                  <button onClick={revealAnswer} className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-xl font-bold text-2xl shadow-lg flex items-center gap-2">
+                    Hiển Thị Đáp Án <ChevronRight />
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {roomData.status === 'REVEAL' && (
             <div className="animate-fade-in flex flex-col md:flex-row gap-6 min-h-[70vh]">
