@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô phỏng 3D Hình học Không gian Lớp 11</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- KaTeX for Math Formulas -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+    <!-- Three.js Import Map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #ffffff; color: #1e293b; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+        .pointer-events-auto { pointer-events: auto; }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        }
+        
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 18px; width: 18px; border-radius: 50%; background: #2563eb; cursor: pointer; margin-top: -7px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #cbd5e1; border-radius: 2px; }
+        
+        /* Styles cho chế độ Phóng to (Fullscreen) */
+        .expanded-panel {
+            position: fixed !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) !important;
+            width: 90vw !important; max-width: 900px !important; height: auto !important; max-height: 90vh !important;
+            z-index: 100 !important; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+        }
+        .expanded-panel #info-content { padding: 2rem !important; gap: 1.5rem !important; }
+        .expanded-panel #math-formula { font-size: 2.2rem !important; padding: 2rem !important; min-height: 160px !important; }
+        .expanded-panel #math-result { font-size: 1.25rem !important; line-height: 2.2rem !important; padding: 1.5rem !important; }
+        .expanded-panel h3 { font-size: 1.5rem !important; }
+        
+        /* Chế độ thu gọn tối giản cho bảng điều khiển */
+        .minimized-panel {
+            background: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+            border: none !important; box-shadow: none !important; pointer-events: none;
+        }
+        .minimized-panel .panel-header { background: transparent !important; border-bottom: none !important; pointer-events: auto; }
+        .minimized-panel .panel-title { opacity: 0; pointer-events: none; }
+        .minimized-panel #control-footer-hint { display: none !important; }
+        .minimized-panel label { text-shadow: 0 0 6px rgba(255,255,255,0.9), 0 0 2px rgba(255,255,255,1) !important; }
+        
+        /* Làm trong suốt thanh trượt, bật sáng khi di chuột (hover) */
+        .minimized-panel #controls-container { 
+            opacity: 0.35; 
+            transition: opacity 0.3s ease; 
+            pointer-events: auto;
+        }
+        .minimized-panel #controls-container:hover { 
+            opacity: 1; 
+        }
+        .minimized-panel input[type=range]::-webkit-slider-runnable-track { 
+            background: rgba(203, 213, 225, 0.5) !important; 
+        }
+        .minimized-panel input[type=range]::-webkit-slider-thumb { 
+            background: rgba(37, 99, 235, 0.6) !important; 
+            box-shadow: none !important; 
+        }
+    </style>
+
+    <script>
+        window.togglePanel = function(contentId, iconId) {
+            const content = document.getElementById(contentId);
+            const icon = document.getElementById(iconId);
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden'); icon.classList.remove('-rotate-90');
+            } else {
+                content.classList.add('hidden'); icon.classList.add('-rotate-90');
+            }
+        };
+
+        window.toggleExpand = function() {
+            const panel = document.getElementById('info-panel');
+            const overlay = document.getElementById('expand-overlay');
+            const icon = document.getElementById('expand-icon');
+
+            if (panel.classList.contains('expanded-panel')) {
+                panel.classList.remove('expanded-panel'); overlay.classList.add('hidden');
+                icon.innerHTML = '<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>';
+            } else {
+                panel.classList.add('expanded-panel'); overlay.classList.remove('hidden');
+                document.getElementById('info-content').classList.remove('hidden');
+                document.getElementById('info-icon').classList.remove('-rotate-90');
+                icon.innerHTML = '<path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>';
+            }
+        };
+
+        window.toggleControlPanel = function() {
+            const panel = document.getElementById('bottom-panel');
+            const icon = document.getElementById('control-icon');
+            if (panel.classList.contains('minimized-panel')) {
+                panel.classList.remove('minimized-panel'); icon.classList.remove('-rotate-90');
+            } else {
+                panel.classList.add('minimized-panel'); icon.classList.add('-rotate-90');
+            }
+        };
+
+        // Hàm bật/tắt chế độ Toàn màn hình (Fullscreen)
+        window.toggleFullScreen = function() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.warn(`Lỗi khi mở toàn màn hình: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        };
+
+        // Lắng nghe sự kiện thay đổi trạng thái toàn màn hình để đổi icon
+        document.addEventListener('fullscreenchange', () => {
+            const icon = document.getElementById('fullscreen-icon');
+            if (document.fullscreenElement) {
+                // Biểu tượng Thu nhỏ lại
+                icon.innerHTML = '<path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/>';
+            } else {
+                // Biểu tượng Mở toàn màn hình
+                icon.innerHTML = '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>';
+            }
+        });
+
+        // Phím tắt F để bật/tắt Toàn màn hình
+        document.addEventListener('keydown', (event) => {
+            if (event.key.toLowerCase() === 'f' && event.target.tagName !== 'INPUT') {
+                window.toggleFullScreen();
+            }
+        });
+    </script>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    <div id="ui-layer" class="absolute top-0 left-0 w-full h-full pointer-events-none flex flex-col justify-between p-3 md:p-5 z-10">
+        <div id="expand-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 hidden transition-all duration-300 pointer-events-auto" onclick="toggleExpand()"></div>
+
+        <!-- TOP ROW -->
+        <div class="flex flex-col md:flex-row justify-between items-start gap-4 w-full relative">
+            <!-- Menu Trái -->
+            <div class="w-full md:w-[320px] glass-panel rounded-xl pointer-events-auto shrink-0 flex flex-col transition-all duration-300 max-h-[85vh] overflow-hidden flex">
+                <div class="p-4 flex justify-between items-center cursor-pointer select-none shrink-0" onclick="togglePanel('mode-content', 'mode-icon')">
+                    <h1 class="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-teal-600 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><path d="m10 3-4 7 4 7m4-14 4 7-4 7"/></svg>
+                        Hình học Không gian 11
+                    </h1>
+                    <svg id="mode-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-500 transition-transform duration-300 -rotate-90"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                
+                <div id="mode-content" class="px-4 pb-4 space-y-2 overflow-y-auto hidden-scrollbar hidden">
+                    <button id="btn-mode-1" class="w-full text-left px-4 py-2.5 rounded-lg transition font-semibold text-sm shadow-sm">1. Chóp S.ABCD (SA &perp; đáy)</button>
+                    <button id="btn-mode-2" class="w-full text-left px-4 py-2.5 rounded-lg transition font-semibold text-sm shadow-sm">2. Lập phương & Đt chéo nhau</button>
+                    <button id="btn-mode-3" class="w-full text-left px-4 py-2.5 rounded-lg transition font-semibold text-sm shadow-sm">3. Lăng trụ tam giác đều</button>
+                    <button id="btn-mode-4" class="w-full text-left px-4 py-2.5 rounded-lg transition font-semibold text-sm shadow-sm">4. Giao tuyến (SAB) & (SCD)</button>
+                    <button id="btn-mode-5" class="w-full text-left px-4 py-2.5 rounded-lg transition font-semibold text-sm shadow-sm">5. Thiết diện // mp đáy</button>
+                    <button id="btn-mode-6" class="w-full text-left px-4 py-2.5 rounded-lg transition font-semibold text-sm shadow-sm">6. Góc Đường & Mặt phẳng</button>
+                    <button id="btn-mode-7" class="w-full text-left px-4 py-2.5 rounded-lg transition font-semibold text-sm shadow-sm">7. Góc nhị diện (Góc 2 mp)</button>
+                    <button id="btn-mode-8" class="w-full text-left px-4 py-2.5 rounded-lg transition font-semibold text-sm shadow-sm">8. Khoảng cách Điểm - Mặt</button>
+                    <button id="btn-mode-9" class="w-full text-left px-4 py-2.5 rounded-lg transition font-semibold text-sm shadow-sm">9. Đoạn vuông góc chung</button>
+                    <button id="btn-mode-10" class="w-full text-left px-4 py-2.5 rounded-lg transition font-semibold text-sm shadow-sm">10. Tứ diện đều</button>
+                </div>
+            </div>
+
+            <!-- Bảng Công thức Phải -->
+            <div id="info-panel" class="w-full md:w-[380px] glass-panel rounded-xl pointer-events-auto shrink-0 flex flex-col transition-all duration-300 relative z-20">
+                <div class="p-4 flex justify-between items-center select-none border-b border-slate-100">
+                    <h3 class="font-bold text-teal-700 text-lg flex items-center gap-2 cursor-pointer" onclick="togglePanel('info-content', 'info-icon')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        Lý thuyết & Kết quả
+                    </h3>
+                    <div class="flex items-center gap-3">
+                        <!-- Nút Toàn màn hình -->
+                        <button onclick="toggleFullScreen()" class="text-slate-400 hover:text-blue-600 transition-colors" title="Toàn màn hình (Phím F)">
+                            <svg id="fullscreen-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+                        </button>
+                        <!-- Nút Phóng to Bảng công thức -->
+                        <button onclick="toggleExpand()" class="text-slate-400 hover:text-blue-600 transition-colors" title="Phóng to bảng">
+                            <svg id="expand-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+                        </button>
+                        <!-- Nút Thu gọn bảng -->
+                        <svg id="info-icon" onclick="togglePanel('info-content', 'info-icon')" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-500 cursor-pointer transition-transform duration-300 -rotate-90"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </div>
+                </div>
+                
+                <div id="info-content" class="p-4 flex flex-col gap-3 hidden">
+                    <div id="math-formula" class="bg-slate-100 p-3 rounded-lg overflow-x-auto text-center border border-slate-200 shadow-inner min-h-[80px] flex items-center justify-center text-lg text-slate-800 transition-all duration-300"></div>
+                    <div id="math-result" class="text-sm text-slate-700 space-y-2 font-mono bg-white p-3 rounded-lg border border-slate-200 shadow-sm transition-all duration-300"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM ROW -->
+        <div class="w-full flex justify-center relative mt-4">
+            <div id="bottom-panel" class="w-full md:w-[700px] glass-panel rounded-xl pointer-events-auto flex flex-col transition-all duration-300 shadow-xl border-t-4 border-t-blue-500 minimized-panel">
+                <div class="panel-header p-3 px-5 flex justify-between items-center cursor-pointer select-none border-b border-slate-100 bg-white/50 rounded-t-xl transition-all duration-300" onclick="toggleControlPanel()">
+                    <h2 class="panel-title text-base font-bold text-slate-800 flex items-center gap-2 transition-opacity duration-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                        Bảng điều khiển thông số
+                    </h2>
+                    <svg id="control-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-500 transition-transform duration-300 -rotate-90"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                
+                <div id="control-content" class="p-4 transition-all duration-300">
+                    <div id="controls-container"></div>
+                    <div id="control-footer-hint" class="mt-4 pt-3 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-2 text-xs text-slate-600">
+                        <span class="font-medium">🖱️ Kéo chuột: Xoay | Lăn: Thu phóng | Chuột phải: Di chuyển</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        let scene, camera, renderer, controls;
+        let objectsGroup = new THREE.Group();
+        let pointGroup = new THREE.Group();
+        let currentMode = 1;
+        
+        // State
+        const state = {
+            m1: { a: 4, h: 5 },
+            m2: { a: 4 },
+            m3: { a: 4, h: 5 },
+            m4: { a: 5, b: 4, h: 5 },
+            m5: { z: 2.5 },
+            m6: { a: 4, h: 5 },
+            m7: { a: 4, h: 5 },
+            m8: { a: 4, h: 5 },
+            m9: { a: 4, h: 5 },
+            m10: { a: 4 }
+        };
+
+        const mathFormula = document.getElementById('math-formula');
+        const mathResult = document.getElementById('math-result');
+        const controlsContainer = document.getElementById('controls-container');
+
+        // --- DRAWING HELPERS ---
+        function createTextSprite(text, color, scale=1.2) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 128;
+            const context = canvas.getContext('2d');
+            context.font = 'Bold 48px "Segoe UI", Arial';
+            context.fillStyle = color;
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            // Add a slight outline for better visibility
+            context.lineWidth = 4;
+            context.strokeStyle = 'white';
+            context.strokeText(text, 64, 64);
+            context.fillText(text, 64, 64);
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMaterial = new THREE.SpriteMaterial({ map: texture, depthTest: false });
+            const sprite = new THREE.Sprite(spriteMaterial);
+            sprite.scale.set(scale, scale, scale);
+            return sprite;
+        }
+
+        function createPoint(pos, color=0x1d4ed8, label='', labelOffset=new THREE.Vector3(0.5,0.5,0.5)) {
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 16), new THREE.MeshPhongMaterial({ color }));
+            mesh.position.copy(pos);
+            objectsGroup.add(mesh);
+            if(label) {
+                const sprite = createTextSprite(label, '#' + color.toString(16).padStart(6, '0'));
+                sprite.position.copy(pos).add(labelOffset);
+                objectsGroup.add(sprite);
+            }
+            return mesh;
+        }
+
+        function drawLine(p1, p2, color=0x1e293b, radius=0.03) {
+            const path = new THREE.LineCurve3(p1, p2);
+            const mesh = new THREE.Mesh(new THREE.TubeGeometry(path, 1, radius, 8, false), new THREE.MeshPhongMaterial({ color }));
+            objectsGroup.add(mesh);
+            return mesh;
+        }
+
+        // Thay đổi bản chất nét đứt thành các khối trụ 3D với bán kính bằng 1/2 nét liền (0.015)
+        function drawDashed(p1, p2, color=0x64748b, radius=0.015) {
+            const distance = p1.distanceTo(p2);
+            const dashSize = 0.25; // Chiều dài 1 nét đứt
+            const gapSize = 0.15;  // Khoảng trống giữa 2 nét đứt
+            const step = dashSize + gapSize;
+            const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
+            
+            for (let d = 0; d < distance; d += step) {
+                const start = new THREE.Vector3().copy(p1).addScaledVector(dir, d);
+                const currentDash = Math.min(dashSize, distance - d);
+                if (currentDash <= 0.001) continue;
+                
+                const end = new THREE.Vector3().copy(start).addScaledVector(dir, currentDash);
+                const path = new THREE.LineCurve3(start, end);
+                const mesh = new THREE.Mesh(new THREE.TubeGeometry(path, 1, radius, 8, false), new THREE.MeshPhongMaterial({ color }));
+                objectsGroup.add(mesh);
+            }
+        }
+
+        function drawSolid(points, color=0x3b82f6, opacity=0.15) {
+            const geom = new THREE.BufferGeometry();
+            const vertices = [];
+            points.forEach(p => vertices.push(p.x, p.y, p.z));
+            geom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            const indices = [];
+            for(let i=1; i<points.length-1; i++) { indices.push(0, i, i+1); }
+            geom.setIndex(indices);
+            geom.computeVertexNormals();
+            const mesh = new THREE.Mesh(geom, new THREE.MeshPhongMaterial({ color, transparent: true, opacity, side: THREE.DoubleSide }));
+            objectsGroup.add(mesh);
+            return mesh;
+        }
+
+        function drawAngleArc(pCenter, p1, p2, radius, color=0xdc2626) {
+            const v1 = new THREE.Vector3().subVectors(p1, pCenter).normalize();
+            const v2 = new THREE.Vector3().subVectors(p2, pCenter).normalize();
+            const normal = new THREE.Vector3().crossVectors(v1, v2).normalize();
+            if (normal.length() < 0.001) return; // Parallel
+            
+            const angle = v1.angleTo(v2);
+            const curve = new THREE.EllipseCurve(0, 0, radius, radius, 0, angle, false, 0);
+            const points = curve.getPoints(30);
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const arc = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color, linewidth: 3, depthTest: false }));
+            
+            arc.position.copy(pCenter);
+            const matrix = new THREE.Matrix4().makeBasis(v1, new THREE.Vector3().crossVectors(normal, v1), normal);
+            arc.quaternion.setFromRotationMatrix(matrix);
+            objectsGroup.add(arc);
+        }
+
+        function clearAll() {
+            while (objectsGroup.children.length > 0) {
+                const child = objectsGroup.children[0];
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+                    else child.material.dispose();
+                }
+                objectsGroup.remove(child);
+            }
+        }
+
+        // --- INIT ---
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xffffff);
+            
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.up.set(0, 0, 1);
+            camera.position.set(10, 10, 8);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+            
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true; controls.dampingFactor = 0.05;
+            
+            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+            dirLight.position.set(10, 20, 10);
+            scene.add(dirLight);
+            
+            // Grid
+            const gridHelper = new THREE.GridHelper(15, 15, 0x94a3b8, 0xe2e8f0);
+            gridHelper.rotation.x = Math.PI / 2;
+            scene.add(gridHelper);
+
+            scene.add(objectsGroup);
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            for(let i=1; i<=10; i++) {
+                document.getElementById(`btn-mode-${i}`).addEventListener('click', () => switchMode(i));
+            }
+
+            switchMode(1);
+            animate();
+        }
+
+        function updateMath(tex, res) {
+            // Render phần công thức lớn (display math)
+            katex.render(tex, mathFormula, { throwOnError: false, displayMode: true });
+            
+            // Dò tìm và render tất cả các công thức nội tuyến (inline math) nằm giữa 2 dấu $ trong phần Kết quả
+            const renderedRes = res.replace(/\$(.*?)\$/g, (match, mathContent) => {
+                try {
+                    return katex.renderToString(mathContent, { throwOnError: false });
+                } catch (e) {
+                    return match; // Nếu lỗi cú pháp KaTeX thì giữ nguyên text
+                }
+            });
+            
+            mathResult.innerHTML = renderedRes;
+        }
+
+        function buildUI(html) {
+            controlsContainer.innerHTML = html;
+        }
+
+        // --- SCENARIO 1: Chóp S.ABCD ---
+        function renderM1() {
+            clearAll();
+            const a = state.m1.a, h = state.m1.h;
+            // A at origin, B(a,0,0), C(a,a,0), D(0,a,0), S(0,0,h)
+            const A = new THREE.Vector3(0,0,0), B = new THREE.Vector3(a,0,0), C = new THREE.Vector3(a,a,0), D = new THREE.Vector3(0,a,0), S = new THREE.Vector3(0,0,h);
+            
+            createPoint(A, 0x059669, 'A', new THREE.Vector3(-0.4,-0.4,0)); createPoint(B, 0x059669, 'B');
+            createPoint(C, 0x059669, 'C'); createPoint(D, 0x059669, 'D'); createPoint(S, 0xdc2626, 'S');
+
+            drawSolid([A,B,C,D], 0x10b981); // Đáy
+            drawSolid([S,A,B], 0x3b82f6); drawSolid([S,B,C], 0x3b82f6); drawSolid([S,C,D], 0x3b82f6); drawSolid([S,D,A], 0x3b82f6);
+
+            const [AB, BC, CD, DA] = [[A,B], [B,C], [C,D], [D,A]];
+            const [SA, SB, SC, SD] = [[S,A], [S,B], [S,C], [S,D]];
+            
+            [BC, CD, SB, SC, SD].forEach(e => drawLine(e[0], e[1]));
+            [AB, DA, SA].forEach(e => drawDashed(e[0], e[1], 0x1e293b)); // Nét đứt mặt sau
+
+            updateMath(`SA \\perp (ABCD) \\Rightarrow V = \\frac{1}{3} S_{\\text{đáy}} \\cdot h`, 
+                `<div>Thể tích $V = \\frac{1}{3} \\cdot ${a}^2 \\cdot ${h} = ${(a*a*h/3).toFixed(1)}$</div>`);
+            controls.target.copy(new THREE.Vector3(a/2, a/2, h/3));
+        }
+
+        // --- SCENARIO 2: Lập phương ---
+        function renderM2() {
+            clearAll();
+            const a = state.m2.a;
+            const pts = {
+                A: new THREE.Vector3(0,0,0), B: new THREE.Vector3(a,0,0), C: new THREE.Vector3(a,a,0), D: new THREE.Vector3(0,a,0),
+                A1: new THREE.Vector3(0,0,a), B1: new THREE.Vector3(a,0,a), C1: new THREE.Vector3(a,a,a), D1: new THREE.Vector3(0,a,a)
+            };
+            
+            ['A','B','C','D','A1','B1','C1','D1'].forEach(k => {
+                createPoint(pts[k], 0x1d4ed8, k.replace('1', "'"));
+            });
+
+            // Draw solid faces
+            drawSolid([pts.A, pts.B, pts.C, pts.D], 0x94a3b8); drawSolid([pts.A1, pts.B1, pts.C1, pts.D1], 0x94a3b8);
+            drawSolid([pts.A, pts.B, pts.B1, pts.A1], 0x94a3b8); drawSolid([pts.B, pts.C, pts.C1, pts.B1], 0x94a3b8);
+            drawSolid([pts.C, pts.D, pts.D1, pts.C1], 0x94a3b8); drawSolid([pts.D, pts.A, pts.A1, pts.D1], 0x94a3b8);
+
+            // Edges
+            const edges = [
+                ['A','B'],['B','C'],['C','D'],['D','A'], ['A1','B1'],['B1','C1'],['C1','D1'],['D1','A1'], ['A','A1'],['B','B1'],['C','C1'],['D','D1']
+            ];
+            edges.forEach(e => drawLine(pts[e[0]], pts[e[1]]));
+
+            // Highlight Skew Lines: A'B and B'C (wait, A'B and AC is better for 60 deg showing parallel translation)
+            // Let's do A'B and AC. Translate A'B to D'C. Angle(D'C, AC) = Angle(A'B, AC) = Angle in equilateral tri AD'C.
+            drawLine(pts.A1, pts.B, 0xdc2626, 0.05); // Red A'B
+            drawLine(pts.A, pts.C, 0x059669, 0.05); // Green AC
+            
+            // Draw translation D'C and AD' to show triangle
+            drawDashed(pts.D1, pts.C, 0xdc2626); // Translate A'B -> D'C
+            drawDashed(pts.A, pts.D1, 0xd97706); // Completing triangle AD'C
+            
+            drawSolid([pts.A, pts.C, pts.D1], 0xf59e0b, 0.3); // Highlighting triangle
+
+            updateMath(`\\widehat{(A'B, AC)} = \\widehat{(D'C, AC)} = \\widehat{ACD'} = 60^\\circ`, 
+                `<div>Đường thẳng $A'B \\parallel D'C$.</div>
+                <div>Tam giác $ACD'$ đều vì 3 cạnh là 3 đường chéo của các mặt hình lập phương (bằng $a\\sqrt{2}$).</div>`);
+            controls.target.copy(new THREE.Vector3(a/2, a/2, a/2));
+        }
+
+        // --- SCENARIO 3: Lăng trụ đều ---
+        function renderM3() {
+            clearAll();
+            const a = state.m3.a, h = state.m3.h;
+            const hTriangle = a * Math.sqrt(3) / 2;
+            const A = new THREE.Vector3(0, hTriangle * 2/3, 0);
+            const B = new THREE.Vector3(-a/2, -hTriangle * 1/3, 0);
+            const C = new THREE.Vector3(a/2, -hTriangle * 1/3, 0);
+            const A1 = new THREE.Vector3(A.x, A.y, h), B1 = new THREE.Vector3(B.x, B.y, h), C1 = new THREE.Vector3(C.x, C.y, h);
+
+            [A,B,C,A1,B1,C1].forEach((p,i) => createPoint(p, 0x059669, ['A','B','C',"A'","B'","C'"][i]));
+
+            drawSolid([A,B,C], 0x10b981); drawSolid([A1,B1,C1], 0x10b981);
+            drawSolid([A,B,B1,A1], 0x3b82f6); drawSolid([B,C,C1,B1], 0x3b82f6); drawSolid([C,A,A1,C1], 0x3b82f6);
+
+            [[A,B],[B,C],[C,A],[A1,B1],[B1,C1],[C1,A1],[A,A1],[B,B1],[C,C1]].forEach(e => drawLine(e[0], e[1]));
+
+            updateMath(`V = B \\cdot h = \\frac{a^2\\sqrt{3}}{4} \\cdot h`, 
+                `<div>Đáy là tam giác đều cạnh a. Các cạnh bên vuông góc với đáy.</div>`);
+            controls.target.copy(new THREE.Vector3(0, 0, h/2));
+        }
+
+        // --- SCENARIO 4: Giao tuyến ---
+        function renderM4() {
+            clearAll();
+            const a = state.m4.a, b = state.m4.b, h = state.m4.h;
+            // Base ABCD (parallelogram centered)
+            const A = new THREE.Vector3(-a/2, -b/2, 0), B = new THREE.Vector3(a/2, -b/2, 0);
+            const C = new THREE.Vector3(a/2+2, b/2, 0), D = new THREE.Vector3(-a/2+2, b/2, 0); // Shear to make it parallelogram
+            const S = new THREE.Vector3(0, 0, h);
+
+            [A,B,C,D,S].forEach((p,i) => createPoint(p, 0x1d4ed8, ['A','B','C','D','S'][i]));
+
+            drawSolid([A,B,C,D], 0x10b981);
+            drawSolid([S,A,B], 0xdc2626, 0.3); // Highlight SAB
+            drawSolid([S,C,D], 0x059669, 0.3); // Highlight SCD
+
+            [[A,B],[B,C],[C,D],[D,A],[S,A],[S,B],[S,C],[S,D]].forEach(e => drawLine(e[0], e[1]));
+
+            // Intersection line Sx parallel to AB and CD
+            const dir = new THREE.Vector3().subVectors(B, A).normalize();
+            const p1 = new THREE.Vector3().copy(S).addScaledVector(dir, 8);
+            const p2 = new THREE.Vector3().copy(S).addScaledVector(dir, -8);
+            drawLine(p1, p2, 0xdc2626, 0.05);
+            createPoint(p1, 0, 'x', new THREE.Vector3(0,0,0.5));
+
+            updateMath(`(SAB) \\cap (SCD) = Sx \\parallel AB \\parallel CD`, 
+                `<div>Vì $AB \\parallel CD$, giao tuyến của hai mặt phẳng chứa chúng phải đi qua điểm chung $S$ và song song với đáy.</div>`);
+            controls.target.copy(new THREE.Vector3(0, 0, h/3));
+        }
+
+        // --- SCENARIO 5: Thiết diện ---
+        function renderM5() {
+            clearAll();
+            const a = 4, h = 6, z = state.m5.z;
+            const A = new THREE.Vector3(-a/2,-a/2,0), B = new THREE.Vector3(a/2,-a/2,0), C = new THREE.Vector3(a/2,a/2,0), D = new THREE.Vector3(-a/2,a/2,0), S = new THREE.Vector3(0,0,h);
+            
+            [A,B,C,D,S].forEach((p,i) => createPoint(p, 0x1d4ed8, ['A','B','C','D','S'][i]));
+            [[A,B],[B,C],[C,D],[D,A],[S,A],[S,B],[S,C],[S,D]].forEach(e => drawLine(e[0], e[1], 0x94a3b8));
+
+            // Cut points
+            const k = (h - z)/h;
+            const M = new THREE.Vector3().lerpVectors(A, S, z/h);
+            const N = new THREE.Vector3().lerpVectors(B, S, z/h);
+            const P = new THREE.Vector3().lerpVectors(C, S, z/h);
+            const Q = new THREE.Vector3().lerpVectors(D, S, z/h);
+
+            [M,N,P,Q].forEach((p,i) => createPoint(p, 0xdc2626, ['M','N','P','Q'][i]));
+            
+            drawSolid([M,N,P,Q], 0xdc2626, 0.4); // Thiết diện
+            [[M,N],[N,P],[P,Q],[Q,M]].forEach(e => drawLine(e[0], e[1], 0xdc2626, 0.05));
+
+            // Cutting plane visualization
+            const planeGeom = new THREE.PlaneGeometry(10, 10);
+            const planeMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.1, side: THREE.DoubleSide });
+            const plane = new THREE.Mesh(planeGeom, planeMat);
+            plane.position.z = z;
+            objectsGroup.add(plane);
+
+            updateMath(`\\frac{S_{MNPQ}}{S_{ABCD}} = \\left(\\frac{SM}{SA}\\right)^2 = k^2`, 
+                `<div>Mặt phẳng $(\\alpha) \\parallel (ABCD)$ cắt chóp tạo thành thiết diện $MNPQ$ đồng dạng với đáy theo tỉ số $k = \\frac{${(h-z).toFixed(1)}}{${h}}$.</div>`);
+            controls.target.copy(new THREE.Vector3(0, 0, h/2));
+        }
+
+        // --- SCENARIO 6: Góc Đường và Mặt ---
+        function renderM6() {
+            clearAll();
+            const a = state.m6.a, h = state.m6.h;
+            const A = new THREE.Vector3(0,0,0), B = new THREE.Vector3(a,0,0), C = new THREE.Vector3(a,a,0), D = new THREE.Vector3(0,a,0), S = new THREE.Vector3(0,0,h);
+            
+            [A,B,C,D,S].forEach((p,i) => createPoint(p, 0x1d4ed8, ['A','B','C','D','S'][i]));
+            drawSolid([A,B,C,D], 0x10b981);
+            [[A,B],[B,C],[C,D],[D,A],[S,A],[S,B],[S,D]].forEach(e => drawLine(e[0], e[1]));
+            
+            drawLine(S, C, 0xdc2626, 0.05); // Highlight SC
+            drawDashed(A, C, 0xd97706); // Hình chiếu AC
+            drawLine(S, A, 0xd97706, 0.05); // SA
+            
+            drawAngleArc(C, A, S, 1.2, 0xdc2626);
+            
+            const AC = a * Math.sqrt(2);
+            const angle = Math.atan(h / AC) * 180 / Math.PI;
+
+            updateMath(`\\widehat{(SC, (ABCD))} = \\widehat{(SC, AC)} = \\widehat{SCA}`, 
+                `<div>Hình chiếu của $S$ lên $(ABCD)$ là $A$.</div>
+                <div>$\\tan \\alpha = \\frac{SA}{AC} = \\frac{${h}}{${AC.toFixed(2)}} \\Rightarrow \\alpha \\approx ${angle.toFixed(1)}^\\circ$</div>`);
+            controls.target.copy(new THREE.Vector3(a/2, a/2, h/3));
+        }
+
+        // --- SCENARIO 7: Góc Nhị Diện ---
+        function renderM7() {
+            clearAll();
+            const a = state.m7.a, h = state.m7.h;
+            const A = new THREE.Vector3(0,0,0), B = new THREE.Vector3(a,0,0), C = new THREE.Vector3(a,a,0), D = new THREE.Vector3(0,a,0), S = new THREE.Vector3(0,0,h);
+            
+            [A,B,C,D,S].forEach((p,i) => createPoint(p, 0x1d4ed8, ['A','B','C','D','S'][i]));
+            drawSolid([A,B,C,D], 0x10b981);
+            drawSolid([S,B,C], 0x3b82f6, 0.3); // Mp (SBC)
+
+            [[A,B],[B,C],[C,D],[D,A],[S,A],[S,C],[S,D]].forEach(e => drawLine(e[0], e[1]));
+            
+            drawLine(S, B, 0xdc2626, 0.05); // SB
+            drawLine(A, B, 0xdc2626, 0.05); // AB
+            
+            drawAngleArc(B, A, S, 1.2, 0xdc2626);
+            
+            const angle = Math.atan(h / a) * 180 / Math.PI;
+
+            updateMath(`\\widehat{((SBC), (ABCD))} = \\widehat{SBA}`, 
+                `<div>Giao tuyến là $BC$. Vì $AB \\perp BC$ và $SA \\perp BC \\Rightarrow SB \\perp BC$.</div>
+                <div>$\\tan \\alpha = \\frac{SA}{AB} = \\frac{${h}}{${a}} \\Rightarrow \\alpha \\approx ${angle.toFixed(1)}^\\circ$</div>`);
+            controls.target.copy(new THREE.Vector3(a/2, a/2, h/3));
+        }
+
+        // --- SCENARIO 8: K/c Điểm đến Mặt ---
+        function renderM8() {
+            clearAll();
+            const a = state.m8.a, h = state.m8.h;
+            const A = new THREE.Vector3(0,0,0), B = new THREE.Vector3(a,0,0), C = new THREE.Vector3(a,a,0), D = new THREE.Vector3(0,a,0), S = new THREE.Vector3(0,0,h);
+            const O = new THREE.Vector3(a/2, a/2, 0); // Tâm đáy
+
+            [A,B,C,D,S,O].forEach((p,i) => createPoint(p, 0x1d4ed8, ['A','B','C','D','S','O'][i]));
+            drawSolid([S,B,D], 0x3b82f6, 0.3); // (SBD)
+
+            [[A,B],[B,C],[C,D],[D,A],[S,A],[S,B],[S,C],[S,D]].forEach(e => drawLine(e[0], e[1]));
+            drawDashed(B, D); drawDashed(A, C); drawDashed(S, O);
+            
+            // Kẻ AH perp SO
+            const SO_vec = new THREE.Vector3().subVectors(S, O);
+            const AO_vec = new THREE.Vector3().subVectors(O, A); // Wait, A to O is (a/2, a/2, 0)
+            
+            const t = A.distanceTo(O)**2 / (A.distanceTo(O)**2 + h**2);
+            const H = new THREE.Vector3().lerpVectors(A, S, 0); // wrong logic, H is on SO
+            const OS = new THREE.Vector3().subVectors(S,O);
+            const OA = new THREE.Vector3().subVectors(A,O);
+            const proj = OA.dot(OS) / OS.lengthSq();
+            const H_true = new THREE.Vector3().copy(O).addScaledVector(OS, proj); // wait, triangle SAO is right at A.
+            
+            // In right triangle SAO at A: AH is altitude to hypotenuse SO.
+            // H divides SO in ratio AH^2 / ... actually: vector AH = A - H.
+            // Distance AH = SA * AO / SO.
+            const AO_len = a * Math.sqrt(2) / 2;
+            const SO_len = Math.sqrt(h*h + AO_len*AO_len);
+            const AH_len = h * AO_len / SO_len;
+            
+            // Geometric H point:
+            const SH_len = h*h / SO_len;
+            const H_pt = new THREE.Vector3().copy(S).lerp(O, SH_len / SO_len);
+            
+            createPoint(H_pt, 0xdc2626, 'H');
+            drawDashed(A, H_pt, 0xdc2626); // AH
+            
+            updateMath(`\\frac{1}{d^2} = \\frac{1}{SA^2} + \\frac{1}{AO^2}`, 
+                `<div>Kẻ $AO \\perp BD$, kẻ $AH \\perp SO$. Khi đó $d(A, (SBD)) = AH$.</div>
+                <div>Khoảng cách $d = ${AH_len.toFixed(2)}$</div>`);
+            controls.target.copy(new THREE.Vector3(a/2, a/2, h/3));
+        }
+
+        // --- SCENARIO 9: Đoạn vuông góc chung ---
+        function renderM9() {
+            clearAll();
+            const a = state.m9.a, h = state.m9.h;
+            const A = new THREE.Vector3(0,0,0), B = new THREE.Vector3(a,0,0), C = new THREE.Vector3(a,a,0), D = new THREE.Vector3(0,a,0), S = new THREE.Vector3(0,0,h);
+            
+            [A,B,C,D,S].forEach((p,i) => createPoint(p, 0x1d4ed8, ['A','B','C','D','S'][i]));
+            
+            [[A,D],[D,C],[C,B],[S,B],[S,C],[S,D]].forEach(e => drawLine(e[0], e[1]));
+            drawLine(S, A, 0xdc2626, 0.05); // Highlight SA
+            drawLine(B, C, 0xdc2626, 0.05); // Highlight BC
+            drawLine(A, B, 0x059669, 0.06); // Đoạn VGC AB
+            
+            updateMath(`d(SA, BC) = AB = ${a}`, 
+                `<div>Đoạn vuông góc chung là đoạn cắt và vuông góc với cả 2 đường thẳng.</div>
+                <div>Ta có $AB \\perp SA$ (vì $SA \\perp$ đáy) và $AB \\perp BC$ (đáy là hình vuông).</div>`);
+            controls.target.copy(new THREE.Vector3(a/2, a/2, h/3));
+        }
+
+        // --- SCENARIO 10: Tứ diện đều ---
+        function renderM10() {
+            clearAll();
+            const a = state.m10.a;
+            // Base A, B, C
+            const hTri = a * Math.sqrt(3)/2;
+            const A = new THREE.Vector3(0, hTri * 2/3, 0);
+            const B = new THREE.Vector3(-a/2, -hTri * 1/3, 0);
+            const C = new THREE.Vector3(a/2, -hTri * 1/3, 0);
+            const G = new THREE.Vector3(0,0,0);
+            const h = a * Math.sqrt(2/3);
+            const S = new THREE.Vector3(0, 0, h);
+
+            [A,B,C,S,G].forEach((p,i) => createPoint(p, 0x1d4ed8, ['A','B','C','S','G'][i]));
+            
+            drawSolid([A,B,C], 0x10b981);
+            drawSolid([S,A,B], 0x3b82f6); drawSolid([S,B,C], 0x3b82f6); drawSolid([S,C,A], 0x3b82f6);
+
+            [[A,B],[B,C],[C,A],[S,A],[S,B],[S,C]].forEach(e => drawLine(e[0], e[1]));
+            drawDashed(S, G, 0xdc2626); // Chiều cao SG
+
+            updateMath(`V = \\frac{a^3\\sqrt{2}}{12}, \\quad h = \\frac{a\\sqrt{6}}{3}`, 
+                `<div>Tứ diện đều có 4 mặt là 4 tam giác đều cạnh $a = ${a}$.</div>
+                <div>Hình chiếu của đỉnh trùng với trọng tâm $G$ của đáy. Chiều cao $h \\approx ${h.toFixed(2)}$</div>`);
+            controls.target.copy(new THREE.Vector3(0, 0, h/3));
+        }
+
+        function switchMode(mode) {
+            currentMode = mode;
+            [1,2,3,4,5,6,7,8,9,10].forEach(i => {
+                const btn = document.getElementById(`btn-mode-${i}`);
+                if (i === mode) btn.className = "w-full text-left px-4 py-2.5 rounded-lg bg-blue-600 font-bold text-sm text-white shadow-md";
+                else btn.className = "w-full text-left px-4 py-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 font-semibold text-sm text-slate-700";
+            });
+
+            // Setup Controls HTML
+            if(mode === 1) buildUI(`<div class="flex gap-4">
+                <label class="text-xs font-bold">Cạnh đáy a: <span class="text-blue-600">${state.m1.a}</span><input type="range" min="2" max="8" step="0.5" value="${state.m1.a}" oninput="state.m1.a=parseFloat(this.value); renderM1(); this.previousElementSibling.innerText=this.value"></label>
+                <label class="text-xs font-bold">Chiều cao h: <span class="text-blue-600">${state.m1.h}</span><input type="range" min="2" max="8" step="0.5" value="${state.m1.h}" oninput="state.m1.h=parseFloat(this.value); renderM1(); this.previousElementSibling.innerText=this.value"></label>
+            </div>`);
+            else if(mode === 2) buildUI(`<label class="text-xs font-bold">Cạnh hình lập phương a: <span class="text-blue-600">${state.m2.a}</span><input type="range" min="2" max="8" step="0.5" value="${state.m2.a}" oninput="state.m2.a=parseFloat(this.value); renderM2(); this.previousElementSibling.innerText=this.value"></label>`);
+            else if(mode === 3) buildUI(`<div class="flex gap-4">
+                <label class="text-xs font-bold">Cạnh đáy a: <span class="text-blue-600">${state.m3.a}</span><input type="range" min="2" max="8" step="0.5" value="${state.m3.a}" oninput="state.m3.a=parseFloat(this.value); renderM3(); this.previousElementSibling.innerText=this.value"></label>
+                <label class="text-xs font-bold">Chiều cao h: <span class="text-blue-600">${state.m3.h}</span><input type="range" min="2" max="8" step="0.5" value="${state.m3.h}" oninput="state.m3.h=parseFloat(this.value); renderM3(); this.previousElementSibling.innerText=this.value"></label>
+            </div>`);
+            else if(mode === 4) buildUI(`<div class="flex gap-4">
+                <label class="text-xs font-bold">Chiều dài a: <span class="text-blue-600">${state.m4.a}</span><input type="range" min="3" max="8" step="0.5" value="${state.m4.a}" oninput="state.m4.a=parseFloat(this.value); renderM4(); this.previousElementSibling.innerText=this.value"></label>
+                <label class="text-xs font-bold">Chiều cao h: <span class="text-blue-600">${state.m4.h}</span><input type="range" min="3" max="8" step="0.5" value="${state.m4.h}" oninput="state.m4.h=parseFloat(this.value); renderM4(); this.previousElementSibling.innerText=this.value"></label>
+            </div>`);
+            else if(mode === 5) buildUI(`<label class="text-xs font-bold">Mặt cắt z: <span class="text-blue-600">${state.m5.z}</span><input type="range" min="0" max="6" step="0.1" value="${state.m5.z}" oninput="state.m5.z=parseFloat(this.value); renderM5(); this.previousElementSibling.innerText=this.value"></label>`);
+            else if(mode === 6) buildUI(`<div class="flex gap-4">
+                <label class="text-xs font-bold">Cạnh đáy a: <span class="text-blue-600">${state.m6.a}</span><input type="range" min="2" max="8" step="0.5" value="${state.m6.a}" oninput="state.m6.a=parseFloat(this.value); renderM6(); this.previousElementSibling.innerText=this.value"></label>
+                <label class="text-xs font-bold">Chiều cao h: <span class="text-blue-600">${state.m6.h}</span><input type="range" min="2" max="8" step="0.5" value="${state.m6.h}" oninput="state.m6.h=parseFloat(this.value); renderM6(); this.previousElementSibling.innerText=this.value"></label>
+            </div>`);
+            else if(mode === 7) buildUI(`<div class="flex gap-4">
+                <label class="text-xs font-bold">Cạnh đáy a: <span class="text-blue-600">${state.m7.a}</span><input type="range" min="2" max="8" step="0.5" value="${state.m7.a}" oninput="state.m7.a=parseFloat(this.value); renderM7(); this.previousElementSibling.innerText=this.value"></label>
+                <label class="text-xs font-bold">Chiều cao h: <span class="text-blue-600">${state.m7.h}</span><input type="range" min="2" max="8" step="0.5" value="${state.m7.h}" oninput="state.m7.h=parseFloat(this.value); renderM7(); this.previousElementSibling.innerText=this.value"></label>
+            </div>`);
+            else if(mode === 8) buildUI(`<div class="flex gap-4">
+                <label class="text-xs font-bold">Cạnh đáy a: <span class="text-blue-600">${state.m8.a}</span><input type="range" min="2" max="8" step="0.5" value="${state.m8.a}" oninput="state.m8.a=parseFloat(this.value); renderM8(); this.previousElementSibling.innerText=this.value"></label>
+                <label class="text-xs font-bold">Chiều cao h: <span class="text-blue-600">${state.m8.h}</span><input type="range" min="2" max="8" step="0.5" value="${state.m8.h}" oninput="state.m8.h=parseFloat(this.value); renderM8(); this.previousElementSibling.innerText=this.value"></label>
+            </div>`);
+            else if(mode === 9) buildUI(`<div class="flex gap-4">
+                <label class="text-xs font-bold">Cạnh đáy a: <span class="text-blue-600">${state.m9.a}</span><input type="range" min="2" max="8" step="0.5" value="${state.m9.a}" oninput="state.m9.a=parseFloat(this.value); renderM9(); this.previousElementSibling.innerText=this.value"></label>
+                <label class="text-xs font-bold">Chiều cao h: <span class="text-blue-600">${state.m9.h}</span><input type="range" min="2" max="8" step="0.5" value="${state.m9.h}" oninput="state.m9.h=parseFloat(this.value); renderM9(); this.previousElementSibling.innerText=this.value"></label>
+            </div>`);
+            else if(mode === 10) buildUI(`<label class="text-xs font-bold">Cạnh a: <span class="text-blue-600">${state.m10.a}</span><input type="range" min="2" max="8" step="0.5" value="${state.m10.a}" oninput="state.m10.a=parseFloat(this.value); renderM10(); this.previousElementSibling.innerText=this.value"></label>`);
+
+            window[`renderM${mode}`]();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Expose to window for inline HTML handlers and dynamic function calls
+        window.state = state;
+        window.renderM1 = renderM1;
+        window.renderM2 = renderM2;
+        window.renderM3 = renderM3;
+        window.renderM4 = renderM4;
+        window.renderM5 = renderM5;
+        window.renderM6 = renderM6;
+        window.renderM7 = renderM7;
+        window.renderM8 = renderM8;
+        window.renderM9 = renderM9;
+        window.renderM10 = renderM10;
+
+        window.onload = init;
+    </script>
+</body>
+</html>
