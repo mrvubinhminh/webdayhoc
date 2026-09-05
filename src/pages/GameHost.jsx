@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
-import { ArrowLeft, Upload, Play, Users, Trophy, ChevronRight, CheckCircle2, XCircle } from 'lucide-react';
+import { ArrowLeft, Upload, Play, Users, Trophy, ChevronRight, CheckCircle2, XCircle, Crown } from 'lucide-react';
 import { db } from '../firebase';
 import { ref, set, update, onValue, remove } from 'firebase/database';
 import katex from 'katex';
@@ -224,20 +224,29 @@ const GameHost = () => {
   };
 
   const revealAnswer = async () => {
-    // Tự động cộng điểm cho những người trả lời đúng
+    // Tự động cộng điểm cho những người trả lời đúng và đếm số câu sai
     const currentQ = roomData.questions[roomData.currentQuestionIndex];
     const players = roomData.players || {};
     
+    let wrongCount = 0;
     const updates = {};
     updates['status'] = 'REVEAL';
     
     Object.keys(players).forEach(playerId => {
       const p = players[playerId];
-      if (p.currentAnswer === currentQ.correctOption) {
-        // Cộng điểm
-        updates[`players/${playerId}/score`] = (p.score || 0) + 100; // Mỗi câu 100 điểm
+      if (p.currentAnswer) {
+         if (p.currentAnswer === currentQ.correctOption) {
+           // Cộng điểm
+           updates[`players/${playerId}/score`] = (p.score || 0) + 100; // Mỗi câu 100 điểm
+         } else {
+           wrongCount++;
+         }
+      } else {
+         wrongCount++; // Không trả lời cũng tính là sai
       }
     });
+
+    updates[`questions/${roomData.currentQuestionIndex}/wrongCount`] = wrongCount;
 
     await update(ref(db, `rooms/${roomCode}`), updates);
   };
@@ -249,7 +258,7 @@ const GameHost = () => {
   const nextQuestion = async () => {
     const nextIdx = roomData.currentQuestionIndex + 1;
     if (nextIdx >= roomData.questions.length) {
-      alert("Đã hết câu hỏi!");
+      await update(ref(db, `rooms/${roomCode}`), { status: 'END' });
       return;
     }
     
@@ -267,7 +276,13 @@ const GameHost = () => {
   };
 
   const endGame = async () => {
-    if (window.confirm("Kết thúc trò chơi và xoá phòng?")) {
+    if (window.confirm("Bạn có chắc muốn kết thúc và xem tổng kết xếp hạng?")) {
+      await update(ref(db, `rooms/${roomCode}`), { status: 'END' });
+    }
+  };
+
+  const closeRoom = async () => {
+    if (window.confirm("Kết thúc hoàn toàn và xoá phòng chơi này?")) {
       await remove(ref(db, `rooms/${roomCode}`));
       setLocalGameState('SETUP');
       setRoomCode('');
@@ -562,6 +577,80 @@ const GameHost = () => {
                </div>
             </div>
           )}
+
+          {roomData.status === 'END' && (() => {
+             const top3 = sortedTop10.slice(0, 3);
+             const worstQuestion = [...roomData.questions]
+                .map((q, idx) => ({ ...q, index: idx }))
+                .filter(q => q.wrongCount > 0)
+                .sort((a, b) => b.wrongCount - a.wrongCount)[0];
+
+             return (
+                <div className="w-full max-w-5xl mx-auto mt-4 px-4 animate-fade-in">
+                  <h1 className="text-4xl md:text-6xl font-black text-center text-yellow-400 mb-16 mt-8 drop-shadow-[0_0_20px_rgba(250,204,21,0.5)]">
+                     🏆 TỔNG KẾT BẢNG XẾP HẠNG 🏆
+                  </h1>
+
+                  {/* Podium */}
+                  <div className="flex justify-center items-end gap-4 md:gap-8 h-[350px] mb-16">
+                     {top3[1] && (
+                        <div className="flex flex-col items-center animate-bounce-in" style={{ animationDelay: '0.2s' }}>
+                           <div className="text-2xl font-bold text-gray-300 mb-2 truncate max-w-[150px]">{top3[1].name}</div>
+                           <div className="w-20 h-20 bg-gray-300 rounded-full p-1 mb-2 shadow-[0_0_15px_rgba(209,213,219,0.5)] relative">
+                              <img src={top3[1].avatar} className="w-full h-full object-contain rounded-full bg-slate-800" alt="avt" />
+                           </div>
+                           <div className="w-24 h-40 bg-gradient-to-t from-gray-600 to-gray-400 rounded-t-xl flex items-center justify-center text-5xl font-black text-white shadow-2xl">2</div>
+                           <div className="text-xl font-bold mt-3 text-gray-300">{top3[1].score || 0} đ</div>
+                        </div>
+                     )}
+                     
+                     {top3[0] && (
+                        <div className="flex flex-col items-center animate-bounce-in z-10 mx-2">
+                           <Crown className="w-20 h-20 text-yellow-400 mb-[-10px] drop-shadow-[0_0_20px_rgba(250,204,21,0.8)] animate-pulse" />
+                           <div className="text-3xl font-black text-yellow-400 mb-2 truncate max-w-[180px]">{top3[0].name}</div>
+                           <div className="w-28 h-28 bg-yellow-400 rounded-full p-1.5 mb-2 shadow-[0_0_30px_rgba(250,204,21,0.8)] relative">
+                              <img src={top3[0].avatar} className="w-full h-full object-contain rounded-full bg-slate-800" alt="avt" />
+                           </div>
+                           <div className="w-32 h-56 bg-gradient-to-t from-yellow-600 to-yellow-400 rounded-t-xl flex items-center justify-center text-7xl font-black text-white shadow-2xl">1</div>
+                           <div className="text-2xl font-black mt-3 text-yellow-400">{top3[0].score || 0} đ</div>
+                        </div>
+                     )}
+
+                     {top3[2] && (
+                        <div className="flex flex-col items-center animate-bounce-in" style={{ animationDelay: '0.4s' }}>
+                           <div className="text-2xl font-bold text-amber-600 mb-2 truncate max-w-[150px]">{top3[2].name}</div>
+                           <div className="w-20 h-20 bg-amber-600 rounded-full p-1 mb-2 shadow-[0_0_15px_rgba(217,119,6,0.5)] relative">
+                              <img src={top3[2].avatar} className="w-full h-full object-contain rounded-full bg-slate-800" alt="avt" />
+                           </div>
+                           <div className="w-24 h-32 bg-gradient-to-t from-amber-700 to-amber-500 rounded-t-xl flex items-center justify-center text-5xl font-black text-white shadow-2xl">3</div>
+                           <div className="text-xl font-bold mt-3 text-amber-600">{top3[2].score || 0} đ</div>
+                        </div>
+                     )}
+                  </div>
+
+                  {/* Thống kê câu sai nhiều nhất */}
+                  {worstQuestion && (
+                     <div className="bg-slate-800/80 p-8 rounded-3xl border border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.15)] mb-12 animate-fade-in" style={{ animationDelay: '0.8s' }}>
+                        <h2 className="text-2xl font-bold text-red-400 mb-6 flex items-center justify-center gap-3">
+                           <XCircle className="w-8 h-8" />
+                           THỐNG KÊ: Câu bị làm sai nhiều nhất ({worstQuestion.wrongCount} em làm sai)
+                        </h2>
+                        
+                        <div className="bg-slate-900 p-6 rounded-2xl text-xl text-center border border-slate-700 flex flex-col items-center">
+                           <div className="text-emerald-400 font-bold mb-4">Câu hỏi số {worstQuestion.index + 1}:</div>
+                           <MathText text={worstQuestion.question} />
+                        </div>
+                     </div>
+                  )}
+
+                  <div className="flex justify-center pb-12 animate-fade-in" style={{ animationDelay: '1s' }}>
+                     <button onClick={closeRoom} className="bg-red-600 hover:bg-red-500 text-white px-10 py-5 rounded-2xl font-black text-2xl shadow-lg transition-transform hover:scale-105 flex items-center gap-3">
+                        Thoát & Xoá Phòng
+                     </button>
+                  </div>
+                </div>
+             );
+          })()}
 
         </div>
       )}

@@ -230,6 +230,45 @@ const GamePlayer = () => {
                 </div>
              );
           })()}
+
+          {roomData.status === 'END' && (() => {
+             const playersList = roomData?.players ? Object.values(roomData.players) : [];
+             const myRankIndex = playersList.sort((a, b) => (b.score || 0) - (a.score || 0)).findIndex(p => p.id === playerId);
+             const myRank = myRankIndex + 1;
+
+             return (
+                <div className="flex flex-col items-center justify-center w-full h-full animate-fade-in bg-slate-900 absolute top-0 left-0 p-6 text-center">
+                   <div className="text-6xl mb-6 animate-bounce">🏆</div>
+                   <h1 className="text-4xl font-black text-yellow-400 mb-2 drop-shadow-md">TRÒ CHƠI KẾT THÚC</h1>
+                   <p className="text-xl text-gray-300 mb-12">Cảm ơn bạn đã tham gia!</p>
+
+                   <div className="bg-slate-800 p-8 rounded-3xl border-2 border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.2)] w-full max-w-sm">
+                      <div className="w-24 h-24 bg-white/10 rounded-full mx-auto mb-4 p-2 shadow-xl">
+                         <img src={me?.avatar} alt="avatar" className="w-full h-full object-contain" />
+                      </div>
+                      <h2 className="text-2xl font-bold text-white mb-2">{me?.name}</h2>
+                      
+                      <div className="flex justify-between items-center bg-slate-900 rounded-2xl p-4 mt-6">
+                         <div className="text-left">
+                            <div className="text-gray-400 text-sm font-bold uppercase tracking-wider mb-1">Xếp hạng</div>
+                            <div className="text-4xl font-black text-emerald-400">#{myRank}</div>
+                         </div>
+                         <div className="text-right">
+                            <div className="text-gray-400 text-sm font-bold uppercase tracking-wider mb-1">Tổng điểm</div>
+                            <div className="text-3xl font-black text-yellow-400">{me?.score || 0}</div>
+                         </div>
+                      </div>
+                   </div>
+
+                   <button 
+                     onClick={() => navigate('/')}
+                     className="mt-12 bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-full font-bold transition-all"
+                   >
+                     Về trang chủ
+                   </button>
+                </div>
+             );
+          })()}
         </div>
       )}
     </div>
