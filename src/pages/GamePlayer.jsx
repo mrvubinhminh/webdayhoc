@@ -161,56 +161,75 @@ const GamePlayer = () => {
             </div>
           )}
 
-          {roomData.status === 'REVEAL' && (
-            <div className="text-center animate-fade-in">
-               {me?.currentAnswer === roomData.questions[roomData.currentQuestionIndex].correctOption ? (
-                  <div className="bg-emerald-600 p-12 rounded-3xl shadow-2xl border-4 border-emerald-400">
-                     <CheckCircle className="w-32 h-32 text-white mx-auto mb-6" />
-                     <h2 className="text-4xl font-black text-white mb-2">CHÍNH XÁC!</h2>
-                     <p className="text-2xl text-emerald-200">+100 điểm</p>
-                  </div>
-               ) : (
-                  <div className="bg-red-600 p-12 rounded-3xl shadow-2xl border-4 border-red-400">
-                     <XCircle className="w-32 h-32 text-white mx-auto mb-6" />
-                     <h2 className="text-4xl font-black text-white mb-2">SAI RỒI!</h2>
-                     <p className="text-2xl text-red-200">Không sao, phục thù câu sau nhé!</p>
-                  </div>
-               )}
-            </div>
-          )}
+          {roomData.status === 'REVEAL' && (() => {
+             const isCorrect = me?.currentAnswer === roomData.questions[roomData.currentQuestionIndex].correctOption;
+             const playersList = roomData?.players ? Object.values(roomData.players) : [];
+             const sortedTop5 = [...playersList].sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 5);
+             const myRankIndex = playersList.sort((a, b) => (b.score || 0) - (a.score || 0)).findIndex(p => p.id === playerId);
 
-          {roomData.status === 'LEADERBOARD' && (
-             <div className="w-full max-w-xl mx-auto animate-fade-in">
-               <div className="flex items-center justify-center gap-4 mb-8">
-                 <div className="w-20 h-20 bg-white/10 rounded-full border-4 border-yellow-400 p-1">
-                   <img src={me?.avatar} alt="avatar" className="w-full h-full object-contain" />
-                 </div>
-                 <div>
-                   <h2 className="text-2xl font-bold text-white">Điểm của bạn:</h2>
-                   <div className="text-4xl font-black text-yellow-400">{me?.score || 0}</div>
-                 </div>
-               </div>
-               
-               <div className="bg-slate-800/80 p-6 rounded-3xl border border-slate-700 shadow-xl">
-                 <h3 className="text-xl font-bold text-gray-400 mb-6 text-center">🏆 BẢNG XẾP HẠNG TOP 5</h3>
-                 <div className="space-y-3">
-                   {sortedPlayers.map((p, i) => (
-                     <div key={i} className={`flex justify-between items-center p-4 rounded-xl font-bold ${p.name === name ? 'bg-yellow-500/20 border border-yellow-500/50 text-white' : 'bg-slate-900/50 text-gray-300'}`}>
-                       <div className="flex items-center gap-3">
-                         <div className="w-8 h-8 flex items-center justify-center bg-slate-800 rounded-full text-sm">#{i+1}</div>
-                         <div className="w-10 h-10 bg-white/10 rounded-full overflow-hidden p-1">
-                           <img src={p.avatar} alt="avt" className="w-full h-full object-contain" />
-                         </div>
-                         <span>{p.name}</span>
+             return (
+                <div className="flex flex-col w-full h-full animate-fade-in bg-slate-900 absolute top-0 left-0 pt-4">
+                  {/* Banner đúng/sai */}
+                  <div className={`mx-4 p-6 text-center rounded-3xl shadow-xl flex flex-col items-center justify-center border-4 ${isCorrect ? 'bg-emerald-600 border-emerald-400' : 'bg-red-600 border-red-400'}`}>
+                    <div className="flex items-center gap-6">
+                       <div className="w-24 h-24 bg-white/20 rounded-full overflow-hidden p-1 border-4 border-white shadow-xl">
+                          <img src={me?.avatar} alt="avt" className="w-full h-full object-contain" />
                        </div>
-                       <div className="text-xl">{p.score || 0}</div>
-                     </div>
-                   ))}
-                 </div>
-               </div>
-             </div>
-          )}
+                       <div className="text-left">
+                          <h2 className="text-3xl font-black text-white drop-shadow-md mb-1">{isCorrect ? 'CHÍNH XÁC!' : 'SAI RỒI!'}</h2>
+                          <div className="text-xl text-white/90">Điểm của bạn: <span className="font-black text-3xl text-yellow-300 ml-2">{me?.score || 0}</span></div>
+                       </div>
+                    </div>
+                  </div>
 
+                  {/* Bảng xếp hạng */}
+                  <div className="flex-1 overflow-y-auto px-4 mt-6 pb-6">
+                    <h3 className="text-xl font-bold text-gray-400 mb-4 text-center">🏆 TOP 5 HIỆN TẠI</h3>
+                    <div className="space-y-3 max-w-xl mx-auto">
+                       {sortedTop5.map((p, i) => {
+                         const isMe = p.id === playerId;
+                         let bgClass = 'bg-slate-800 text-gray-300';
+                         if (i === 0) bgClass = 'bg-gradient-to-r from-yellow-500 to-yellow-400 text-black shadow-lg font-black';
+                         if (isMe) bgClass = 'bg-emerald-500 text-white shadow-lg border-2 border-emerald-300 font-black scale-[1.02]';
+
+                         return (
+                           <div key={i} className={`flex justify-between items-center p-4 rounded-2xl text-lg font-bold transition-all ${bgClass}`}>
+                             <div className="flex items-center gap-3">
+                               <div className={`w-8 h-8 flex items-center justify-center rounded-full text-sm ${i === 0 && !isMe ? 'bg-black/20' : 'bg-black/30'}`}>
+                                 #{i+1}
+                               </div>
+                               <div className="w-10 h-10 bg-white/20 rounded-full overflow-hidden p-0.5">
+                                 <img src={p.avatar} alt="avt" className="w-full h-full object-contain" />
+                               </div>
+                               <span className="truncate max-w-[150px]">{p.name} {isMe && '(Bạn)'}</span>
+                             </div>
+                             <div className="text-xl">{p.score || 0}</div>
+                           </div>
+                         );
+                       })}
+
+                       {/* Nếu bản thân không ở trong Top 5, hiển thị thêm ở dưới cùng */}
+                       {myRankIndex >= 5 && (
+                         <div className="mt-6 pt-6 border-t-2 border-slate-700 border-dashed">
+                           <div className="flex justify-between items-center p-4 rounded-2xl text-lg font-black bg-emerald-500 text-white shadow-lg border-2 border-emerald-300">
+                             <div className="flex items-center gap-3">
+                               <div className="w-8 h-8 flex items-center justify-center rounded-full text-sm bg-black/30">
+                                 #{myRankIndex + 1}
+                               </div>
+                               <div className="w-10 h-10 bg-white/20 rounded-full overflow-hidden p-0.5">
+                                 <img src={me?.avatar} alt="avt" className="w-full h-full object-contain" />
+                               </div>
+                               <span className="truncate max-w-[150px]">{me?.name} (Bạn)</span>
+                             </div>
+                             <div className="text-xl">{me?.score || 0}</div>
+                           </div>
+                         </div>
+                       )}
+                    </div>
+                  </div>
+                </div>
+             );
+          })()}
         </div>
       )}
     </div>

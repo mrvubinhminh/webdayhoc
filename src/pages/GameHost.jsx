@@ -220,6 +220,8 @@ const GameHost = () => {
   // Các hàm phụ trợ tính toán
   const playersList = roomData?.players ? Object.values(roomData.players) : [];
   const answerCount = playersList.filter(p => p.currentAnswer).length;
+  // Sắp xếp người chơi để hiển thị Bảng xếp hạng Top 10
+  const sortedTop10 = [...playersList].sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 10);
 
   return (
     <div className="min-h-screen bg-slate-900 text-white p-4 md:p-8">
@@ -346,63 +348,62 @@ const GameHost = () => {
           )}
 
           {roomData.status === 'REVEAL' && (
-            <div className="animate-fade-in flex flex-col min-h-[70vh]">
-               <div className="bg-slate-800 p-8 rounded-3xl mb-8 border-4 border-slate-700 flex flex-col md:flex-row gap-8 flex-1">
-                  <div className="md:w-1/4 flex flex-col items-center justify-center text-center bg-slate-900/50 p-6 rounded-2xl border border-slate-700">
-                    <h2 className="text-3xl text-gray-400 mb-4">Đáp án đúng là:</h2>
-                    <div className="text-8xl font-black text-emerald-400 mb-6 drop-shadow-[0_0_20px_rgba(52,211,153,0.5)]">
+            <div className="animate-fade-in flex flex-col md:flex-row gap-6 min-h-[70vh]">
+               {/* Phần hiển thị đáp án và lời giải (Bên trái) */}
+               <div className="flex-1 bg-slate-800 p-8 rounded-3xl border-4 border-slate-700 flex flex-col gap-6">
+                  <div className="flex flex-col items-center justify-center text-center bg-slate-900/50 p-6 rounded-2xl border border-slate-700">
+                    <h2 className="text-2xl text-gray-400 mb-2">Đáp án đúng là:</h2>
+                    <div className="text-7xl font-black text-emerald-400 drop-shadow-[0_0_20px_rgba(52,211,153,0.5)]">
                       {['A', 'B', 'C', 'D'][roomData.questions[roomData.currentQuestionIndex].correctOption - 1]}
                     </div>
                   </div>
                   
                   {roomData.questions[roomData.currentQuestionIndex].explanation && (
-                    <div className="flex-1 bg-slate-900 p-8 rounded-2xl text-left border border-slate-700 overflow-y-auto max-h-[60vh] shadow-inner">
-                      <h3 className="text-3xl font-bold text-emerald-400 mb-6 border-b-2 border-slate-700/50 pb-4 flex items-center gap-3">
+                    <div className="flex-1 bg-slate-900 p-6 rounded-2xl text-left border border-slate-700 overflow-y-auto max-h-[50vh] shadow-inner">
+                      <h3 className="text-2xl font-bold text-emerald-400 mb-4 border-b-2 border-slate-700/50 pb-2 flex items-center gap-3">
                         Lời giải chi tiết
                       </h3>
-                      <div className="text-2xl leading-[1.8] text-gray-200">
+                      <div className="text-xl leading-[1.8] text-gray-200">
                         <MathText text={roomData.questions[roomData.currentQuestionIndex].explanation} />
                       </div>
                     </div>
                   )}
+
+                  <div className="mt-auto flex justify-end">
+                    <button onClick={nextQuestion} className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-xl font-bold text-xl shadow-lg flex items-center gap-2">
+                      Câu Tiếp Theo <ChevronRight />
+                    </button>
+                  </div>
                </div>
 
-               <div className="flex justify-between mt-auto">
-                  <button onClick={showLeaderboard} className="bg-orange-600 hover:bg-orange-500 text-white px-8 py-4 rounded-xl font-bold text-2xl shadow-lg flex items-center gap-2">
-                    <Trophy className="w-6 h-6" /> Xem Bảng Xếp Hạng
-                  </button>
-                  <button onClick={nextQuestion} className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-xl font-bold text-2xl shadow-lg flex items-center gap-2">
-                    Câu Tiếp Theo <ChevronRight />
-                  </button>
-               </div>
-            </div>
-          )}
+               {/* Bảng xếp hạng Top 10 (Bên phải) */}
+               <div className="md:w-1/3 bg-slate-800/80 p-6 rounded-3xl border border-slate-700 shadow-xl overflow-y-auto max-h-[70vh]">
+                 <h3 className="text-2xl font-black text-yellow-400 mb-6 text-center flex items-center justify-center gap-2">
+                   <Trophy className="w-8 h-8" /> BẢNG XẾP HẠNG TOP 10
+                 </h3>
+                 <div className="space-y-3">
+                   {sortedTop10.map((p, i) => {
+                     let bgClass = 'bg-slate-900/50 text-gray-300';
+                     if (i === 0) bgClass = 'bg-gradient-to-r from-yellow-600 to-yellow-400 text-black scale-[1.02] shadow-[0_0_15px_rgba(250,204,21,0.5)]';
+                     else if (i === 1) bgClass = 'bg-gradient-to-r from-gray-400 to-gray-300 text-black shadow-lg';
+                     else if (i === 2) bgClass = 'bg-gradient-to-r from-amber-700 to-amber-600 text-white shadow-lg';
 
-          {roomData.status === 'LEADERBOARD' && (
-            <div className="animate-fade-in max-w-3xl mx-auto">
-               <h2 className="text-5xl font-black text-center text-yellow-400 mb-12 flex items-center justify-center gap-4">
-                 <Trophy className="w-12 h-12" /> Bảng Xếp Hạng
-               </h2>
-               
-               <div className="space-y-4">
-                 {playersList.sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 5).map((p, i) => (
-                   <div key={i} className={`flex justify-between items-center p-6 rounded-2xl text-2xl font-bold ${i === 0 ? 'bg-gradient-to-r from-yellow-600 to-yellow-400 text-black scale-105 shadow-xl' : 'bg-slate-800 text-white'}`}>
-                     <div className="flex items-center gap-4">
-                       <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl ${i === 0 ? 'bg-black/20 text-black' : 'bg-slate-700'}`}>#{i+1}</div>
-                       <div className="w-14 h-14 bg-white/20 rounded-full overflow-hidden p-1 border-2 border-white/30">
-                         <img src={p.avatar} alt="avt" className="w-full h-full object-contain" />
+                     return (
+                       <div key={i} className={`flex justify-between items-center p-3 rounded-xl font-bold transition-all ${bgClass}`}>
+                         <div className="flex items-center gap-3">
+                           <div className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-black ${i < 3 ? 'bg-black/20' : 'bg-slate-800'}`}>
+                             #{i+1}
+                           </div>
+                           <div className={`w-10 h-10 rounded-full overflow-hidden p-0.5 ${i < 3 ? 'bg-white/30' : 'bg-white/10'}`}>
+                             <img src={p.avatar} alt="avt" className="w-full h-full object-contain" />
+                           </div>
+                           <span className="truncate max-w-[120px]">{p.name}</span>
+                         </div>
+                         <div className="text-lg font-black">{p.score || 0}</div>
                        </div>
-                       <span>{p.name}</span>
-                     </div>
-                     <div className="text-3xl font-black">{p.score || 0} pt</div>
-                   </div>
-                 ))}
-               </div>
-
-               <div className="mt-12 flex justify-end">
-                  <button onClick={nextQuestion} className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-xl font-bold text-2xl shadow-lg flex items-center gap-2">
-                    Tiếp Tục <ChevronRight />
-                  </button>
+                     );
+                   })}
+                 </div>
                </div>
             </div>
           )}
