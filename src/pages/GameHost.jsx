@@ -38,8 +38,8 @@ const MathText = ({ text }) => {
       }
       
       // Xử lý xuống dòng cho phần text (không phải toán)
-      // \\newline, \newline, \\, hoặc xuống dòng thực sự (\n)
-      const textParts = part.split(/\\\\newline|\\newline|\\\\|\n/g);
+      // Chỉ \newline hoặc \\newline mới xuống dòng, \\ không xuống dòng
+      const textParts = part.split(/\\\\newline|\\newline/g);
       return (
         <span key={i}>
           {textParts.map((t, idx) => (

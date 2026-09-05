@@ -1,0 +1,1859 @@
+<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#2d6a4f"><title>Sổ Tay Toán Học 6-12</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
+
+:root{
+  --bg:#f3ede0;
+  --paper:#fffdf8;
+  --paper-line:#e7dfc9;
+  --ink:#2b2a26;
+  --muted:#7a7667;
+  --line:#ddd4bd;
+  --accent:#c9184a;
+  --accent-ink:#ffffff;
+  --shadow:0 2px 10px rgba(60,50,20,.10);
+  --radius:16px;
+  --fs-scale:1;
+  --tag-dn:#3a6bd6;
+  --tag-ct:#c9184a;
+  --tag-tc:#2f9e44;
+  --tag-dh:#8338ec;
+  --tag-ly:#e08600;
+  --tag-dt:#4361ee;
+  --tag-vd:#0f8b6c;
+  --spiral:#d8cba9;
+  color-scheme: light;
+}
+:root:not([data-theme="light"]){
+  @media (prefers-color-scheme: dark){
+    --bg:#16161a;
+    --paper:#1f2024;
+    --paper-line:#2a2b30;
+    --ink:#eae6d9;
+    --muted:#9b9788;
+    --line:#34353b;
+    --shadow:0 2px 14px rgba(0,0,0,.45);
+    --spiral:#3a3b41;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16161a;
+  --paper:#1f2024;
+  --paper-line:#2a2b30;
+  --ink:#eae6d9;
+  --muted:#9b9788;
+  --line:#34353b;
+  --shadow:0 2px 14px rgba(0,0,0,.45);
+  --spiral:#3a3b41;
+  color-scheme: dark;
+}
+
+*{box-sizing:border-box;}
+[hidden]{display:none !important;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Be Vietnam Pro', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size:calc(15px * var(--fs-scale));
+  line-height:1.5;
+  -webkit-tap-highlight-color:transparent;
+}
+.app{max-width:640px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding-bottom:76px;}
+
+/* ---------- Top bar & search ---------- */
+.topbar{
+  position:sticky;top:0;z-index:20;
+  background:var(--bg);
+  padding:14px 14px 10px;
+  border-bottom:1px solid var(--line);
+}
+.app-title{
+  margin:0 0 10px;
+  font-size:1.15rem;
+  font-weight:800;
+  letter-spacing:.2px;
+  display:flex;flex-wrap:wrap;align-items:baseline;row-gap:2px;
+}
+.app-title span{
+  font-weight:500;color:var(--muted);font-size:.72em;margin-left:6px;
+}
+.search-wrap{
+  position:relative;
+  display:flex;align-items:center;
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:999px;
+  box-shadow:var(--shadow);
+  padding:0 6px 0 14px;
+}
+.search-icon{font-size:1rem;opacity:.6;margin-right:6px;}
+#searchInput{
+  flex:1;border:none;background:transparent;outline:none;
+  padding:12px 6px;font-size:.98rem;color:var(--ink);font-family:inherit;
+}
+#searchInput::placeholder{color:var(--muted);}
+.clear-btn{
+  border:none;background:var(--line);color:var(--ink);
+  width:26px;height:26px;border-radius:50%;font-size:.8rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;flex:none;
+}
+
+/* ---------- Panels ---------- */
+main{flex:1;padding:10px 14px 24px;}
+.panel{display:none;}
+.panel.active{display:block;}
+.panel-title{font-size:1.05rem;font-weight:700;margin:6px 0 12px;}
+.panel-header-row{display:flex;align-items:center;justify-content:space-between;}
+.hint{color:var(--muted);font-size:.85rem;margin:-4px 0 10px;}
+.empty-state{color:var(--muted);text-align:center;padding:30px 10px;font-size:.92rem;}
+
+/* ---------- Search results ---------- */
+.search-results{margin-top:4px;}
+.result-card{
+  background:var(--paper);border:1px solid var(--line);border-radius:12px;
+  padding:12px 14px;margin-bottom:8px;box-shadow:var(--shadow);cursor:pointer;
+}
+.result-crumb{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px;display:flex;align-items:center;gap:6px;}
+.result-crumb .dot{width:8px;height:8px;border-radius:50%;flex:none;}
+.result-name{font-weight:700;font-size:.98rem;margin-bottom:3px;}
+.result-snippet{font-size:.85rem;color:var(--muted);}
+.result-snippet mark{background:rgba(201,24,74,.18);color:inherit;border-radius:3px;padding:0 2px;}
+
+/* ---------- Tree (notebook accordion) ---------- */
+.tree{display:flex;flex-direction:column;gap:10px;}
+details.grade{
+  border-radius:var(--radius);
+  overflow:hidden;
+  border:1px solid var(--line);
+  background:var(--paper);
+  box-shadow:var(--shadow);
+}
+details.grade > summary{
+  list-style:none;cursor:pointer;
+  padding:13px 16px 13px 22px;
+  font-weight:800;font-size:1rem;
+  display:flex;align-items:center;gap:10px;
+  position:relative;
+  color:var(--grade-color, var(--accent));
+  background:
+    radial-gradient(circle at 10px 50%, var(--bg) 0 3.5px, transparent 4px),
+    linear-gradient(0deg, color-mix(in srgb, var(--grade-color,var(--accent)) 12%, var(--paper)), color-mix(in srgb, var(--grade-color,var(--accent)) 12%, var(--paper)));
+}
+details.grade > summary::-webkit-details-marker{display:none;}
+details.grade > summary::after{
+  content:"›";margin-left:auto;font-size:1.3rem;color:var(--muted);
+  transform:rotate(90deg);transition:transform .15s ease;
+}
+details.grade[open] > summary::after{transform:rotate(-90deg);}
+.grade-body{padding:8px 10px 12px;display:flex;flex-direction:column;gap:8px;}
+
+details.strand{
+  border:1px solid var(--paper-line);border-radius:12px;overflow:hidden;background:var(--paper);
+}
+details.strand > summary{
+  list-style:none;cursor:pointer;padding:10px 12px;font-weight:700;font-size:.9rem;
+  color:var(--muted);display:flex;align-items:center;gap:8px;
+}
+details.strand > summary::-webkit-details-marker{display:none;}
+details.strand > summary::after{content:"›";margin-left:auto;transform:rotate(90deg);transition:transform .15s ease;}
+details.strand[open] > summary::after{transform:rotate(-90deg);}
+.strand-body{padding:2px 8px 10px;display:flex;flex-direction:column;gap:6px;}
+
+details.topic{
+  border:1px dashed var(--paper-line);border-radius:10px;background:var(--bg);
+  scroll-margin-top:150px;
+}
+details.topic[open]{background:var(--paper);border-style:solid;}
+details.topic > summary{
+  list-style:none;cursor:pointer;padding:9px 10px;display:flex;align-items:center;gap:8px;font-size:.9rem;font-weight:600;
+}
+details.topic > summary::-webkit-details-marker{display:none;}
+details.topic > summary .topic-name{flex:1;}
+details.topic > summary::after{content:"+";margin-left:2px;color:var(--muted);font-weight:400;transform:none;}
+details.topic[open] > summary::after{content:"–";}
+.star-btn{
+  border:none;background:none;cursor:pointer;font-size:1.05rem;line-height:1;
+  color:var(--line);padding:2px 4px;flex:none;
+}
+.star-btn[data-fav="1"]{color:#f2b705;}
+
+.items{list-style:none;margin:0;padding:2px 10px 10px;display:flex;flex-direction:column;gap:7px;}
+.item-card{
+  background:var(--bg);border:1px solid var(--paper-line);border-radius:9px;padding:8px 10px;font-size:.88rem;
+}
+.item-tag{
+  display:inline-block;font-size:.66rem;font-weight:700;padding:1px 7px;border-radius:999px;color:#fff;
+  margin-bottom:4px;letter-spacing:.02em;
+}
+.item-text{color:var(--ink);}
+
+.flash{animation:flashPulse 1.5s ease;}
+@keyframes flashPulse{
+  0%{box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent);}
+  100%{box-shadow:none;}
+}
+
+/* ---------- Flat lists (favorites / history) ---------- */
+.flat-list{display:flex;flex-direction:column;gap:8px;}
+.flat-card{
+  background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:11px 13px;
+  box-shadow:var(--shadow);cursor:pointer;display:flex;align-items:flex-start;gap:10px;
+}
+.flat-card .flat-main{flex:1;min-width:0;}
+.flat-time{font-size:.72rem;color:var(--muted);white-space:nowrap;flex:none;padding-top:2px;}
+
+/* ---------- Settings ---------- */
+.settings-group{
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+  padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow);
+}
+.settings-group h3{margin:0 0 10px;font-size:.92rem;}
+.seg-control{display:inline-flex;background:var(--bg);border-radius:999px;padding:3px;gap:2px;}
+.seg-btn{
+  border:none;background:transparent;padding:7px 13px;border-radius:999px;font-size:.82rem;
+  cursor:pointer;color:var(--muted);font-family:inherit;font-weight:600;
+}
+.seg-btn.active{background:var(--accent);color:#fff;}
+.setting-row{display:flex;align-items:center;justify-content:space-between;margin-top:12px;font-size:.88rem;}
+.grade-toggles{display:flex;flex-wrap:wrap;gap:8px;}
+.grade-chip{
+  display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;
+  padding:6px 12px 6px 8px;font-size:.82rem;font-weight:600;cursor:pointer;user-select:none;background:var(--bg);
+}
+.grade-chip input{accent-color:var(--accent);}
+.btn-row{display:flex;flex-wrap:wrap;gap:8px;}
+.btn{
+  border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:9px 14px;border-radius:10px;
+  font-size:.85rem;font-weight:600;cursor:pointer;font-family:inherit;
+}
+.btn-danger{color:#c9184a;border-color:#c9184a55;}
+.link-btn{border:none;background:none;color:var(--accent);font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit;}
+.about{color:var(--muted);font-size:.76rem;text-align:center;margin-top:6px;line-height:1.6;}
+
+/* ---------- Tab bar ---------- */
+.tabbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:30;
+  max-width:640px;margin:0 auto;
+  background:var(--paper);border-top:1px solid var(--line);
+  display:flex;box-shadow:0 -2px 10px rgba(0,0,0,.06);
+}
+.tab-btn{
+  flex:1;border:none;background:none;padding:9px 4px 10px;cursor:pointer;font-family:inherit;
+  display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--muted);font-size:.68rem;font-weight:600;
+}
+.tab-btn.active{color:var(--accent);}
+.tab-icon{font-size:1.2rem;}
+
+/* ---------- Modal ---------- */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(20,18,10,.45);z-index:50;
+  display:flex;align-items:flex-end;justify-content:center;
+}
+.modal{
+  background:var(--paper);width:100%;max-width:640px;border-radius:18px 18px 0 0;
+  padding:16px;max-height:82vh;overflow:auto;
+}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.modal-header h3{margin:0;font-size:1rem;}
+.icon-btn{border:none;background:var(--bg);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:.9rem;color:var(--ink);}
+.modal-body textarea{
+  width:100%;min-height:140px;border:1px solid var(--line);border-radius:10px;padding:10px;
+  font-family:ui-monospace, monospace;font-size:.78rem;background:var(--bg);color:var(--ink);resize:vertical;
+}
+.modal-body p{font-size:.85rem;color:var(--muted);margin:8px 0;}
+.modal-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+.toast{
+  position:fixed;left:50%;bottom:88px;transform:translateX(-50%);
+  background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:.82rem;
+  z-index:60;opacity:0;pointer-events:none;transition:opacity .2s ease;
+}
+.toast.show{opacity:1;}
+
+/* ---------- MathJax ---------- */
+mjx-container{font-size:104% !important;}
+.item-text mjx-container, .result-name mjx-container, .result-snippet mjx-container{
+  max-width:100%;overflow-x:auto;overflow-y:hidden;
+}
+.item-text mjx-container[display="true"]{margin:.35em 0 !important;}
+</style></head><body>
+
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$']],
+    displayMath: [['$$', '$$']]
+  },
+  options: {
+    skipHtmlTags: ['script','noscript','style','textarea','pre','code']
+  }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+
+<div class="app">
+  <header class="topbar">
+    <h1 class="app-title">📐 Sổ Tay Toán Học <span>Thầy Vũ Tiến Lực – THPT Nguyễn Hữu Cảnh</span></h1>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input id="searchInput" type="search" placeholder="Tra cứu công thức, định nghĩa, bài học…" autocomplete="off" />
+      <button id="clearSearch" class="clear-btn" hidden>✕</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="panel-sotay" class="panel active">
+      <div id="searchResults" class="search-results" hidden></div>
+      <div id="treeRoot" class="tree"></div>
+    </section>
+
+    <section id="panel-favorites" class="panel">
+      <h2 class="panel-title">⭐ Yêu thích</h2>
+      <div id="favList" class="flat-list"></div>
+      <p id="favEmpty" class="empty-state" hidden>Chưa có mục yêu thích. Chạm ngôi sao ★ ở mỗi bài trong Sổ tay để lưu.</p>
+    </section>
+
+    <section id="panel-history" class="panel">
+      <div class="panel-header-row">
+        <h2 class="panel-title">🕒 Lịch sử tra cứu</h2>
+        <button id="clearHistoryBtn" class="link-btn">Xóa lịch sử</button>
+      </div>
+      <div id="historyList" class="flat-list"></div>
+      <p id="historyEmpty" class="empty-state" hidden>Chưa có lịch sử. Các bài bạn xem sẽ hiện ở đây.</p>
+    </section>
+
+    <section id="panel-settings" class="panel">
+      <h2 class="panel-title">⚙️ Cài đặt</h2>
+
+      <div class="settings-group">
+        <h3>Giao diện</h3>
+        <div class="seg-control" id="themeControl">
+          <button type="button" data-theme="system" class="seg-btn active">Hệ thống</button>
+          <button type="button" data-theme="light" class="seg-btn">Sáng</button>
+          <button type="button" data-theme="dark" class="seg-btn">Tối</button>
+        </div>
+        <div class="setting-row">
+          <span>Cỡ chữ</span>
+          <div class="seg-control" id="fontControl">
+            <button type="button" data-size="1" class="seg-btn">A⁻</button>
+            <button type="button" data-size="2" class="seg-btn active">A</button>
+            <button type="button" data-size="3" class="seg-btn">A⁺</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <h3>Hiển thị khối lớp</h3>
+        <p class="hint">Bỏ chọn để ẩn bớt khối lớp bạn không cần tra cứu ngay.</p>
+        <div id="gradeToggles" class="grade-toggles"></div>
+      </div>
+
+      <div class="settings-group">
+        <h3>Dữ liệu cá nhân</h3>
+        <p class="hint">Yêu thích, lịch sử và cài đặt được lưu ngay trên thiết bị này — không gửi lên máy chủ nào.</p>
+        <div class="btn-row">
+          <button type="button" id="exportBtn" class="btn">Xuất dữ liệu</button>
+          <button type="button" id="importBtn" class="btn">Nhập dữ liệu</button>
+          <button type="button" id="resetBtn" class="btn btn-danger">Xóa toàn bộ</button>
+        </div>
+      </div>
+
+      <p class="about">Sổ Tay Toán Học Thông Minh · Lớp 6–12 theo Chương trình GDPT 2018 · Công thức &amp; ý chính, không kèm bài tập minh họa.</p>
+    </section>
+  </main>
+
+  <nav class="tabbar">
+    <button type="button" class="tab-btn active" data-panel="sotay"><span class="tab-icon">📖</span><span>Sổ tay</span></button>
+    <button type="button" class="tab-btn" data-panel="favorites"><span class="tab-icon">⭐</span><span>Yêu thích</span></button>
+    <button type="button" class="tab-btn" data-panel="history"><span class="tab-icon">🕒</span><span>Lịch sử</span></button>
+    <button type="button" class="tab-btn" data-panel="settings"><span class="tab-icon">⚙️</span><span>Cài đặt</span></button>
+  </nav>
+</div>
+
+<div id="modalOverlay" class="modal-overlay" hidden>
+  <div class="modal">
+    <div class="modal-header"><h3 id="modalTitle"></h3><button type="button" id="modalClose" class="icon-btn">✕</button></div>
+    <div id="modalBody" class="modal-body"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// ===================== DỮ LIỆU =====================
+const DATA = [
+{g:6,l:"Lớp 6",c:"#e07a5f",s:[
+ {n:"Số & Đại số",t:[
+  {n:"Tập hợp. Số tự nhiên",i:[
+   "DN|Tập hợp: dùng chữ cái in hoa đặt tên; kí hiệu $a \\in A$ (a thuộc A), $a \\notin A$ (a không thuộc A), $\\emptyset$ (tập rỗng)",
+   "CT|Hai cách viết tập hợp: liệt kê các phần tử, hoặc chỉ ra tính chất đặc trưng của phần tử",
+   "DN|Tập hợp số tự nhiên $\\mathbb{N}=\\{0;1;2;3;\\ldots\\}$; $\\mathbb{N}^*=\\{1;2;3;\\ldots\\}$ (không có số 0)",
+   "TC|Trong hai số tự nhiên khác nhau, luôn có một số nhỏ hơn số kia; biểu diễn trên tia số, số ở bên trái nhỏ hơn",
+  ]},
+  {n:"Các phép tính với số tự nhiên",i:[
+   "TC|Phép cộng, nhân: giao hoán $a+b=b+a$, $ab=ba$; kết hợp $(a+b)+c=a+(b+c)$; phân phối $a(b+c)=ab+ac$",
+   "CT|Phép chia có dư: $a=b\\cdot q+r$ với $0\\leq r<b$ (a là số bị chia, b là số chia, q là thương, r là số dư)",
+   "DN|Lũy thừa: $a^n=a\\cdot a\\cdots a$ (n thừa số $a$), $a$ gọi là cơ số, $n$ là số mũ; quy ước $a^1=a$, $a^0=1$ ($a\\neq 0$)",
+   "CT|Nhân, chia hai lũy thừa cùng cơ số: $a^m\\cdot a^n=a^{m+n}$; $a^m:a^n=a^{m-n}$ ($a\\neq 0$, $m\\geq n$)",
+   "LY|Thứ tự thực hiện phép tính: Lũy thừa → Nhân, chia → Cộng, trừ; trong ngoặc thì ( ) → [ ] → { } trước",
+  ]},
+  {n:"Tính chia hết trong tập số tự nhiên",i:[
+   "DH|Chia hết cho 2: chữ số tận cùng là 0,2,4,6,8. Chia hết cho 5: chữ số tận cùng là 0 hoặc 5",
+   "DH|Chia hết cho 3: tổng các chữ số chia hết cho 3. Chia hết cho 9: tổng các chữ số chia hết cho 9",
+   "DN|Số nguyên tố là số tự nhiên lớn hơn 1, chỉ có hai ước là 1 và chính nó; hợp số có nhiều hơn 2 ước",
+   "CT|Phân tích một số ra thừa số nguyên tố: viết số đó dưới dạng tích của các số nguyên tố",
+   "DN|Ước chung lớn nhất (ƯCLN) của hai hay nhiều số là số lớn nhất trong tập hợp các ước chung của chúng",
+   "DN|Bội chung nhỏ nhất (BCNN) của hai hay nhiều số là số nhỏ nhất khác 0 trong tập hợp các bội chung",
+   "CT|Tìm ƯCLN: lấy tích các thừa số nguyên tố chung, mỗi thừa số lấy số mũ nhỏ nhất. Tìm BCNN: lấy tích các thừa số nguyên tố chung và riêng, mỗi thừa số lấy số mũ lớn nhất",
+  ]},
+  {n:"Số nguyên",i:[
+   "DN|Tập hợp số nguyên $\\mathbb{Z}=\\{\\ldots;-2;-1;0;1;2;\\ldots\\}$; số đối của $a$ là $-a$; giá trị tuyệt đối $|a|$ là khoảng cách từ $a$ đến $0$",
+   "TC|Cộng hai số nguyên cùng dấu: cộng hai giá trị tuyệt đối, giữ nguyên dấu. Cộng hai số nguyên khác dấu: lấy giá trị tuyệt đối lớn trừ giá trị tuyệt đối nhỏ, dấu là dấu của số có giá trị tuyệt đối lớn hơn",
+   "CT|Phép trừ: $a-b=a+(-b)$",
+   "TC|Nhân, chia số nguyên: cùng dấu cho kết quả dương, khác dấu cho kết quả âm; $(-a)\\cdot(-b)=a\\cdot b$",
+  ]},
+  {n:"Phân số",i:[
+   "DN|Phân số $\\dfrac{a}{b}$ ($a,b\\in\\mathbb{Z}$, $b\\neq 0$); $a$ là tử số, $b$ là mẫu số",
+   "TC|Hai phân số bằng nhau: $\\dfrac{a}{b}=\\dfrac{c}{d} \\Leftrightarrow a\\cdot d=b\\cdot c$",
+   "CT|Cộng, trừ phân số cùng mẫu: giữ nguyên mẫu, cộng/trừ tử; khác mẫu: quy đồng mẫu số trước",
+   "CT|Nhân hai phân số: $\\dfrac{a}{b}\\cdot\\dfrac{c}{d}=\\dfrac{a\\cdot c}{b\\cdot d}$. Chia hai phân số: $\\dfrac{a}{b}:\\dfrac{c}{d}=\\dfrac{a}{b}\\cdot\\dfrac{d}{c}$",
+   "DN|Hỗn số là cách viết gồm phần nguyên và phần phân số; liên hệ phân số – số thập phân – phần trăm",
+  ]},
+  {n:"Số thập phân",i:[
+   "DN|Số thập phân gồm phần nguyên và phần thập phân, cách nhau bởi dấu phẩy; có thể âm hoặc dương",
+   "LY|Làm tròn số thập phân: xét chữ số ngay sau hàng cần làm tròn, $\\geq 5$ thì tăng thêm 1 đơn vị ở hàng làm tròn",
+   "DN|Tỉ số của $a$ và $b$ ($b\\neq 0$) là $a:b$ hay $\\dfrac{a}{b}$; tỉ số phần trăm của $a$ và $b$ là $\\dfrac{a}{b}\\cdot 100\\%$",
+  ]},
+ ]},
+ {n:"Hình học & Đo lường",t:[
+  {n:"Hình học trực quan – Chu vi, diện tích",i:[
+   "DH|Hình vuông: 4 cạnh bằng nhau, 4 góc vuông. Hình chữ nhật: 2 cặp cạnh đối song song và bằng nhau, 4 góc vuông",
+   "DH|Hình thoi: 4 cạnh bằng nhau, 2 đường chéo vuông góc. Hình bình hành: 2 cặp cạnh đối song song và bằng nhau",
+   "DH|Hình thang cân: có một cặp cạnh đối song song, hai cạnh bên bằng nhau, hai góc kề một đáy bằng nhau",
+   "CT|Hình vuông cạnh $a$: chu vi $C=4a$, diện tích $S=a^2$. Hình chữ nhật: $C=2(a+b)$, $S=a\\cdot b$",
+   "CT|Hình thoi hai đường chéo $d_1,d_2$: $S=\\dfrac{1}{2}\\cdot d_1\\cdot d_2$. Hình bình hành đáy $a$, cao $h$: $S=a\\cdot h$",
+   "CT|Hình thang hai đáy $a,b$, cao $h$: $S=\\dfrac{1}{2}\\cdot(a+b)\\cdot h$",
+   "DN|Tam giác đều: 3 cạnh bằng nhau, 3 góc bằng $60^\\circ$. Lục giác đều: 6 cạnh bằng nhau, 6 góc bằng nhau",
+  ]},
+  {n:"Điểm, đường thẳng, đoạn thẳng, góc",i:[
+   "DN|Qua hai điểm phân biệt chỉ có một đường thẳng; ba điểm thẳng hàng khi cùng nằm trên một đường thẳng",
+   "DN|Trung điểm của đoạn thẳng $AB$ là điểm nằm giữa và cách đều hai đầu mút $A$, $B$",
+   "DN|Góc là hình gồm hai tia chung gốc; số đo góc đo bằng độ",
+   "DH|Góc nhọn: $0^\\circ<\\alpha<90^\\circ$. Góc vuông: $\\alpha=90^\\circ$. Góc tù: $90^\\circ<\\alpha<180^\\circ$. Góc bẹt: $\\alpha=180^\\circ$",
+  ]},
+ ]},
+ {n:"Thống kê & Xác suất",t:[
+  {n:"Thu thập, biểu diễn dữ liệu",i:[
+   "DN|Thu thập dữ liệu bằng quan sát, lập phiếu hỏi, phỏng vấn, tra cứu tài liệu",
+   "CT|Các dạng biểu diễn: bảng số liệu, biểu đồ tranh, biểu đồ cột, biểu đồ cột kép",
+  ]},
+  {n:"Xác suất thực nghiệm",i:[
+   "CT|Xác suất thực nghiệm của một sự kiện $=\\dfrac{\\text{số lần sự kiện xảy ra}}{\\text{tổng số lần thực hiện}}$",
+   "LY|Xác suất thực nghiệm càng ổn định khi số lần thử càng lớn",
+  ]},
+ ]},
+]},
+{g:7,l:"Lớp 7",c:"#f2a541",s:[
+ {n:"Số & Đại số",t:[
+  {n:"Số hữu tỉ",i:[
+   "DN|Số hữu tỉ là số viết được dưới dạng phân số $\\dfrac{a}{b}$ ($a,b\\in\\mathbb{Z}$, $b\\neq 0$); tập hợp kí hiệu $\\mathbb{Q}$",
+   "CT|Cộng, trừ, nhân, chia số hữu tỉ: quy về phép tính trên phân số cùng mẫu",
+   "CT|Lũy thừa của số hữu tỉ: $x^m\\cdot x^n=x^{m+n}$; $x^m:x^n=x^{m-n}$; $(x^m)^n=x^{mn}$; $(x\\cdot y)^n=x^n\\cdot y^n$; $\\left(\\dfrac{x}{y}\\right)^n=\\dfrac{x^n}{y^n}$",
+   "DN|Giá trị tuyệt đối của số hữu tỉ $x$, kí hiệu $|x|$, là khoảng cách từ điểm $x$ đến điểm $0$ trên trục số",
+  ]},
+  {n:"Số thực",i:[
+   "DN|Số vô tỉ là số thập phân vô hạn không tuần hoàn (ví dụ $\\sqrt{2}$, $\\pi$); căn bậc hai số học của $a\\geq 0$ là $\\sqrt{a}$",
+   "DN|Tập hợp số thực $\\mathbb{R}=\\mathbb{Q}\\cup(\\text{tập số vô tỉ})$; mỗi số thực đều biểu diễn được bởi một điểm trên trục số",
+   "TC|Với $a,b\\geq 0$: $a<b \\Leftrightarrow \\sqrt{a}<\\sqrt{b}$",
+  ]},
+  {n:"Đại lượng tỉ lệ thuận, tỉ lệ nghịch",i:[
+   "DN|$y$ tỉ lệ thuận với $x$ theo hệ số $k$ ($k\\neq 0$) nếu $y=k\\cdot x$",
+   "DN|$y$ tỉ lệ nghịch với $x$ theo hệ số $k$ ($k\\neq 0$) nếu $y=\\dfrac{k}{x}$, tức $x\\cdot y=k$ không đổi",
+   "CT|Tính chất dãy tỉ số bằng nhau: $\\dfrac{a}{b}=\\dfrac{c}{d}=\\dfrac{a+c}{b+d}=\\dfrac{a-c}{b-d}$ ($b\\neq \\pm d$)",
+  ]},
+  {n:"Biểu thức đại số. Đa thức một biến",i:[
+   "DN|Đơn thức một biến là biểu thức có dạng $a\\cdot x^k$ ($a$ là hệ số, $k$ là bậc); đa thức là tổng các đơn thức",
+   "DN|Bậc của đa thức một biến là số mũ lớn nhất của biến trong đa thức (sau khi thu gọn)",
+   "DN|Nghiệm của đa thức một biến $P(x)$ là giá trị của $x$ sao cho $P(x)=0$",
+  ]},
+ ]},
+ {n:"Hình học & Đo lường",t:[
+  {n:"Góc và đường thẳng song song",i:[
+   "TC|Hai góc đối đỉnh thì bằng nhau; hai đường thẳng vuông góc tạo ra bốn góc vuông",
+   "DN|Đường trung trực của đoạn thẳng là đường vuông góc với đoạn thẳng tại trung điểm của nó",
+   "DH|Nếu một đường thẳng cắt hai đường thẳng tạo ra một cặp góc so le trong (hoặc đồng vị) bằng nhau thì hai đường thẳng đó song song",
+   "LY|Tiên đề Euclid: qua một điểm ở ngoài một đường thẳng, chỉ có một đường thẳng song song với đường thẳng đó",
+  ]},
+  {n:"Tam giác",i:[
+   "TC|Tổng ba góc trong một tam giác bằng $180^\\circ$; góc ngoài của tam giác bằng tổng hai góc trong không kề với nó",
+   "DH|Ba trường hợp bằng nhau của hai tam giác: cạnh–cạnh–cạnh (c.c.c), cạnh–góc–cạnh (c.g.c), góc–cạnh–góc (g.c.g)",
+   "DH|Tam giác cân: hai cạnh bên bằng nhau và hai góc ở đáy bằng nhau. Tam giác đều: ba cạnh bằng nhau, mỗi góc $60^\\circ$",
+   "TC|Trong một tam giác, góc đối diện với cạnh lớn hơn thì lớn hơn (và ngược lại)",
+   "CT|Bất đẳng thức tam giác: với ba cạnh $a,b,c$ thì $|b-c|<a<b+c$",
+   "TC|Bốn đường đồng quy của tam giác: trung tuyến (giao tại trọng tâm), phân giác (tâm đường tròn nội tiếp), trung trực (tâm đường tròn ngoại tiếp), đường cao (trực tâm)",
+  ]},
+ ]},
+ {n:"Thống kê & Xác suất",t:[
+  {n:"Thống kê",i:[
+   "CT|Các dạng biểu đồ: biểu đồ đoạn thẳng (thể hiện xu thế theo thời gian), biểu đồ hình quạt tròn (thể hiện tỉ lệ phần trăm)",
+  ]},
+  {n:"Biến cố và xác suất",i:[
+   "DN|Biến cố chắc chắn luôn xảy ra; biến cố không thể không bao giờ xảy ra; biến cố ngẫu nhiên có thể xảy ra hoặc không",
+   "CT|Nếu một phép thử có $n$ kết quả đồng khả năng và biến cố $A$ ứng với $k$ kết quả thì $P(A)=\\dfrac{k}{n}$",
+  ]},
+ ]},
+]},
+{g:8,l:"Lớp 8",c:"#6a994e",s:[
+ {n:"Đại số",t:[
+  {n:"Đa thức nhiều biến. Hằng đẳng thức",i:[
+   "CT|Bình phương của một tổng/hiệu: $(a+b)^2=a^2+2ab+b^2$; $(a-b)^2=a^2-2ab+b^2$",
+   "CT|Hiệu hai bình phương: $a^2-b^2=(a-b)(a+b)$",
+   "CT|Lập phương của một tổng/hiệu: $(a+b)^3=a^3+3a^2b+3ab^2+b^3$; $(a-b)^3=a^3-3a^2b+3ab^2-b^3$",
+   "CT|Tổng, hiệu hai lập phương: $a^3+b^3=(a+b)(a^2-ab+b^2)$; $a^3-b^3=(a-b)(a^2+ab+b^2)$",
+   "LY|Phân tích đa thức thành nhân tử bằng: đặt nhân tử chung, dùng hằng đẳng thức, hoặc nhóm hạng tử",
+  ]},
+  {n:"Phân thức đại số",i:[
+   "DN|Phân thức đại số là biểu thức có dạng $\\dfrac{A}{B}$ với $A,B$ là đa thức, $B$ khác đa thức $0$",
+   "TC|Điều kiện xác định của phân thức là giá trị của biến làm mẫu thức khác $0$",
+   "CT|Cộng, trừ, nhân, chia phân thức: tương tự quy tắc với phân số, thực hiện trên đa thức",
+  ]},
+  {n:"Hàm số bậc nhất. Phương trình bậc nhất",i:[
+   "DN|Hàm số bậc nhất $y=ax+b$ ($a\\neq 0$); đồ thị là một đường thẳng, $a$ gọi là hệ số góc",
+   "TC|$a>0$: hàm số đồng biến (đường thẳng đi lên); $a<0$: hàm số nghịch biến (đường thẳng đi xuống)",
+   "CT|Phương trình bậc nhất một ẩn $ax+b=0$ ($a\\neq 0$) có nghiệm duy nhất $x=-\\dfrac{b}{a}$",
+  ]},
+ ]},
+ {n:"Hình học & Đo lường",t:[
+  {n:"Tứ giác",i:[
+   "TC|Tổng bốn góc của một tứ giác bằng $360^\\circ$",
+   "DH|Hình bình hành: các cạnh đối song song và bằng nhau, hai đường chéo cắt nhau tại trung điểm mỗi đường",
+   "DH|Hình chữ nhật: hình bình hành có một góc vuông (hoặc hai đường chéo bằng nhau)",
+   "DH|Hình thoi: hình bình hành có hai cạnh kề bằng nhau (hoặc hai đường chéo vuông góc)",
+   "DH|Hình vuông: vừa là hình chữ nhật vừa là hình thoi",
+  ]},
+  {n:"Định lí Thalès. Tam giác đồng dạng",i:[
+   "CT|Định lí Thalès: đường thẳng song song với một cạnh của tam giác và cắt hai cạnh còn lại thì định ra trên hai cạnh đó các đoạn thẳng tương ứng tỉ lệ",
+   "TC|Đường phân giác trong tam giác chia cạnh đối diện thành hai đoạn tỉ lệ với hai cạnh kề",
+   "DH|Tam giác đồng dạng theo các trường hợp: cạnh–cạnh–cạnh (c.c.c), cạnh–góc–cạnh (c.g.c), góc–góc (g.g)",
+   "CT|Tỉ số diện tích của hai tam giác đồng dạng bằng bình phương tỉ số đồng dạng",
+  ]},
+  {n:"Định lí Pythagore",i:[
+   "CT|Trong tam giác vuông có hai cạnh góc vuông $b,c$ và cạnh huyền $a$: $a^2=b^2+c^2$",
+   "LY|Định lí đảo: nếu $a^2=b^2+c^2$ thì tam giác đó vuông (góc vuông đối diện cạnh $a$)",
+  ]},
+ ]},
+ {n:"Thống kê & Xác suất",t:[
+  {n:"Thống kê",i:[
+   "LY|Cần nhận biết dữ liệu không hợp lí, không chính xác (mâu thuẫn thực tế, sai đơn vị, trùng lặp) trước khi phân tích",
+  ]},
+  {n:"Xác suất",i:[
+   "CT|Xác suất của biến cố $=\\dfrac{\\text{số kết quả thuận lợi}}{\\text{tổng số kết quả có thể}}$ (đồng khả năng)",
+   "LY|Xác suất thực nghiệm càng gần xác suất lí thuyết khi số phép thử càng lớn",
+  ]},
+ ]},
+]},
+{g:9,l:"Lớp 9",c:"#457b9d",s:[
+ {n:"Đại số",t:[
+  {n:"Căn thức",i:[
+   "DN|Căn bậc hai số học của $a\\geq 0$ là $\\sqrt{a}$ (không âm); căn bậc ba của $a$, kí hiệu $\\sqrt[3]{a}$, xác định với mọi $a$",
+   "CT|$\\sqrt{a^2}=|a|$; $\\sqrt{ab}=\\sqrt{a}\\cdot\\sqrt{b}$ ($a,b\\geq 0$); $\\sqrt{\\dfrac{a}{b}}=\\dfrac{\\sqrt{a}}{\\sqrt{b}}$ ($a\\geq 0$, $b>0$)",
+   "CT|Trục căn thức ở mẫu: nhân cả tử và mẫu với biểu thức liên hợp để khử căn ở mẫu",
+  ]},
+  {n:"Hệ hai phương trình bậc nhất hai ẩn",i:[
+   "DN|Phương trình bậc nhất hai ẩn: $ax+by=c$; hệ hai phương trình bậc nhất hai ẩn gồm hai phương trình như vậy",
+   "CT|Giải hệ bằng phương pháp thế (rút một ẩn theo ẩn kia rồi thay vào) hoặc phương pháp cộng đại số (khử bớt một ẩn)",
+  ]},
+  {n:"Hàm số y = ax² (a≠0) và đồ thị parabol",i:[
+   "TC|Hàm số $y=ax^2$ ($a\\neq 0$) xác định với mọi $x\\in\\mathbb{R}$. Nếu $a>0$: hàm nghịch biến khi $x<0$, đồng biến khi $x>0$, giá trị nhỏ nhất $y=0$ tại $x=0$; nếu $a<0$: đồng biến khi $x<0$, nghịch biến khi $x>0$, giá trị lớn nhất $y=0$ tại $x=0$",
+   "TC|Đồ thị hàm số $y=ax^2$ là một parabol đỉnh $O(0;0)$, nhận trục $Oy$ làm trục đối xứng; $a>0$: bề lõm quay lên, nằm phía trên trục hoành (trừ điểm $O$); $a<0$: bề lõm quay xuống, nằm phía dưới trục hoành (trừ điểm $O$)",
+   "CT|Cách vẽ đồ thị: lập bảng giá trị với các cặp $x$ đối xứng qua $0$ (ví dụ $x=-2,-1,0,1,2$), tính $y$ tương ứng, biểu diễn các điểm rồi nối thành đường cong parabol",
+   "LY|$|a|$ càng lớn thì parabol càng hẹp (dốc hơn); hai điểm có hoành độ đối nhau trên $(P)$ thì có cùng tung độ, do tính đối xứng qua $Oy$",
+  ]},
+  {n:"Phương trình bậc hai một ẩn — công thức nghiệm",i:[
+   "DN|Phương trình bậc hai một ẩn có dạng $ax^2+bx+c=0$ ($a\\neq 0$)",
+   "CT|Công thức nghiệm: $\\Delta=b^2-4ac$. Nếu $\\Delta>0$: hai nghiệm phân biệt $x_{1,2}=\\dfrac{-b\\pm\\sqrt{\\Delta}}{2a}$. Nếu $\\Delta=0$: nghiệm kép $x_1=x_2=-\\dfrac{b}{2a}$. Nếu $\\Delta<0$: phương trình vô nghiệm",
+   "CT|Công thức nghiệm thu gọn (khi $b=2b'$): $\\Delta'=b'^2-ac$; nếu $\\Delta'\\geq 0$ thì $x_{1,2}=\\dfrac{-b'\\pm\\sqrt{\\Delta'}}{a}$ — nên dùng khi $b$ chẵn để tính gọn hơn",
+   "LY|Nhẩm nghiệm nhanh: nếu $a+b+c=0$ thì $x_1=1$, $x_2=\\dfrac{c}{a}$; nếu $a-b+c=0$ thì $x_1=-1$, $x_2=-\\dfrac{c}{a}$. Nếu $a,c$ trái dấu thì $ac<0\\Rightarrow \\Delta=b^2-4ac>0$: phương trình luôn có hai nghiệm phân biệt trái dấu",
+  ]},
+  {n:"Hệ thức Vi-ét và các ứng dụng",i:[
+   "CT|Định lí Vi-ét (thuận): nếu $ax^2+bx+c=0$ ($a\\neq 0$) có $\\Delta\\geq 0$ với hai nghiệm $x_1,x_2$ thì $x_1+x_2=-\\dfrac{b}{a}$, $x_1x_2=\\dfrac{c}{a}$",
+   "CT|Định lí Vi-ét (đảo): nếu hai số $u,v$ thỏa $u+v=S$ và $uv=P$ (với $S^2\\geq 4P$) thì $u,v$ là hai nghiệm của $t^2-St+P=0$ — dùng để tìm hai số biết tổng và tích, hoặc lập phương trình bậc hai biết trước hai nghiệm",
+   "CT|Các biểu thức đối xứng thường gặp (đặt $S=x_1+x_2$, $P=x_1x_2$): $x_1^2+x_2^2=S^2-2P$; $x_1^3+x_2^3=S^3-3PS$; $\\dfrac{1}{x_1}+\\dfrac{1}{x_2}=\\dfrac{S}{P}$ ($P\\neq 0$); $|x_1-x_2|=\\sqrt{S^2-4P}$",
+   "TC|Xét dấu hai nghiệm (khi $\\Delta\\geq 0$): hai nghiệm trái dấu $\\Leftrightarrow P<0$; hai nghiệm cùng dấu $\\Leftrightarrow \\Delta\\geq 0$ và $P>0$ (cùng dương nếu thêm $S>0$, cùng âm nếu $S<0$)",
+   "DT|Dạng toán: tìm tham số $m$ để phương trình có hai nghiệm $x_1,x_2$ thỏa một hệ thức cho trước (ví dụ $x_1^2+x_2^2=k$, $x_1=2x_2$, $\\dfrac{1}{x_1}+\\dfrac{1}{x_2}=k$...). Phương pháp: (1) tìm điều kiện của $m$ để có hai nghiệm ($\\Delta\\geq 0$); (2) tính $S,P$ theo $m$ bằng Vi-ét; (3) thay vào hệ thức đề cho, giải tìm $m$; (4) đối chiếu điều kiện ở bước (1) rồi kết luận",
+   "VD|Ví dụ: Cho phương trình $x^2-2(m-1)x+2m-5=0$. Tìm $m$ để hai nghiệm $x_1,x_2$ thỏa $x_1^2+x_2^2=8$. Ta có $\\Delta'=(m-1)^2-(2m-5)=(m-2)^2+2>0$ với mọi $m$ nên phương trình luôn có hai nghiệm phân biệt. Theo Vi-ét: $S=2(m-1)$, $P=2m-5$; $x_1^2+x_2^2=S^2-2P=4(m-1)^2-2(2m-5)=4m^2-12m+14=8 \\Leftrightarrow 2m^2-6m+3=0$, giải được $m=\\dfrac{3\\pm\\sqrt3}{2}$",
+  ]},
+  {n:"Phương trình quy về phương trình bậc hai",i:[
+   "DN|Phương trình trùng phương: $ax^4+bx^2+c=0$ ($a\\neq 0$) — đặt ẩn phụ $t=x^2$ ($t\\geq 0$), đưa về phương trình bậc hai $at^2+bt+c=0$ theo $t$, giải tìm $t$ rồi suy ra $x=\\pm\\sqrt{t}$ với mỗi $t\\geq 0$ nhận được",
+   "CT|Phương trình chứa ẩn ở mẫu thức: tìm điều kiện xác định (mẫu khác $0$) trước; quy đồng, khử mẫu để đưa về phương trình bậc hai; giải rồi đối chiếu điều kiện xác định trước khi kết luận nghiệm",
+   "CT|Phương trình đưa về dạng tích: biến đổi vế trái thành $A(x)\\cdot B(x)=0 \\Leftrightarrow A(x)=0$ hoặc $B(x)=0$, thường dùng khi vế phải bằng $0$ và vế trái phân tích được thành nhân tử",
+  ]},
+  {n:"Tương giao giữa parabol (P): y = ax² và đường thẳng (d)",i:[
+   "CT|Xét phương trình hoành độ giao điểm của $(P): y=ax^2$ và $(d): y=kx+b$: $ax^2=kx+b \\Leftrightarrow ax^2-kx-b=0$ — số giao điểm của $(P)$ và $(d)$ bằng số nghiệm của phương trình này",
+   "TC|$\\Delta>0$: $(d)$ cắt $(P)$ tại hai điểm phân biệt; $\\Delta=0$: $(d)$ tiếp xúc $(P)$ tại một điểm; $\\Delta<0$: $(d)$ và $(P)$ không có điểm chung",
+   "DT|Dạng toán: biện luận theo tham số $m$ để $(d)$ cắt $(P)$ tại hai điểm phân biệt có hoành độ thỏa một điều kiện cho trước — lập phương trình hoành độ giao điểm theo $m$, dùng Vi-ét cho chính phương trình đó rồi làm tương tự dạng toán Vi-ét ở trên",
+   "VD|Ví dụ: Tìm $m$ để $(d): y=2x+m$ cắt $(P): y=x^2$ tại hai điểm phân biệt có hoành độ trái dấu. Phương trình hoành độ giao điểm: $x^2=2x+m \\Leftrightarrow x^2-2x-m=0$. Hai nghiệm trái dấu $\\Leftrightarrow x_1x_2<0 \\Leftrightarrow -m<0 \\Leftrightarrow m>0$",
+  ]},
+  {n:"Giải bài toán bằng cách lập phương trình bậc hai",i:[
+   "LY|Các bước giải: (1) chọn ẩn và đặt điều kiện thích hợp; (2) biểu diễn các đại lượng chưa biết khác theo ẩn; (3) lập phương trình biểu thị mối quan hệ giữa các đại lượng; (4) giải phương trình vừa lập; (5) đối chiếu điều kiện, loại nghiệm không phù hợp rồi kết luận",
+   "DT|Toán số học: tìm hai số (hoặc một số) thỏa điều kiện về tổng, hiệu, tích hoặc quan hệ giữa các chữ số — điều kiện \\\"tích\\\" hoặc \\\"bình phương\\\" thường dẫn tới phương trình bậc hai",
+   "VD|Ví dụ: Tìm hai số tự nhiên biết hiệu của chúng bằng $5$ và tích bằng $150$. Gọi số lớn là $x$ ($x>5$), số bé là $x-5$: $x(x-5)=150 \\Leftrightarrow x^2-5x-150=0 \\Leftrightarrow (x-15)(x+10)=0$, suy ra $x=15$ (nhận). Vậy hai số cần tìm là $15$ và $10$",
+   "DT|Toán hình học: hình chữ nhật (biết chu vi và diện tích, hoặc quan hệ giữa hai kích thước), tam giác vuông (biết cạnh huyền và hệ thức giữa hai cạnh góc vuông) — thường dẫn tới phương trình bậc hai một ẩn sau khi đặt ẩn cho một kích thước",
+   "VD|Ví dụ: Một mảnh vườn hình chữ nhật có chu vi $56$ m và diện tích $192$ m². Tính hai kích thước. Gọi chiều dài là $x$ (m, $0<x<28$): chiều rộng là $28-x$, có $x(28-x)=192 \\Leftrightarrow x^2-28x+192=0 \\Leftrightarrow (x-12)(x-16)=0$, suy ra $x=16$ (nhận vì chiều dài lớn hơn chiều rộng). Vậy chiều dài $16$ m, chiều rộng $12$ m",
+   "DT|Toán chuyển động, năng suất dẫn tới một phương trình bậc hai một ẩn (khác dạng phải lập hệ hai ẩn): áp dụng khi các đại lượng còn lại biểu diễn được ngay theo một ẩn duy nhất",
+   "VD|Ví dụ: Một đội xe cần chở $120$ tấn hàng. Hôm làm việc thực tế có thêm $4$ xe nên mỗi xe chở ít hơn dự định $1$ tấn (các xe chở đều nhau). Hỏi lúc đầu đội có bao nhiêu xe? Gọi $x$ (xe, $x>0$, nguyên) là số xe dự định: $\\dfrac{120}{x}-\\dfrac{120}{x+4}=1 \\Leftrightarrow 120(x+4)-120x=x(x+4) \\Leftrightarrow x^2+4x-480=0 \\Leftrightarrow (x-20)(x+24)=0$, suy ra $x=20$ (nhận). Vậy lúc đầu đội có $20$ xe",
+  ]},
+ ]},
+ {n:"Hình học & Đo lường",t:[
+  {n:"Hệ thức lượng trong tam giác vuông",i:[
+   "CT|Hệ thức cạnh và đường cao: $b^2=a\\cdot b'$; $c^2=a\\cdot c'$; $h^2=b'\\cdot c'$; $a\\cdot h=b\\cdot c$ ($a$: cạnh huyền, $h$: đường cao, $b',c'$: hình chiếu)",
+   "CT|Tỉ số lượng giác góc nhọn $\\alpha$: $\\sin\\alpha=\\dfrac{\\text{đối}}{\\text{huyền}}$, $\\cos\\alpha=\\dfrac{\\text{kề}}{\\text{huyền}}$, $\\tan\\alpha=\\dfrac{\\text{đối}}{\\text{kề}}$, $\\cot\\alpha=\\dfrac{\\text{kề}}{\\text{đối}}$",
+   "CT|Hệ thức cạnh và góc: $b=a\\sin B=a\\cos C$; $c=a\\sin C=a\\cos B$; $b=c\\tan B$",
+  ]},
+  {n:"Sự xác định đường tròn. Tính chất đối xứng",i:[
+   "DN|Đường tròn tâm $O$ bán kính $R$ ($R>0$) là tập hợp các điểm cách $O$ một khoảng bằng $R$, kí hiệu $(O;R)$",
+   "TC|Qua ba điểm không thẳng hàng, có duy nhất một đường tròn đi qua ba điểm đó; tâm là giao điểm ba đường trung trực của tam giác tạo bởi ba điểm ấy",
+   "TC|Đường tròn có tâm đối xứng là tâm $O$ và có vô số trục đối xứng, mỗi trục là một đường thẳng chứa đường kính",
+   "TC|Trong một đường tròn, đường kính vuông góc với một dây thì đi qua trung điểm của dây ấy (và ngược lại, đường kính đi qua trung điểm một dây không đi qua tâm thì vuông góc với dây đó)",
+   "TC|Đường kính là dây lớn nhất của đường tròn; trong hai dây, dây nào gần tâm hơn thì dây đó lớn hơn (và ngược lại)",
+  ]},
+  {n:"Vị trí tương đối của đường thẳng và đường tròn. Tiếp tuyến",i:[
+   "TC|Gọi $d$ là khoảng cách từ tâm $O$ đến đường thẳng $a$, $R$ là bán kính: $d<R$: $a$ cắt $(O)$ tại 2 điểm; $d=R$: $a$ tiếp xúc $(O)$ (1 điểm chung); $d>R$: $a$ và $(O)$ không giao nhau",
+   "DH|Dấu hiệu nhận biết tiếp tuyến: một đường thẳng là tiếp tuyến của đường tròn nếu nó đi qua một điểm của đường tròn và vuông góc với bán kính đi qua điểm đó",
+   "TC|Nếu hai tiếp tuyến của một đường tròn cắt nhau tại một điểm thì: điểm đó cách đều hai tiếp điểm; tia kẻ từ điểm đó qua tâm là tia phân giác của góc tạo bởi hai tiếp tuyến; tia kẻ từ tâm qua điểm đó là tia phân giác của góc tạo bởi hai bán kính đi qua các tiếp điểm",
+  ]},
+  {n:"Vị trí tương đối của hai đường tròn",i:[
+   "TC|Xét hai đường tròn $(O;R)$ và $(O';r)$ với $R\\geq r$, $d=OO'$: $d>R+r$: ở ngoài nhau (0 điểm chung); $d=R+r$: tiếp xúc ngoài (1 điểm chung); $R-r<d<R+r$: cắt nhau (2 điểm chung); $d=R-r$ ($R>r$): tiếp xúc trong (1 điểm chung); $d<R-r$: đựng nhau (0 điểm chung)",
+   "TC|Đường nối tâm là trục đối xứng của hình gồm hai đường tròn; nếu hai đường tròn cắt nhau thì đường nối tâm là đường trung trực của dây chung; nếu tiếp xúc nhau thì tiếp điểm nằm trên đường nối tâm",
+  ]},
+  {n:"Góc ở tâm. Số đo cung. Liên hệ cung và dây",i:[
+   "DN|Góc ở tâm là góc có đỉnh trùng với tâm đường tròn; số đo cung nhỏ bằng số đo góc ở tâm chắn cung đó; số đo cung lớn $=360^\\circ-$ số đo cung nhỏ tương ứng; số đo nửa đường tròn $=180^\\circ$",
+   "TC|Trong một đường tròn hay hai đường tròn bằng nhau: hai cung bằng nhau căng hai dây bằng nhau và ngược lại; cung lớn hơn căng dây lớn hơn và ngược lại",
+   "TC|Trong một đường tròn, hai dây bằng nhau thì cách đều tâm và ngược lại; trong hai dây không bằng nhau, dây lớn hơn thì gần tâm hơn",
+  ]},
+  {n:"Góc nội tiếp. Góc tạo bởi tia tiếp tuyến và dây cung",i:[
+   "DN|Góc nội tiếp là góc có đỉnh nằm trên đường tròn và hai cạnh chứa hai dây cung của đường tròn đó",
+   "CT|Trong một đường tròn, số đo góc nội tiếp bằng nửa số đo cung bị chắn: $\\widehat{ACB}=\\dfrac{1}{2}\\text{sđ}\\overset{\\frown}{AB}$",
+   "TC|Các góc nội tiếp cùng chắn một cung (hoặc chắn các cung bằng nhau) thì bằng nhau; góc nội tiếp chắn nửa đường tròn là góc vuông; góc nội tiếp nhỏ hơn hoặc bằng $90^\\circ$ có số đo bằng nửa số đo góc ở tâm cùng chắn một cung",
+   "CT|Góc tạo bởi tia tiếp tuyến và dây cung có số đo bằng nửa số đo cung bị chắn; hệ quả: góc này bằng góc nội tiếp cùng chắn cung đó",
+  ]},
+  {n:"Góc có đỉnh bên trong, bên ngoài đường tròn",i:[
+   "CT|Số đo góc có đỉnh ở bên trong đường tròn bằng nửa tổng số đo hai cung bị chắn: $\\widehat{AEC}=\\dfrac{1}{2}\\big(\\text{sđ}\\overset{\\frown}{AC}+\\text{sđ}\\overset{\\frown}{BD}\\big)$ ($E$ là giao điểm hai dây $AB,CD$ bên trong đường tròn)",
+   "CT|Số đo góc có đỉnh ở bên ngoài đường tròn bằng nửa hiệu số đo hai cung bị chắn: $\\widehat{AEC}=\\dfrac{1}{2}\\big(\\text{sđ}\\overset{\\frown}{AC}-\\text{sđ}\\overset{\\frown}{BD}\\big)$ ($E$ là giao điểm hai cát tuyến/tiếp tuyến ở bên ngoài đường tròn)",
+  ]},
+  {n:"Cung chứa góc. Tứ giác nội tiếp",i:[
+   "DN|Quỹ tích các điểm $M$ nhìn đoạn thẳng $AB$ cho trước dưới một góc $\\alpha$ không đổi ($0^\\circ<\\alpha<180^\\circ$) là hai cung chứa góc $\\alpha$ dựng trên đoạn $AB$, đối xứng nhau qua $AB$; đặc biệt $\\alpha=90^\\circ$ thì quỹ tích là đường tròn đường kính $AB$",
+   "DN|Tứ giác nội tiếp là tứ giác có bốn đỉnh cùng nằm trên một đường tròn",
+   "DH|Dấu hiệu nhận biết tứ giác nội tiếp: tổng hai góc đối bằng $180^\\circ$; hoặc góc ngoài tại một đỉnh bằng góc trong của đỉnh đối diện; hoặc hai đỉnh kề nhau cùng nhìn cạnh nối hai đỉnh còn lại dưới các góc bằng nhau; hoặc bốn đỉnh cách đều một điểm (tâm đường tròn ngoại tiếp)",
+  ]},
+  {n:"Đường tròn ngoại tiếp, nội tiếp đa giác đều",i:[
+   "DN|Đường tròn ngoại tiếp đa giác đều là đường tròn đi qua tất cả các đỉnh; đường tròn nội tiếp là đường tròn tiếp xúc với tất cả các cạnh của đa giác đều đó — hai đường tròn này có cùng tâm, gọi là tâm của đa giác đều",
+   "CT|Đa giác đều $n$ cạnh nội tiếp đường tròn bán kính $R$: mỗi cạnh $a_n=2R\\sin\\dfrac{180^\\circ}{n}$; bán kính đường tròn nội tiếp $r=R\\cos\\dfrac{180^\\circ}{n}$",
+   "LY|Trường hợp hay dùng: lục giác đều nội tiếp $(O;R)$ có cạnh bằng $R$; hình vuông nội tiếp $(O;R)$ có cạnh bằng $R\\sqrt{2}$; tam giác đều nội tiếp $(O;R)$ có cạnh bằng $R\\sqrt{3}$",
+  ]},
+  {n:"Độ dài đường tròn, cung tròn. Diện tích hình tròn, hình quạt",i:[
+   "CT|Chu vi (độ dài) đường tròn bán kính $R$: $C=2\\pi R=\\pi d$ ($d$: đường kính); độ dài cung tròn $n^\\circ$: $l=\\dfrac{\\pi Rn}{180}$",
+   "CT|Diện tích hình tròn bán kính $R$: $S=\\pi R^2$; diện tích hình quạt tròn cung $n^\\circ$: $S_{\\text{quạt}}=\\dfrac{\\pi R^2n}{360}=\\dfrac{l\\cdot R}{2}$",
+   "CT|Diện tích hình vành khăn giới hạn bởi hai đường tròn đồng tâm bán kính $R>r$: $S=\\pi(R^2-r^2)$",
+  ]},
+  {n:"Hình trụ",i:[
+   "DN|Hình trụ có hai đáy là hai hình tròn bằng nhau và song song; khi quay một hình chữ nhật quanh một cạnh cố định thì cạnh đối diện quét nên mặt xung quanh của một hình trụ",
+   "CT|Hình trụ bán kính đáy $r$, chiều cao $h$: diện tích xung quanh $S_{xq}=2\\pi rh$; diện tích toàn phần $S_{tp}=S_{xq}+2\\pi r^2=2\\pi rh+2\\pi r^2$; thể tích $V=\\pi r^2h$",
+   "LY|Đường sinh của hình trụ luôn bằng chiều cao ($l=h$); hai đáy là hai hình tròn bằng nhau nằm trên hai mặt phẳng song song và cách đều trục",
+   "VD|Ví dụ: Một hình trụ có bán kính đáy $r=5$ cm, chiều cao $h=10$ cm. Tính $S_{xq}$, $S_{tp}$, $V$. Ta có $S_{xq}=2\\pi\\cdot5\\cdot10=100\\pi\\text{ cm}^2$; $S_{tp}=100\\pi+2\\pi\\cdot25=150\\pi\\text{ cm}^2\\approx471{,}2\\text{ cm}^2$; $V=\\pi\\cdot25\\cdot10=250\\pi\\text{ cm}^3\\approx785{,}4\\text{ cm}^3$",
+   "VD|Bài toán thực tế: Một lon nước ngọt hình trụ có đường kính đáy $6$ cm, chiều cao $12$ cm. Tính diện tích vỏ lon (bỏ qua mép dán) và thể tích lon. Bán kính $r=3$ cm: $S_{tp}=S_{xq}+2\\pi r^2=2\\pi\\cdot3\\cdot12+2\\pi\\cdot9=72\\pi+18\\pi=90\\pi\\approx282{,}7\\text{ cm}^2$; $V=\\pi\\cdot9\\cdot12=108\\pi\\approx339{,}3\\text{ cm}^3\\approx339{,}3\\text{ ml}$",
+  ]},
+  {n:"Hình nón",i:[
+   "DN|Hình nón có đáy là một hình tròn, đỉnh là điểm không nằm trên mặt phẳng đáy; khi quay một tam giác vuông quanh một cạnh góc vuông thì cạnh huyền quét nên mặt xung quanh của một hình nón",
+   "CT|Với hình nón bán kính đáy $r$, chiều cao $h$, đường sinh $l$: liên hệ $l^2=r^2+h^2$ (định lí Pythagore trong tam giác vuông sinh ra hình nón)",
+   "CT|Diện tích xung quanh $S_{xq}=\\pi rl$; diện tích toàn phần $S_{tp}=S_{xq}+\\pi r^2=\\pi rl+\\pi r^2$; thể tích $V=\\dfrac{1}{3}\\pi r^2h$",
+   "VD|Ví dụ: Một hình nón có bán kính đáy $r=3$ cm, chiều cao $h=4$ cm. Tính đường sinh, $S_{xq}$, $S_{tp}$, $V$. Ta có $l=\\sqrt{r^2+h^2}=\\sqrt{9+16}=5$ cm; $S_{xq}=\\pi\\cdot3\\cdot5=15\\pi\\text{ cm}^2$; $S_{tp}=15\\pi+\\pi\\cdot9=24\\pi\\approx75{,}4\\text{ cm}^2$; $V=\\dfrac{1}{3}\\pi\\cdot9\\cdot4=12\\pi\\approx37{,}7\\text{ cm}^3$",
+   "VD|Bài toán thực tế: Một chiếc nón lá có dạng hình nón với bán kính đáy $20$ cm và đường sinh $30$ cm. Tính diện tích lá cần dùng (diện tích xung quanh, bỏ qua phần chồng mép) và chiều cao của nón. $S_{xq}=\\pi rl=\\pi\\cdot20\\cdot30=600\\pi\\approx1885\\text{ cm}^2$; $h=\\sqrt{l^2-r^2}=\\sqrt{900-400}=\\sqrt{500}=10\\sqrt5\\approx22{,}4\\text{ cm}$",
+  ]},
+  {n:"Hình cầu",i:[
+   "DN|Hình cầu tâm $O$ bán kính $r$ là hình gồm tất cả các điểm trong không gian cách $O$ một khoảng không lớn hơn $r$; khi quay một nửa hình tròn quanh đường kính của nó thì được một hình cầu",
+   "CT|Hình cầu bán kính $r$: diện tích mặt cầu $S=4\\pi r^2$; thể tích $V=\\dfrac{4}{3}\\pi r^3$",
+   "VD|Ví dụ: Một hình cầu có bán kính $r=6$ cm. Tính diện tích mặt cầu và thể tích. $S=4\\pi\\cdot36=144\\pi\\approx452{,}4\\text{ cm}^2$; $V=\\dfrac{4}{3}\\pi\\cdot216=288\\pi\\approx904{,}8\\text{ cm}^3$",
+   "VD|Bài toán thực tế: Một quả bóng đá có đường kính $22$ cm. Tính diện tích da cần dùng để may quả bóng (bỏ qua các đường may) và thể tích không khí bên trong. Bán kính $r=11$ cm: $S=4\\pi\\cdot121=484\\pi\\approx1520{,}5\\text{ cm}^2$; $V=\\dfrac{4}{3}\\pi\\cdot1331\\approx5575{,}3\\text{ cm}^3$",
+  ]},
+  {n:"Bài toán thực tế tổng hợp: hình trụ, hình nón, hình cầu",i:[
+   "DT|Dạng toán thường gặp: tính lượng vật liệu (tôn, vải, sơn, giấy...) dựa trên diện tích xung quanh hoặc diện tích toàn phần; tính dung tích chứa được (nước, cát, khí...) dựa trên thể tích; hoặc bài toán kết hợp nhiều hình khối ghép lại với nhau (ví dụ silo gồm thân hình trụ và nóc hình nón)",
+   "CT|Lưu ý đổi đơn vị trước khi kết luận: $1\\text{ lít}=1\\text{ dm}^3=1000\\text{ cm}^3$; $1\\text{ m}^3=1000\\text{ lít}$ — đề thường cho kích thước theo mét hoặc centimét nhưng hỏi đáp số theo lít",
+   "VD|Ví dụ: Một bồn chứa nước hình trụ có đường kính đáy $1{,}4$ m và chiều cao $2$ m. Hỏi bồn chứa được tối đa bao nhiêu lít nước (làm tròn đến hàng đơn vị)? Bán kính $r=0{,}7$ m: $V=\\pi r^2h=\\pi\\cdot0{,}49\\cdot2=0{,}98\\pi\\approx3{,}079\\text{ m}^3=3079\\text{ lít}$",
+   "VD|Ví dụ: Một cái phễu lọc có dạng hình nón với đường kính miệng phễu $12$ cm, chiều cao $8$ cm. Hỏi phễu chứa được tối đa bao nhiêu ml nước? Bán kính $r=6$ cm: $V=\\dfrac{1}{3}\\pi r^2h=\\dfrac{1}{3}\\pi\\cdot36\\cdot8=96\\pi\\approx301{,}6\\text{ cm}^3\\approx301{,}6\\text{ ml}$",
+  ]},
+ ]},
+ {n:"Thống kê & Xác suất",t:[
+  {n:"Thu thập, phân loại và biểu diễn dữ liệu",i:[
+   "DN|Dữ liệu định tính là dữ liệu không phải số (giới tính, xếp loại, sở thích...); dữ liệu định lượng là dữ liệu dạng số (chiều cao, điểm số, cân nặng...) — cần phân loại đúng trước khi chọn cách biểu diễn và tính toán phù hợp",
+   "CT|Bảng tần số: liệt kê các giá trị (hoặc nhóm giá trị) kèm tần số $n_i$ tương ứng; tần số tương đối (tỉ lệ phần trăm) của một giá trị $=\\dfrac{n_i}{N}\\times100\\%$ ($N$: tổng số liệu)",
+   "LY|Chọn biểu đồ phù hợp với mục đích: biểu đồ cột/đoạn thẳng để so sánh tần số giữa các nhóm; biểu đồ hình quạt (tần số tương đối) để thể hiện tỉ lệ phần trăm cơ cấu; biểu đồ đoạn thẳng (đường gấp khúc) để thể hiện xu hướng biến đổi theo thời gian",
+  ]},
+  {n:"Bảng tần số, tần số tương đối ghép nhóm",i:[
+   "DN|Mẫu số liệu ghép nhóm: khi số liệu quá nhiều giá trị khác nhau, ta chia thành các nhóm dạng nửa khoảng $[a;b)$ có cùng độ dài, kèm tần số $n_i$ của mỗi nhóm",
+   "CT|Giá trị đại diện của nhóm $[a;b)$ là trung bình cộng hai đầu mút: $\\dfrac{a+b}{2}$ — dùng để tính các số đặc trưng (trung bình, phương sai...) của mẫu ghép nhóm",
+   "CT|Tần số tương đối của nhóm $=\\dfrac{n_i}{N}\\times100\\%$; tổng tất cả tần số tương đối của các nhóm luôn bằng $100\\%$",
+  ]},
+  {n:"Số trung bình, trung vị, mốt",i:[
+   "CT|Số trung bình cộng: mẫu không ghép nhóm $\\bar{x}=\\dfrac{\\sum x_i n_i}{N}$; mẫu ghép nhóm: $\\bar{x}\\approx\\dfrac{\\sum (\\text{giá trị đại diện})\\times n_i}{N}$",
+   "DN|Trung vị $M_e$: sắp xếp mẫu số liệu (không ghép nhóm) theo thứ tự không giảm; nếu $N$ lẻ, $M_e$ là giá trị chính giữa; nếu $N$ chẵn, $M_e$ là trung bình cộng của hai giá trị chính giữa",
+   "DN|Mốt $M_0$: giá trị (hoặc nhóm giá trị) có tần số lớn nhất trong mẫu số liệu; một mẫu có thể có một mốt, nhiều mốt, hoặc không có mốt",
+   "LY|Khi mẫu số liệu có giá trị bất thường (quá lớn hoặc quá nhỏ so với phần còn lại) thì trung vị phản ánh xu thế trung tâm tốt hơn số trung bình, vì số trung bình rất nhạy với giá trị ngoại lệ còn trung vị thì không",
+  ]},
+  {n:"Tứ phân vị",i:[
+   "DN|Tứ phân vị chia mẫu số liệu (đã sắp xếp không giảm, gồm $N$ giá trị) thành bốn phần có số lượng phần tử bằng nhau: $Q_1$ (tứ phân vị thứ nhất), $Q_2=M_e$ (trung vị), $Q_3$ (tứ phân vị thứ ba)",
+   "CT|Cách tìm: $Q_2$ là trung vị của cả mẫu; $Q_1$ là trung vị của nửa số liệu bên trái $Q_2$; $Q_3$ là trung vị của nửa số liệu bên phải $Q_2$ (nếu $N$ lẻ thì không tính $Q_2$ vào hai nửa này)",
+   "CT|Khoảng tứ phân vị $\\Delta_Q=Q_3-Q_1$ đo độ phân tán của $50\\%$ số liệu ở giữa; giá trị $x$ được coi là ngoại lệ nếu $x<Q_1-1{,}5\\Delta_Q$ hoặc $x>Q_3+1{,}5\\Delta_Q$",
+   "VD|Ví dụ: Mẫu số liệu (đã sắp xếp): $2,4,5,7,8,9,10,12,15$ ($N=9$). Trung vị $Q_2=8$ (giá trị thứ 5). Nửa dưới: $2,4,5,7$ có trung vị $Q_1=\\dfrac{4+5}{2}=4{,}5$. Nửa trên: $9,10,12,15$ có trung vị $Q_3=\\dfrac{10+12}{2}=11$. Khoảng tứ phân vị $\\Delta_Q=11-4{,}5=6{,}5$",
+  ]},
+  {n:"Tính hợp lí của dữ liệu thống kê",i:[
+   "LY|Đánh giá tính hợp lí của dữ liệu dựa trên: đối tượng và phạm vi thu thập có phù hợp với mục đích thống kê hay không; nguồn thu thập có đáng tin cậy (cơ quan thống kê chính thức, khảo sát trực tiếp...) hay không; số liệu có nhất quán, không mâu thuẫn, không vượt quá phạm vi thực tế hợp lí (ví dụ tuổi không thể âm hay quá lớn) hay không",
+  ]},
+  {n:"Phép thử ngẫu nhiên và xác suất của biến cố",i:[
+   "DN|Phép thử ngẫu nhiên là một hành động, thực nghiệm mà kết quả của nó không thể đoán trước được nhưng biết được tập hợp tất cả các kết quả có thể xảy ra; tập hợp đó gọi là không gian mẫu, kí hiệu $\\Omega$",
+   "CT|Nếu phép thử có các kết quả đồng khả năng xảy ra thì xác suất của biến cố $A$: $P(A)=\\dfrac{n(A)}{n(\\Omega)}=\\dfrac{\\text{số kết quả thuận lợi cho }A}{\\text{số phần tử không gian mẫu}}$",
+   "TC|Với mọi biến cố $A$: $0\\leq P(A)\\leq 1$; $P(\\Omega)=1$ (biến cố chắc chắn); $P(\\varnothing)=0$ (biến cố không thể)",
+   "CT|Biến cố đối của $A$, kí hiệu $\\bar{A}$, xảy ra khi $A$ không xảy ra: $P(\\bar{A})=1-P(A)$",
+   "VD|Ví dụ: Gieo một con xúc xắc cân đối. Không gian mẫu $\\Omega=\\{1,2,3,4,5,6\\}$, $n(\\Omega)=6$. Gọi $A$: \\\"số chấm xuất hiện là số chẵn\\\", $A=\\{2,4,6\\}$, $n(A)=3$, nên $P(A)=\\dfrac{3}{6}=\\dfrac{1}{2}$",
+  ]},
+  {n:"Xác suất thực nghiệm",i:[
+   "DN|Xác suất thực nghiệm của biến cố $A$ trong $n$ lần thực hiện (độc lập) một phép thử: $P_{tn}(A)=\\dfrac{\\text{số lần }A\\text{ xảy ra}}{n}$",
+   "LY|Khi số phép thử $n$ càng lớn, xác suất thực nghiệm $P_{tn}(A)$ càng gần với xác suất lí thuyết (cổ điển) $P(A)$ — đây là cơ sở để ước lượng xác suất một biến cố khi không thể (hoặc khó) xác định bằng lí thuyết",
+   "VD|Ví dụ: Gieo một đồng xu $100$ lần, thấy mặt sấp xuất hiện $47$ lần. Xác suất thực nghiệm của biến cố \\\"xuất hiện mặt sấp\\\" là $\\dfrac{47}{100}=0{,}47$, xấp xỉ xác suất lí thuyết $0{,}5$",
+  ]},
+ ]},
+]},
+{g:"ts10",l:"Ôn thi vào 10 (TP.HCM)",c:"#bc4749",s:[
+ {n:"Phần cơ bản (Câu 1 – Câu 2)",t:[
+  {n:"Giới thiệu cấu trúc đề thi TP.HCM",i:[
+   "LY|Đề Toán tuyển sinh 10 TP.HCM: 7 câu, làm bài trong 120 phút. Câu 1–2 ở mức cơ bản (đồ thị, phương trình bậc hai); Câu 3–6 là các bài toán thực tế (thống kê–xác suất, đại số, hình học, chuyển động/năng suất/giá cả); Câu 7 là hình học phẳng tổng hợp gồm 3 câu con (a,b,c), chiếm 3 điểm — câu 7c thường là câu phân loại khó nhất đề",
+   "LY|Cấu trúc này áp dụng từ năm 2025 (khóa đầu tiên thi theo chương trình GDPT 2018) và tiếp tục ổn định ở năm 2026; khoảng 40–50% số điểm nằm ở các câu toán thực tế nên cần luyện kỹ năng đọc hiểu – lập biểu thức, không chỉ thuộc công thức",
+   "LY|Đặc trưng của đề TP.HCM: không có câu \\\"rút gọn biểu thức chứa căn\\\" riêng như nhiều tỉnh khác; thay vào đó thiên về đọc-hiểu tình huống thực tế rồi tự lập biểu thức/phương trình/bất phương trình",
+  ]},
+  {n:"Câu 1: Đồ thị hàm số y = ax² và đường thẳng",i:[
+   "DT|Vẽ đồ thị parabol $(P): y=ax^2$ trên hệ trục tọa độ; tìm tọa độ giao điểm của $(P)$ với đường thẳng $(d): y=kx+b$, hoặc tìm điểm thuộc $(P)$ thỏa điều kiện cho trước. Luôn là câu mở đầu, mức độ dễ lấy điểm",
+   "CT|Lập bảng giá trị (ít nhất 5 điểm đối xứng qua $Oy$) để vẽ $(P)$; xét phương trình hoành độ giao điểm $ax^2=kx+b \\Leftrightarrow ax^2-kx-b=0$ để tìm giao điểm của $(P)$ và $(d)$",
+   "VD|Ví dụ: Cho $(P): y=\\dfrac{1}{2}x^2$ và $(d): y=x+4$. Tìm tọa độ giao điểm: xét $\\dfrac{1}{2}x^2=x+4 \\Leftrightarrow x^2-2x-8=0 \\Leftrightarrow (x-4)(x+2)=0$, suy ra $x=4$ hoặc $x=-2$. Với $x=4$: $y=8$; với $x=-2$: $y=2$. Vậy $(P)$ và $(d)$ cắt nhau tại $(4;8)$ và $(-2;2)$",
+   "LY|Nếu đề cho tham số $m$ trong hệ số của $(d)$, có thể kết hợp Vi-ét cho phương trình hoành độ giao điểm để biện luận điều kiện của $m$ (ví dụ hai giao điểm có hoành độ trái dấu, hoặc thỏa một hệ thức cho trước) — cách làm tương tự các dạng toán Vi-ét ở Câu 2",
+  ]},
+  {n:"Câu 2: Phương trình bậc hai. Định lí Vi-ét",i:[
+   "DT|Giải phương trình bậc hai, hoặc vận dụng hệ thức Vi-ét để tính giá trị một biểu thức đối xứng của hai nghiệm, hoặc lập phương trình bậc hai khi biết tổng và tích hai nghiệm",
+   "CT|$\\Delta=b^2-4ac$; nếu $\\Delta\\geq 0$: $x_1+x_2=-\\dfrac{b}{a}$, $x_1x_2=\\dfrac{c}{a}$ (Vi-ét); phương trình nhận $x_1,x_2$ làm nghiệm: $x^2-(x_1+x_2)x+x_1x_2=0$",
+   "VD|Ví dụ: Cho phương trình $x^2-5x+3=0$ có hai nghiệm $x_1,x_2$. Tính $x_1^2+x_2^2$. Có $x_1+x_2=5$, $x_1x_2=3$, nên $x_1^2+x_2^2=(x_1+x_2)^2-2x_1x_2=25-6=19$",
+   "DT|Dạng toán nâng cao hay gặp: tìm tham số $m$ để phương trình bậc hai có hai nghiệm thỏa một hệ thức cho trước (tổng bình phương, hiệu, tích...), hoặc bài toán thực tế dẫn tới việc lập rồi giải một phương trình bậc hai kết hợp Vi-ét để biện luận",
+   "VD|Ví dụ (có tham số): Cho phương trình $x^2-(m+1)x+m=0$. Chứng minh phương trình luôn có nghiệm với mọi $m$; tìm $m$ để $|x_1-x_2|=2$. Ta có $\\Delta=(m+1)^2-4m=(m-1)^2\\geq 0$ với mọi $m$ nên luôn có nghiệm. Theo Vi-ét: $S=m+1$, $P=m$; $|x_1-x_2|=\\sqrt{S^2-4P}=\\sqrt{(m+1)^2-4m}=|m-1|=2$, suy ra $m=3$ hoặc $m=-1$",
+  ]},
+ ]},
+ {n:"Toán thực tế (Câu 3 – Câu 6)",t:[
+  {n:"Câu 3: Thống kê và xác suất thực tế",i:[
+   "DT|Đọc bảng số liệu hoặc biểu đồ thống kê từ một tình huống thực tế (kết quả khảo sát, kết quả học tập, sản lượng...); tính số trung bình, tìm mốt, hoặc tính xác suất thực nghiệm/xác suất của một biến cố liên quan",
+   "CT|Số trung bình $=\\dfrac{\\text{tổng (giá trị}\\times\\text{tần số)}}{\\text{tổng tần số}}$; xác suất của biến cố $=\\dfrac{\\text{số kết quả thuận lợi}}{\\text{tổng số kết quả có thể}}$ (đồng khả năng)",
+   "VD|Ví dụ: Một lớp có 40 học sinh, thống kê điểm kiểm tra: 5 điểm 6, 15 điểm 7, 12 điểm 8, 8 điểm 9. Chọn ngẫu nhiên 1 học sinh, tính xác suất học sinh đó đạt điểm 8 trở lên. Số học sinh đạt từ 8 điểm: $12+8=20$; xác suất $=\\dfrac{20}{40}=\\dfrac{1}{2}$",
+   "LY|Lỗi hay gặp: đọc nhầm cột/hàng trong bảng số liệu, hoặc cộng thiếu/thừa nhóm khi tính \\\"từ ... trở lên\\\", \\\"trở xuống\\\" — nên gạch chân đúng nhóm dữ liệu cần trước khi tính",
+   "CT|Trung vị, mốt, tứ phân vị của mẫu số liệu thường xuất hiện dưới dạng bảng số liệu thực tế (điểm thi, doanh thu, thời gian...); cần sắp xếp số liệu tăng dần trước khi xác định trung vị/tứ phân vị, tránh nhầm với số trung bình",
+   "VD|Ví dụ (xác suất thực nghiệm): Một xạ thủ bắn $50$ phát, có $42$ phát trúng bia. Xác suất thực nghiệm để xạ thủ bắn trúng bia ở một lần bắn là $\\dfrac{42}{50}=0{,}84$; nếu xạ thủ bắn thêm $10$ phát nữa với cùng khả năng đó, số phát trúng bia dự đoán khoảng $10\\times0{,}84\\approx 8$ phát",
+  ]},
+  {n:"Câu 4: Toán thực tế – Lập biểu thức, phương trình",i:[
+   "DT|Tình huống thực tế thường gặp: hóa đơn tiền điện/nước tính theo bậc thang, giá cước taxi, lãi suất ngân hàng, tăng trưởng dân số/giá cả theo phần trăm mỗi kỳ — yêu cầu lập biểu thức theo một đại lượng, rồi giải phương trình để tìm giá trị thỏa điều kiện đề bài",
+   "CT|Đặt ẩn cho đại lượng cần tìm; biểu diễn các đại lượng còn lại theo ẩn dựa trên dữ kiện đề cho; lập phương trình rồi giải và đối chiếu điều kiện thực tế trước khi kết luận",
+   "CT|Lãi suất kép / tăng trưởng theo phần trăm cố định mỗi kỳ: $A=P(1+r)^n$ ($P$: giá trị ban đầu, $r$: tỉ lệ tăng mỗi kỳ, $n$: số kỳ, $A$: giá trị sau $n$ kỳ) — dùng chung cho lãi suất ngân hàng, tăng dân số, tăng giá",
+   "VD|Ví dụ: Giá cước taxi: $2\\text{ km}$ đầu giá $11\\,000$ đồng, mỗi km tiếp theo giá $14\\,500$ đồng. Bạn An đi taxi hết $180\\,000$ đồng, hỏi quãng đường đã đi? Gọi $x$ (km, $x>2$) là quãng đường; ta có $11\\,000+14\\,500(x-2)=180\\,000 \\Leftrightarrow x-2=\\dfrac{169\\,000}{14\\,500}\\approx 11{,}66$, suy ra $x\\approx 13{,}66$ km",
+   "VD|Ví dụ: Một khoản tiền gửi tiết kiệm $50$ triệu đồng với lãi suất $6\\%$/năm (lãi kép). Hỏi sau 2 năm số tiền cả gốc lẫn lãi là bao nhiêu? Áp dụng $A=P(1+r)^n=50(1+0{,}06)^2=50\\cdot 1{,}1236=56{,}18$ triệu đồng",
+  ]},
+  {n:"Câu 5: Toán thực tế – Hình học",i:[
+   "DT|Bài toán thực tế liên quan chu vi, diện tích các hình phẳng (hình chữ nhật, hình tròn, tam giác...) hoặc thể tích các hình khối quen thuộc (hình hộp chữ nhật, hình trụ, hình nón, hình cầu) — ví dụ hộp đựng bóng, bể chứa nước, ly hình nón, sân vườn, mảnh đất...",
+   "CT|$V_{\\text{hộp}}=a\\cdot b\\cdot c$; hình trụ bán kính $r$, cao $h$: $V=\\pi r^2h$; hình nón: $V=\\dfrac{1}{3}\\pi r^2h$; hình cầu: $V=\\dfrac{4}{3}\\pi r^3$; hình tròn bán kính $r$: chu vi $C=2\\pi r$, diện tích $S=\\pi r^2$. Luôn đổi các số đo về cùng một đơn vị trước khi tính",
+   "VD|Ví dụ: Một hộp đựng bóng tennis dạng hình trụ chứa vừa khít 3 quả bóng hình cầu bán kính $3{,}5\\text{ cm}$ xếp chồng. Tính thể tích phần không gian trống trong hộp (làm tròn đến $\\text{cm}^3$). Bán kính đáy hộp $r=3{,}5$ cm, chiều cao hộp $h=3\\times 7=21$ cm: $V_{\\text{hộp}}=\\pi r^2h=\\pi\\cdot 3{,}5^2\\cdot 21\\approx 808{,}5\\text{ cm}^3$; tổng thể tích 3 quả bóng $=3\\cdot\\dfrac{4}{3}\\pi r^3\\approx 539{,}0\\text{ cm}^3$; phần trống $\\approx 808{,}5-539{,}0=269{,}5\\text{ cm}^3$",
+   "LY|Lỗi hay gặp: quên đổi đơn vị (mm, cm, m lẫn lộn) và quên vẽ phác hình minh họa trước khi tính — vẽ hình giúp thấy ngay công thức cần dùng",
+  ]},
+  {n:"Câu 6: Toán thực tế – Phương trình & bất phương trình (chuyển động, năng suất, giá cả)",i:[
+   "DT|Đây là dạng \\\"khó nhất trong nhóm câu thực tế\\\", thường thuộc một trong ba mô-típ: (1) hai đối tượng chuyển động cùng lúc hoặc lệch thời gian; (2) hai đội/hai vòi cùng làm chung một công việc (năng suất); (3) bài toán giá cả/chi phí–lợi nhuận cần giải bất phương trình để tìm điều kiện có lãi",
+   "CT|Chuyển động: $s=v\\cdot t$, chú ý các mốc \\\"xuất phát cùng lúc\\\", \\\"đến sớm/muộn hơn\\\", \\\"gặp nhau\\\". Năng suất: nếu một mình làm xong việc trong $x$ (đơn vị thời gian) thì mỗi đơn vị thời gian làm được $\\dfrac{1}{x}$ công việc, cộng năng suất khi làm chung",
+   "CT|Bất phương trình bậc nhất một ẩn từ bài toán thực tế (thường là bài toán lợi nhuận/chi phí): lập bất phương trình theo ẩn rồi giải, đối chiếu điều kiện thực tế (thường lấy số tự nhiên nhỏ nhất/lớn nhất thỏa mãn)",
+   "VD|Ví dụ (chuyển động): Hai bạn A và B cùng xuất phát từ nhà đến trường cách nhau $6$ km. Vận tốc của A hơn vận tốc của B là $3$ km/h nên A đến sớm hơn B $10$ phút $=\\dfrac16$ giờ. Gọi $x$ (km/h, $x>0$) là vận tốc của B: $\\dfrac{6}{x}-\\dfrac{6}{x+3}=\\dfrac16 \\Leftrightarrow 36(x+3)-36x=x(x+3) \\Leftrightarrow x^2+3x-108=0$, giải được $x=9$ (nhận vì $x>0$). Vậy vận tốc của B là $9$ km/h, của A là $12$ km/h",
+   "VD|Ví dụ (năng suất): Hai vòi nước cùng chảy vào bể thì sau $6$ giờ đầy bể; nếu vòi 1 chảy $4$ giờ rồi vòi 2 chảy thêm $3$ giờ thì được $\\dfrac{2}{3}$ bể. Gọi $x,y$ (giờ) là thời gian mỗi vòi chảy một mình đầy bể: $\\dfrac{1}{x}+\\dfrac{1}{y}=\\dfrac{1}{6}$ và $\\dfrac{4}{x}+\\dfrac{3}{y}=\\dfrac{2}{3}$; đặt $u=\\dfrac1x,v=\\dfrac1y$ rồi giải hệ để tìm thời gian mỗi vòi",
+   "VD|Ví dụ (bất phương trình – lợi nhuận): Một xưởng may có chi phí cố định $5\\,000\\,000$ đồng và chi phí nguyên liệu $80\\,000$ đồng cho mỗi áo, bán ra với giá $150\\,000$ đồng/áo. Hỏi cần bán ít nhất bao nhiêu áo để có lãi? Gọi $x\\in\\mathbb{N}^*$ là số áo bán được: lãi $=150\\,000x-(5\\,000\\,000+80\\,000x)>0 \\Leftrightarrow 70\\,000x>5\\,000\\,000 \\Leftrightarrow x>71{,}43$; vì $x$ nguyên nên cần bán ít nhất $72$ áo",
+  ]},
+ ]},
+ {n:"Hình học phẳng (Câu 7)",t:[
+  {n:"Câu 7: Hình học phẳng tổng hợp (3 câu con, 3 điểm)",i:[
+   "DT|Bài hình cuối đề, gồm 3 câu con a, b, c tăng dần độ khó: (a) thường chứng minh tứ giác nội tiếp; (b) chứng minh hệ thức tích đoạn thẳng hoặc hai đường thẳng song song/vuông góc; (c) là câu phân loại khó nhất, thường tính độ dài/diện tích hoặc chứng minh ba điểm thẳng hàng, ba đường đồng quy",
+   "CT|Dấu hiệu tứ giác nội tiếp: tổng hai góc đối bằng $180^\\circ$, hoặc hai đỉnh kề cùng nhìn một cạnh dưới các góc bằng nhau. Góc nội tiếp bằng nửa góc ở tâm cùng chắn một cung; dùng tam giác đồng dạng (g.g) để suy ra hệ thức tích đoạn thẳng",
+   "CT|Độ dài cung tròn $n^\\circ$: $l=\\dfrac{\\pi Rn}{180}$; diện tích hình quạt tròn: $S=\\dfrac{\\pi R^2n}{360}$",
+   "VD|Ví dụ (câu a — tứ giác nội tiếp): Tam giác nhọn $ABC$ nội tiếp đường tròn $(O)$, hai đường cao $BE,CF$ cắt nhau tại $H$. Chứng minh tứ giác $BFEC$ nội tiếp: vì $\\angle BFC=\\angle BEC=90^\\circ$ nên $E,F$ cùng nhìn cạnh $BC$ dưới góc vuông, suy ra $B,F,E,C$ cùng thuộc đường tròn đường kính $BC$, tức $BFEC$ nội tiếp",
+   "LY|Với câu (c) khó: nên thử vẽ thêm đường phụ (đường kính, tiếp tuyến song song, hoặc đường trung trực) và tìm các tam giác đồng dạng còn ẩn — phần lớn lời giải câu phân loại đều bắt đầu từ một cặp tam giác đồng dạng chưa được chỉ ra trực tiếp trong đề",
+  ]},
+ ]},
+]},
+{g:10,l:"Lớp 10",c:"#6d5acd",s:[
+ {n:"Đại số & Giải tích",t:[
+  {n:"Mệnh đề",i:[
+   "DN|Mệnh đề là câu khẳng định đúng hoặc sai, không thể vừa đúng vừa sai; phủ định của mệnh đề $P$ là $\\overline{P}$ (đúng khi $P$ sai và ngược lại)",
+   "CT|Mệnh đề kéo theo $P\\Rightarrow Q$ sai chỉ khi $P$ đúng, $Q$ sai; mệnh đề đảo là $Q\\Rightarrow P$; hai mệnh đề tương đương $P\\Leftrightarrow Q$ khi cả $P\\Rightarrow Q$ và $Q\\Rightarrow P$ đều đúng",
+   "CT|Mệnh đề chứa biến $P(x)$ chỉ trở thành mệnh đề (đúng hoặc sai) khi thay $x$ bởi một giá trị cụ thể; phủ định của \\\"$\\forall x\\in X, P(x)$\\\" là \\\"$\\exists x\\in X, \\overline{P(x)}$\\\"; phủ định của \\\"$\\exists x\\in X, P(x)$\\\" là \\\"$\\forall x\\in X, \\overline{P(x)}$\\\"",
+  ]},
+  {n:"Tập hợp. Tập con",i:[
+   "DN|Tập hợp là một khái niệm cơ bản của toán học (không định nghĩa); phần tử $a$ thuộc tập hợp $A$ kí hiệu $a\\in A$, không thuộc kí hiệu $a\\notin A$",
+   "CT|Hai cách xác định một tập hợp: (1) liệt kê các phần tử, ví dụ $A=\\{1;2;3;4\\}$; (2) chỉ ra tính chất đặc trưng cho các phần tử, ví dụ $A=\\{x\\in\\mathbb{N}\\mid x<5\\}$",
+   "DN|$A$ là tập con của $B$, kí hiệu $A\\subset B$, khi mọi phần tử của $A$ đều thuộc $B$; hai tập hợp bằng nhau, kí hiệu $A=B$, khi $A\\subset B$ và $B\\subset A$",
+   "LY|Tập rỗng $\\varnothing$ (không có phần tử nào) là tập con của mọi tập hợp; một tập hợp có $n$ phần tử thì có đúng $2^n$ tập con (kể cả $\\varnothing$ và chính nó)",
+   "VD|Ví dụ: Tập $A=\\{1;2;3\\}$ có $2^3=8$ tập con, gồm: $\\varnothing$, $\\{1\\}$, $\\{2\\}$, $\\{3\\}$, $\\{1;2\\}$, $\\{1;3\\}$, $\\{2;3\\}$, $\\{1;2;3\\}$",
+  ]},
+  {n:"Các phép toán trên tập hợp",i:[
+   "DN|Giao của $A$ và $B$: $A\\cap B=\\{x\\mid x\\in A \\text{ và } x\\in B\\}$ — gồm các phần tử chung của cả hai tập",
+   "DN|Hợp của $A$ và $B$: $A\\cup B=\\{x\\mid x\\in A \\text{ hoặc } x\\in B\\}$ — gồm các phần tử thuộc ít nhất một trong hai tập",
+   "DN|Hiệu của $A$ và $B$: $A\\setminus B=\\{x\\mid x\\in A \\text{ và } x\\notin B\\}$; nếu $A\\subset E$ thì phần bù của $A$ trong $E$, kí hiệu $C_EA$, là $C_EA=E\\setminus A$",
+   "CT|Công thức đếm số phần tử của hợp hai tập hữu hạn: $n(A\\cup B)=n(A)+n(B)-n(A\\cap B)$ — thường minh họa bằng biểu đồ Ven để giải các bài toán đếm liên quan đến hai (hoặc ba) tập hợp",
+   "VD|Ví dụ: Cho $A=\\{1;2;3;4;5\\}$, $B=\\{3;4;5;6;7\\}$. Tìm $A\\cap B$, $A\\cup B$, $A\\setminus B$. Ta có $A\\cap B=\\{3;4;5\\}$; $A\\cup B=\\{1;2;3;4;5;6;7\\}$; $A\\setminus B=\\{1;2\\}$",
+   "VD|Bài toán thực tế: Lớp 10A có $40$ học sinh, trong đó $25$ em giỏi Toán, $20$ em giỏi Văn, $10$ em giỏi cả hai môn. Hỏi có bao nhiêu em không giỏi môn nào trong hai môn này? Gọi $A,B$ lần lượt là tập học sinh giỏi Toán, giỏi Văn: $n(A\\cup B)=n(A)+n(B)-n(A\\cap B)=25+20-10=35$. Số học sinh không giỏi môn nào $=40-35=5$",
+  ]},
+  {n:"Các tập con thường gặp của tập số thực",i:[
+   "CT|Đoạn $[a;b]=\\{x\\in\\mathbb{R}\\mid a\\leq x\\leq b\\}$; khoảng $(a;b)=\\{x\\in\\mathbb{R}\\mid a<x<b\\}$; nửa khoảng $[a;b)=\\{x\\in\\mathbb{R}\\mid a\\leq x<b\\}$, $(a;b]=\\{x\\in\\mathbb{R}\\mid a<x\\leq b\\}$",
+   "CT|Khoảng, nửa khoảng vô hạn: $(-\\infty;a)$, $(a;+\\infty)$, $(-\\infty;a]$, $[a;+\\infty)$; toàn bộ trục số $\\mathbb{R}=(-\\infty;+\\infty)$",
+   "LY|Cách tìm giao, hợp, hiệu của hai tập con của $\\mathbb{R}$: biểu diễn cả hai tập trên cùng một trục số (chú ý dấu ngoặc vuông \\\"đóng\\\" hay tròn \\\"mở\\\" tại các đầu mút), rồi xác định phần chung (giao), phần gộp (hợp), hoặc phần thuộc tập này mà không thuộc tập kia (hiệu)",
+   "VD|Ví dụ: Cho $A=[-2;3)$, $B=(0;5]$. Tìm $A\\cap B$, $A\\cup B$, $A\\setminus B$. Biểu diễn trên trục số: $A\\cap B=(0;3)$; $A\\cup B=[-2;5]$; $A\\setminus B=[-2;0]$",
+  ]},
+  {n:"Bất phương trình, hệ bất phương trình bậc nhất hai ẩn",i:[
+   "DN|Bất phương trình bậc nhất hai ẩn có dạng $ax+by\\leq c$ (hoặc $<,\\geq,>$); miền nghiệm là một nửa mặt phẳng",
+   "LY|Giải hệ bất phương trình: lấy giao các miền nghiệm; dùng để giải bài toán tối ưu (tìm max/min của biểu thức $F=ax+by$ trên miền nghiệm)",
+  ]},
+  {n:"Hàm số bậc hai, đồ thị",i:[
+   "DN|Tập xác định là tập các giá trị của biến làm biểu thức xác định; hàm số đồng biến/nghịch biến trên khoảng xét dấu của tỉ số biến thiên",
+   "CT|Hàm số bậc hai $y=ax^2+bx+c$ ($a\\neq 0$): đỉnh $I\\!\\left(-\\dfrac{b}{2a};-\\dfrac{\\Delta}{4a}\\right)$, trục đối xứng $x=-\\dfrac{b}{2a}$; $a>0$ bề lõm lên (có GTNN), $a<0$ bề lõm xuống (có GTLN)",
+   "TC|Dấu của tam thức bậc hai $f(x)=ax^2+bx+c$: nếu $\\Delta<0$, $f(x)$ cùng dấu với $a$ với mọi $x$; nếu $\\Delta=0$, $f(x)$ cùng dấu $a$ trừ $x=-\\dfrac{b}{2a}$; nếu $\\Delta>0$, $f(x)$ trái dấu $a$ giữa hai nghiệm, cùng dấu $a$ ngoài khoảng hai nghiệm",
+  ]},
+  {n:"Đại số tổ hợp. Xác suất cổ điển",i:[
+   "CT|Quy tắc cộng: có $m+n$ cách nếu có $m$ cách chọn loại 1 và $n$ cách chọn loại 2 (không trùng nhau). Quy tắc nhân: có $m\\cdot n$ cách nếu công đoạn 1 có $m$ cách và công đoạn 2 có $n$ cách",
+   "CT|Hoán vị của $n$ phần tử: $P_n=n!$. Chỉnh hợp chập $k$ của $n$: $A_n^k=\\dfrac{n!}{(n-k)!}$. Tổ hợp chập $k$ của $n$: $C_n^k=\\dfrac{n!}{k!(n-k)!}$",
+   "CT|Nhị thức Newton: $(a+b)^n=\\displaystyle\\sum_{k=0}^{n} C_n^k\\, a^{n-k}b^k$",
+   "CT|Xác suất cổ điển: $P(A)=\\dfrac{n(A)}{n(\\Omega)}$, với $n(\\Omega)$ là số phần tử không gian mẫu (đồng khả năng)",
+  ]},
+ ]},
+ {n:"Hình học & Đo lường",t:[
+  {n:"Hệ thức lượng trong tam giác",i:[
+   "CT|Định lí côsin: $a^2=b^2+c^2-2bc\\cos A$ (và các hoán vị tương ứng)",
+   "CT|Định lí sin: $\\dfrac{a}{\\sin A}=\\dfrac{b}{\\sin B}=\\dfrac{c}{\\sin C}=2R$ ($R$ là bán kính đường tròn ngoại tiếp)",
+   "CT|Diện tích tam giác: $S=\\dfrac{1}{2}ab\\sin C=\\dfrac{abc}{4R}=pr=\\sqrt{p(p-a)(p-b)(p-c)}$ ($p$: nửa chu vi, $r$: bán kính đường tròn nội tiếp)",
+  ]},
+  {n:"Khái niệm vectơ",i:[
+   "DN|Vectơ $\\overrightarrow{AB}$ là đoạn thẳng $AB$ có hướng, với $A$ là điểm đầu, $B$ là điểm cuối; đường thẳng chứa vectơ gọi là giá của vectơ đó; độ dài vectơ $\\overrightarrow{AB}$, kí hiệu $|\\overrightarrow{AB}|$, bằng độ dài đoạn thẳng $AB$",
+   "DN|Hai vectơ cùng phương khi giá của chúng song song hoặc trùng nhau; hai vectơ cùng phương thì hoặc cùng hướng hoặc ngược hướng",
+   "DN|Hai vectơ $\\vec{a}$ và $\\vec{b}$ bằng nhau, kí hiệu $\\vec{a}=\\vec{b}$, khi chúng cùng hướng và cùng độ dài; vectơ đối của $\\vec{a}$, kí hiệu $-\\vec{a}$, là vectơ ngược hướng và cùng độ dài với $\\vec{a}$",
+   "DN|Vectơ-không, kí hiệu $\\vec{0}$, là vectơ có điểm đầu trùng điểm cuối (ví dụ $\\overrightarrow{AA}$); có độ dài bằng $0$ và được quy ước cùng phương, cùng hướng với mọi vectơ",
+  ]},
+  {n:"Tổng và hiệu hai vectơ",i:[
+   "CT|Quy tắc ba điểm (cộng): với ba điểm $A,B,C$ bất kì: $\\overrightarrow{AB}+\\overrightarrow{BC}=\\overrightarrow{AC}$",
+   "CT|Quy tắc hình bình hành: nếu $ABCD$ là hình bình hành thì $\\overrightarrow{AB}+\\overrightarrow{AD}=\\overrightarrow{AC}$",
+   "CT|Quy tắc trừ: với ba điểm $O,A,B$ bất kì: $\\overrightarrow{OB}-\\overrightarrow{OA}=\\overrightarrow{AB}$ — dùng để \\\"tách\\\" một vectơ hiệu thành vectơ nối hai điểm",
+   "TC|Tính chất phép cộng vectơ: giao hoán $\\vec{a}+\\vec{b}=\\vec{b}+\\vec{a}$; kết hợp $(\\vec{a}+\\vec{b})+\\vec{c}=\\vec{a}+(\\vec{b}+\\vec{c})$; $\\vec{a}+\\vec{0}=\\vec{a}$; $\\vec{a}+(-\\vec{a})=\\vec{0}$",
+   "CT|Quy tắc trung điểm: $I$ là trung điểm đoạn thẳng $AB$ $\\Leftrightarrow$ $\\overrightarrow{IA}+\\overrightarrow{IB}=\\vec{0}$ $\\Leftrightarrow$ với mọi điểm $M$: $\\overrightarrow{MA}+\\overrightarrow{MB}=2\\overrightarrow{MI}$",
+   "CT|Quy tắc trọng tâm: $G$ là trọng tâm tam giác $ABC$ $\\Leftrightarrow$ $\\overrightarrow{GA}+\\overrightarrow{GB}+\\overrightarrow{GC}=\\vec{0}$ $\\Leftrightarrow$ với mọi điểm $M$: $\\overrightarrow{MA}+\\overrightarrow{MB}+\\overrightarrow{MC}=3\\overrightarrow{MG}$",
+   "VD|Ví dụ: Cho hình bình hành $ABCD$, gọi $O$ là giao điểm hai đường chéo. Vì $O$ là trung điểm $AC$ nên $\\overrightarrow{OA}+\\overrightarrow{OC}=\\vec{0}$; theo quy tắc hình bình hành, $\\overrightarrow{AB}+\\overrightarrow{AD}=\\overrightarrow{AC}$",
+  ]},
+  {n:"Tích của vectơ với một số",i:[
+   "DN|Tích của số thực $k$ với vectơ $\\vec{a}\\neq\\vec{0}$ là một vectơ, kí hiệu $k\\vec{a}$: cùng hướng với $\\vec{a}$ nếu $k>0$, ngược hướng nếu $k<0$, và có độ dài $|k\\vec{a}|=|k|\\cdot|\\vec{a}|$",
+   "TC|Tính chất: $k(\\vec{a}+\\vec{b})=k\\vec{a}+k\\vec{b}$; $(k+l)\\vec{a}=k\\vec{a}+l\\vec{a}$; $k(l\\vec{a})=(kl)\\vec{a}$; $1\\cdot\\vec{a}=\\vec{a}$; $(-1)\\cdot\\vec{a}=-\\vec{a}$",
+   "CT|Điều kiện hai vectơ cùng phương: với $\\vec{a}\\neq\\vec{0}$, vectơ $\\vec{b}$ cùng phương với $\\vec{a}$ $\\Leftrightarrow$ tồn tại duy nhất số thực $k$ sao cho $\\vec{b}=k\\vec{a}$",
+   "TC|Ba điểm phân biệt $A,B,C$ thẳng hàng $\\Leftrightarrow$ $\\overrightarrow{AB}$ và $\\overrightarrow{AC}$ cùng phương $\\Leftrightarrow$ tồn tại số $k$ sao cho $\\overrightarrow{AB}=k\\overrightarrow{AC}$",
+   "CT|Phân tích (biểu diễn) một vectơ theo hai vectơ không cùng phương: nếu $\\vec{a},\\vec{b}$ không cùng phương thì mọi vectơ $\\vec{x}$ trong mặt phẳng đều biểu diễn được duy nhất dưới dạng $\\vec{x}=m\\vec{a}+n\\vec{b}$ ($m,n\\in\\mathbb{R}$)",
+   "VD|Ví dụ: Cho tam giác $ABC$, gọi $M$ là trung điểm $BC$. Phân tích $\\overrightarrow{AM}$ theo $\\overrightarrow{AB}$ và $\\overrightarrow{AC}$. Áp dụng quy tắc trung điểm cho $M$ (với điểm gốc $A$): $\\overrightarrow{AB}+\\overrightarrow{AC}=2\\overrightarrow{AM}$, suy ra $\\overrightarrow{AM}=\\dfrac{1}{2}\\big(\\overrightarrow{AB}+\\overrightarrow{AC}\\big)$",
+  ]},
+  {n:"Tích vô hướng của hai vectơ",i:[
+   "DN|Tích vô hướng của $\\vec{a}$ và $\\vec{b}$ (đều khác $\\vec{0}$): $\\vec{a}\\cdot\\vec{b}=|\\vec{a}|\\,|\\vec{b}|\\cos(\\vec{a},\\vec{b})$, trong đó $(\\vec{a},\\vec{b})$ là góc giữa hai vectơ",
+   "TC|$\\vec{a}\\cdot\\vec{b}=0 \\Leftrightarrow \\vec{a}\\perp\\vec{b}$ (với $\\vec{a},\\vec{b}$ khác $\\vec{0}$); $\\vec{a}\\cdot\\vec{a}=|\\vec{a}|^2$ (bình phương vô hướng)",
+   "TC|Tính chất: $\\vec{a}\\cdot\\vec{b}=\\vec{b}\\cdot\\vec{a}$; $\\vec{a}\\cdot(\\vec{b}+\\vec{c})=\\vec{a}\\cdot\\vec{b}+\\vec{a}\\cdot\\vec{c}$; $(k\\vec{a})\\cdot\\vec{b}=k(\\vec{a}\\cdot\\vec{b})$",
+   "VD|Ví dụ: Cho tam giác đều $ABC$ cạnh $a$. Tính $\\overrightarrow{AB}\\cdot\\overrightarrow{AC}$. Góc giữa $\\overrightarrow{AB}$ và $\\overrightarrow{AC}$ là $\\widehat{BAC}=60^\\circ$: $\\overrightarrow{AB}\\cdot\\overrightarrow{AC}=a\\cdot a\\cdot\\cos60^\\circ=\\dfrac{a^2}{2}$",
+  ]},
+  {n:"Vectơ trong hệ tọa độ Oxy",i:[
+   "DN|Trong mặt phẳng $Oxy$ với hai vectơ đơn vị $\\vec{i},\\vec{j}$ trên hai trục, mỗi vectơ $\\vec{a}$ được viết duy nhất dưới dạng $\\vec{a}=x\\vec{i}+y\\vec{j}$; cặp số $(x;y)$ gọi là tọa độ của $\\vec{a}$, kí hiệu $\\vec{a}=(x;y)$",
+   "CT|Cho $A(x_A;y_A)$, $B(x_B;y_B)$: tọa độ $\\overrightarrow{AB}=(x_B-x_A;\\,y_B-y_A)$; độ dài (khoảng cách) $AB=|\\overrightarrow{AB}|=\\sqrt{(x_B-x_A)^2+(y_B-y_A)^2}$",
+   "CT|Cho $\\vec{a}=(x_1;y_1)$, $\\vec{b}=(x_2;y_2)$: $\\vec{a}+\\vec{b}=(x_1+x_2;\\,y_1+y_2)$; $\\vec{a}-\\vec{b}=(x_1-x_2;\\,y_1-y_2)$; $k\\vec{a}=(kx_1;\\,ky_1)$",
+   "CT|$\\vec{a}$ cùng phương với $\\vec{b}\\neq\\vec{0}$ $\\Leftrightarrow$ $x_1y_2-x_2y_1=0$ (khi $x_2,y_2\\neq0$ thì tương đương $\\dfrac{x_1}{x_2}=\\dfrac{y_1}{y_2}$)",
+   "CT|Tích vô hướng theo tọa độ: $\\vec{a}\\cdot\\vec{b}=x_1x_2+y_1y_2$; suy ra $\\vec{a}\\perp\\vec{b} \\Leftrightarrow x_1x_2+y_1y_2=0$; và $\\cos(\\vec{a},\\vec{b})=\\dfrac{x_1x_2+y_1y_2}{\\sqrt{x_1^2+y_1^2}\\cdot\\sqrt{x_2^2+y_2^2}}$",
+   "CT|Tọa độ trung điểm $I$ của $AB$: $I=\\left(\\dfrac{x_A+x_B}{2};\\dfrac{y_A+y_B}{2}\\right)$; tọa độ trọng tâm $G$ của tam giác $ABC$: $G=\\left(\\dfrac{x_A+x_B+x_C}{3};\\dfrac{y_A+y_B+y_C}{3}\\right)$",
+   "VD|Ví dụ: Cho $A(1;2)$, $B(4;6)$. Tính $\\overrightarrow{AB}$, độ dài $AB$ và tọa độ trung điểm $I$ của $AB$. $\\overrightarrow{AB}=(4-1;\\,6-2)=(3;4)$; $AB=\\sqrt{3^2+4^2}=5$; $I=\\left(\\dfrac{1+4}{2};\\dfrac{2+6}{2}\\right)=(2{,}5;4)$",
+  ]},
+  {n:"Dạng toán vận dụng vectơ trong hình học",i:[
+   "DT|Các dạng toán thường gặp: (1) chứng minh một đẳng thức vectơ bằng cách chèn điểm và dùng quy tắc ba điểm/trung điểm/trọng tâm; (2) chứng minh ba điểm thẳng hàng hoặc tìm điểm thỏa điều kiện cho trước bằng cách xét hai vectơ cùng phương; (3) tính góc giữa hai vectơ, chứng minh vuông góc, hoặc tính độ dài đoạn thẳng bằng tích vô hướng (có hoặc không dùng tọa độ)",
+   "VD|Ví dụ (đẳng thức vectơ): Cho tam giác $ABC$ có trọng tâm $G$. Chứng minh với mọi điểm $M$: $\\overrightarrow{MA}+\\overrightarrow{MB}+\\overrightarrow{MC}=3\\overrightarrow{MG}$. Chèn điểm $G$: $\\overrightarrow{MA}=\\overrightarrow{MG}+\\overrightarrow{GA}$ và tương tự với $\\overrightarrow{MB},\\overrightarrow{MC}$; cộng vế theo vế: $\\overrightarrow{MA}+\\overrightarrow{MB}+\\overrightarrow{MC}=3\\overrightarrow{MG}+(\\overrightarrow{GA}+\\overrightarrow{GB}+\\overrightarrow{GC})=3\\overrightarrow{MG}$ (vì $G$ là trọng tâm nên $\\overrightarrow{GA}+\\overrightarrow{GB}+\\overrightarrow{GC}=\\vec{0}$)",
+   "VD|Ví dụ (ba điểm thẳng hàng): Cho $A(1;1)$, $B(3;2)$, $C(5;3)$. Chứng minh $A,B,C$ thẳng hàng. Ta có $\\overrightarrow{AB}=(2;1)$, $\\overrightarrow{AC}=(4;2)=2\\overrightarrow{AB}$, hai vectơ cùng phương nên $A,B,C$ thẳng hàng",
+   "VD|Ví dụ (vuông góc bằng tọa độ): Cho $\\vec{a}=(1;2)$, $\\vec{b}=(2;-1)$. Tính $\\vec{a}\\cdot\\vec{b}$ và kết luận. Ta có $\\vec{a}\\cdot\\vec{b}=1\\cdot2+2\\cdot(-1)=0$, suy ra $\\vec{a}\\perp\\vec{b}$",
+  ]},
+  {n:"Phương trình đường thẳng",i:[
+   "DN|Vectơ chỉ phương (VTCP) của đường thẳng $\\Delta$ là vectơ khác $\\vec{0}$ có giá song song hoặc trùng với $\\Delta$; vectơ pháp tuyến (VTPT) là vectơ khác $\\vec{0}$ vuông góc với VTCP (và vuông góc với $\\Delta$); nếu $\\vec{u}=(a;b)$ là một VTCP thì $\\vec{n}=(b;-a)$ là một VTPT",
+   "CT|Phương trình tham số của $\\Delta$ đi qua $M_0(x_0;y_0)$ có VTCP $\\vec{u}=(a;b)$: $\\begin{cases}x=x_0+at\\\\y=y_0+bt\\end{cases}$ ($t\\in\\mathbb{R}$)",
+   "CT|Phương trình chính tắc (khi $a,b\\neq0$): $\\dfrac{x-x_0}{a}=\\dfrac{y-y_0}{b}$",
+   "CT|Phương trình tổng quát: $ax+by+c=0$ ($a^2+b^2\\neq0$), VTPT $\\vec{n}=(a;b)$; nếu $b\\neq0$ thì hệ số góc $k=-\\dfrac{a}{b}$, và đường thẳng qua $M_0(x_0;y_0)$ với hệ số góc $k$ có phương trình $y=k(x-x_0)+y_0$",
+   "VD|Ví dụ: Viết phương trình tham số và tổng quát của đường thẳng đi qua $A(1;2)$, có VTCP $\\vec{u}=(3;-1)$. Tham số: $\\begin{cases}x=1+3t\\\\y=2-t\\end{cases}$; khử $t$: $\\dfrac{x-1}{3}=2-y \\Leftrightarrow x-1=3(2-y) \\Leftrightarrow x+3y-7=0$",
+  ]},
+  {n:"Vị trí tương đối, góc và khoảng cách giữa hai đường thẳng",i:[
+   "CT|Xét $\\Delta_1: a_1x+b_1y+c_1=0$, $\\Delta_2: a_2x+b_2y+c_2=0$ (với $a_2,b_2,c_2\\neq0$): cắt nhau nếu $a_1b_2-a_2b_1\\neq0$; song song nếu $\\dfrac{a_1}{a_2}=\\dfrac{b_1}{b_2}\\neq\\dfrac{c_1}{c_2}$; trùng nhau nếu $\\dfrac{a_1}{a_2}=\\dfrac{b_1}{b_2}=\\dfrac{c_1}{c_2}$",
+   "CT|Góc giữa hai đường thẳng có VTPT $\\vec{n_1}=(a_1;b_1)$, $\\vec{n_2}=(a_2;b_2)$: $\\cos(\\Delta_1,\\Delta_2)=\\dfrac{|a_1a_2+b_1b_2|}{\\sqrt{a_1^2+b_1^2}\\cdot\\sqrt{a_2^2+b_2^2}}$",
+   "CT|Khoảng cách từ điểm $M(x_0;y_0)$ đến đường thẳng $ax+by+c=0$: $d(M,\\Delta)=\\dfrac{|ax_0+by_0+c|}{\\sqrt{a^2+b^2}}$",
+   "VD|Ví dụ: Tính góc giữa $\\Delta_1: x-y+1=0$ và $\\Delta_2: x+y-3=0$. VTPT $\\vec{n_1}=(1;-1)$, $\\vec{n_2}=(1;1)$: $\\cos(\\Delta_1,\\Delta_2)=\\dfrac{|1\\cdot1+(-1)\\cdot1|}{\\sqrt2\\cdot\\sqrt2}=0$, suy ra $\\Delta_1\\perp\\Delta_2$",
+  ]},
+  {n:"Phương trình đường tròn",i:[
+   "CT|Đường tròn tâm $I(a;b)$, bán kính $R$: $(x-a)^2+(y-b)^2=R^2$",
+   "CT|Dạng khai triển $x^2+y^2-2ax-2by+c=0$ là phương trình đường tròn khi $a^2+b^2-c>0$; khi đó tâm $I(a;b)$, bán kính $R=\\sqrt{a^2+b^2-c}$",
+   "VD|Ví dụ: Cho $x^2+y^2-4x+6y-3=0$. Xác định tâm, bán kính. Ta có $-2a=-4\\Rightarrow a=2$; $-2b=6\\Rightarrow b=-3$; $c=-3$; $R=\\sqrt{a^2+b^2-c}=\\sqrt{4+9-(-3)}=\\sqrt{16}=4$. Vậy tâm $I(2;-3)$, bán kính $R=4$",
+   "TC|Vị trí tương đối giữa điểm $M$ và đường tròn $(I;R)$: $IM<R$ ($M$ nằm trong đường tròn); $IM=R$ ($M$ nằm trên đường tròn); $IM>R$ ($M$ nằm ngoài đường tròn)",
+   "TC|Vị trí tương đối giữa hai đường tròn $(I_1;R_1)$, $(I_2;R_2)$ với $d=I_1I_2$: $d>R_1+R_2$ (ở ngoài nhau); $d=R_1+R_2$ (tiếp xúc ngoài); $|R_1-R_2|<d<R_1+R_2$ (cắt nhau tại 2 điểm); $d=|R_1-R_2|$, $R_1\\neq R_2$ (tiếp xúc trong); $d<|R_1-R_2|$ (đựng nhau)",
+   "CT|Ba cách lập phương trình đường tròn thường gặp: biết tâm $I$ và tiếp xúc với $\\Delta$ cho trước thì $R=d(I,\\Delta)$; biết đường kính $AB$ thì tâm là trung điểm $AB$, $R=\\dfrac{AB}{2}$; đi qua ba điểm không thẳng hàng thì thay tọa độ vào dạng khai triển $x^2+y^2-2ax-2by+c=0$ để giải hệ tìm $a,b,c$",
+   "VD|Ví dụ (đường kính): Viết phương trình đường tròn đường kính $AB$ với $A(1;1)$, $B(5;3)$. Tâm $I$ là trung điểm $AB$: $I(3;2)$; $R=\\dfrac{AB}{2}=\\dfrac{\\sqrt{(5-1)^2+(3-1)^2}}{2}=\\dfrac{\\sqrt{20}}{2}=\\sqrt5$. Phương trình: $(x-3)^2+(y-2)^2=5$",
+   "VD|Ví dụ (qua ba điểm): Viết phương trình đường tròn qua $A(1;2)$, $B(5;2)$, $C(1;-4)$. Thay vào $x^2+y^2-2ax-2by+c=0$, giải hệ ba phương trình được $a=3$, $b=-1$, $c=-3$. Phương trình: $(x-3)^2+(y+1)^2=13$",
+  ]},
+  {n:"Phương trình tiếp tuyến của đường tròn",i:[
+   "CT|Tiếp tuyến của $(C):(x-a)^2+(y-b)^2=R^2$ tại điểm $M_0(x_0;y_0)\\in(C)$: $(x_0-a)(x-a)+(y_0-b)(y-b)=R^2$",
+   "CT|Điều kiện để đường thẳng $\\Delta$ tiếp xúc đường tròn tâm $I$ bán kính $R$: $d(I,\\Delta)=R$ — dùng để lập tiếp tuyến đi qua một điểm nằm ngoài đường tròn khi chưa biết tiếp điểm",
+   "VD|Ví dụ: Viết tiếp tuyến của $(x-1)^2+(y-2)^2=25$ tại $M(4;6)$ (thuộc đường tròn vì $3^2+4^2=25$). Áp dụng công thức: $(4-1)(x-1)+(6-2)(y-2)=25 \\Leftrightarrow 3(x-1)+4(y-2)=25 \\Leftrightarrow 3x+4y-36=0$",
+  ]},
+  {n:"Elip",i:[
+   "DN|Elip $(E)$ là tập hợp điểm $M$ sao cho $MF_1+MF_2=2a$ không đổi ($2a>F_1F_2=2c>0$), với $F_1,F_2$ là hai tiêu điểm",
+   "CT|Phương trình chính tắc: $\\dfrac{x^2}{a^2}+\\dfrac{y^2}{b^2}=1$ ($a>b>0$, $b^2=a^2-c^2$); tiêu điểm $F_1(-c;0)$, $F_2(c;0)$; bốn đỉnh $A_1(-a;0)$, $A_2(a;0)$, $B_1(0;-b)$, $B_2(0;b)$; trục lớn $A_1A_2=2a$, trục nhỏ $B_1B_2=2b$",
+   "CT|Tâm sai $e=\\dfrac{c}{a}$ ($0<e<1$); hai đường chuẩn tương ứng hai tiêu điểm: $x=\\pm\\dfrac{a}{e}=\\pm\\dfrac{a^2}{c}$; hình chữ nhật cơ sở (ngoại tiếp elip) có các cạnh $x=\\pm a$, $y=\\pm b$",
+   "LY|$e$ càng gần $0$ thì elip càng \\\"tròn\\\" (gần với đường tròn); $e$ càng gần $1$ thì elip càng \\\"dẹt\\\"",
+   "VD|Ví dụ: Elip $(E): \\dfrac{x^2}{25}+\\dfrac{y^2}{16}=1$. Xác định $a,b,c$, tiêu điểm và tâm sai. $a=5$, $b=4$, $c=\\sqrt{a^2-b^2}=3$. Tiêu điểm $F_1(-3;0)$, $F_2(3;0)$; tâm sai $e=\\dfrac{c}{a}=\\dfrac{3}{5}=0{,}6$",
+  ]},
+  {n:"Hyperbol",i:[
+   "DN|Hyperbol $(H)$ là tập hợp điểm $M$ sao cho $|MF_1-MF_2|=2a$ không đổi ($0<2a<F_1F_2=2c$)",
+   "CT|Phương trình chính tắc: $\\dfrac{x^2}{a^2}-\\dfrac{y^2}{b^2}=1$ ($b^2=c^2-a^2$); tiêu điểm $F_1(-c;0)$, $F_2(c;0)$; hai đỉnh $A_1(-a;0)$, $A_2(a;0)$; trục thực $2a$, trục ảo $2b$",
+   "CT|Tâm sai $e=\\dfrac{c}{a}$ ($e>1$); hai tiệm cận $y=\\pm\\dfrac{b}{a}x$; hai đường chuẩn $x=\\pm\\dfrac{a}{e}=\\pm\\dfrac{a^2}{c}$",
+   "VD|Ví dụ: Hyperbol $(H): \\dfrac{x^2}{9}-\\dfrac{y^2}{16}=1$. Xác định $a,b,c$, tiêu điểm, tâm sai và tiệm cận. $a=3$, $b=4$, $c=\\sqrt{a^2+b^2}=5$. Tiêu điểm $F_1(-5;0)$, $F_2(5;0)$; tâm sai $e=\\dfrac{5}{3}$; tiệm cận $y=\\pm\\dfrac{4}{3}x$",
+  ]},
+  {n:"Parabol",i:[
+   "DN|Parabol $(P)$ là tập hợp điểm $M$ cách đều tiêu điểm $F$ và đường chuẩn $\\Delta$: $MF=d(M,\\Delta)$",
+   "CT|Phương trình chính tắc: $y^2=2px$ ($p>0$); tiêu điểm $F\\left(\\dfrac{p}{2};0\\right)$; đường chuẩn $\\Delta: x=-\\dfrac{p}{2}$; đỉnh $O(0;0)$, trục đối xứng $Ox$",
+   "CT|Bán kính qua tiêu điểm: với $M(x_0;y_0)\\in(P)$, khoảng cách từ $M$ đến tiêu điểm $F$ là $MF=x_0+\\dfrac{p}{2}$ (bằng khoảng cách từ $M$ đến đường chuẩn, theo định nghĩa)",
+   "VD|Ví dụ: Parabol $(P): y^2=8x$ và điểm $M(2;4)\\in(P)$. Xác định $p$, tiêu điểm, đường chuẩn và tính $MF$. $2p=8\\Rightarrow p=4$; tiêu điểm $F(2;0)$; đường chuẩn $x=-2$; $MF=x_0+\\dfrac{p}{2}=2+2=4$",
+  ]},
+  {n:"Dạng toán về ba đường conic",i:[
+   "DT|Các dạng toán thường gặp: (1) xác định các yếu tố (tiêu điểm, đỉnh, trục, tâm sai, tiệm cận, đường chuẩn) từ phương trình chính tắc cho trước; (2) viết phương trình chính tắc của elip, hyperbol hoặc parabol khi biết một số yếu tố (tiêu điểm, độ dài trục, điểm đi qua, tâm sai...)",
+   "VD|Ví dụ (viết pt elip): Viết phương trình chính tắc của elip biết một tiêu điểm $F_2(4;0)$ và độ dài trục lớn bằng $10$. Ta có $c=4$, $2a=10\\Rightarrow a=5$, $b^2=a^2-c^2=25-16=9$. Phương trình: $\\dfrac{x^2}{25}+\\dfrac{y^2}{9}=1$",
+   "VD|Ví dụ (viết pt parabol): Viết phương trình chính tắc của parabol biết tiêu điểm $F(3;0)$. Ta có $\\dfrac{p}{2}=3\\Rightarrow p=6$. Phương trình: $y^2=12x$",
+  ]},
+  {n:"Dạng toán vận dụng phương pháp tọa độ trong mặt phẳng",i:[
+   "DT|Các dạng toán thường gặp: viết phương trình đường thẳng qua hai điểm hoặc qua một điểm với điều kiện song song/vuông góc với đường thẳng cho trước; lập phương trình đường tròn qua các điểm hoặc thỏa điều kiện tiếp xúc; viết phương trình tiếp tuyến của đường tròn tại một điểm hoặc đi qua một điểm nằm ngoài đường tròn",
+   "VD|Ví dụ: Viết phương trình đường thẳng qua $A(1;1)$ và $B(3;5)$. VTCP $\\overrightarrow{AB}=(2;4)$, chọn VTPT $\\vec{n}=(2;-1)$: phương trình $2(x-1)-1(y-1)=0 \\Leftrightarrow 2x-y-1=0$",
+   "VD|Ví dụ: Viết phương trình đường thẳng $d$ qua $M(2;-1)$, song song với $\\Delta: 3x-2y+5=0$. Vì $d\\parallel\\Delta$ nên $d$ nhận $\\vec{n}=(3;-2)$ làm VTPT: $d: 3(x-2)-2(y+1)=0 \\Leftrightarrow 3x-2y-8=0$",
+  ]},
+ ]},
+ {n:"Thống kê & Xác suất",t:[
+  {n:"Các số đặc trưng của mẫu số liệu",i:[
+   "CT|Số trung bình $\\bar{x}=\\dfrac{\\text{tổng các giá trị}}{n}$; số trung vị là giá trị ở giữa dãy đã sắp xếp; mốt là giá trị xuất hiện nhiều nhất",
+   "CT|Khoảng biến thiên $=$ giá trị lớn nhất $-$ giá trị nhỏ nhất; khoảng tứ phân vị $\\Delta_Q=Q_3-Q_1$",
+   "CT|Phương sai $s^2=$ trung bình của bình phương độ lệch so với số trung bình; độ lệch chuẩn $s=\\sqrt{s^2}$",
+  ]},
+ ]},
+]},
+{g:11,l:"Lớp 11",c:"#d0416e",s:[
+ {n:"Đại số & Giải tích",t:[
+  {n:"Giá trị lượng giác của góc (cung) lượng giác",i:[
+   "DN|Trên đường tròn lượng giác (tâm $O$, bán kính $1$), với góc lượng giác $\\alpha$ có điểm cuối $M(\\cos\\alpha;\\sin\\alpha)$: $\\tan\\alpha=\\dfrac{\\sin\\alpha}{\\cos\\alpha}$ ($\\cos\\alpha\\neq0$); $\\cot\\alpha=\\dfrac{\\cos\\alpha}{\\sin\\alpha}$ ($\\sin\\alpha\\neq0$)",
+   "CT|Các hệ thức cơ bản: $\\sin^2\\alpha+\\cos^2\\alpha=1$; $1+\\tan^2\\alpha=\\dfrac{1}{\\cos^2\\alpha}$ ($\\cos\\alpha\\neq0$); $1+\\cot^2\\alpha=\\dfrac{1}{\\sin^2\\alpha}$ ($\\sin\\alpha\\neq0$); $\\tan\\alpha\\cdot\\cot\\alpha=1$",
+   "CT|Dấu giá trị lượng giác theo góc phần tư: I ($0<\\alpha<\\frac{\\pi}{2}$): tất cả dương; II ($\\frac{\\pi}{2}<\\alpha<\\pi$): chỉ $\\sin$ dương; III ($\\pi<\\alpha<\\frac{3\\pi}{2}$): chỉ $\\tan,\\cot$ dương; IV ($\\frac{3\\pi}{2}<\\alpha<2\\pi$): chỉ $\\cos$ dương",
+   "CT|Công thức cung liên kết: đối ($-\\alpha$): $\\cos(-\\alpha)=\\cos\\alpha$, $\\sin(-\\alpha)=-\\sin\\alpha$; bù ($\\pi-\\alpha$): $\\sin(\\pi-\\alpha)=\\sin\\alpha$, $\\cos(\\pi-\\alpha)=-\\cos\\alpha$; phụ ($\\frac{\\pi}{2}-\\alpha$): $\\sin\\left(\\frac{\\pi}{2}-\\alpha\\right)=\\cos\\alpha$, $\\cos\\left(\\frac{\\pi}{2}-\\alpha\\right)=\\sin\\alpha$; hơn kém $\\pi$: $\\sin(\\pi+\\alpha)=-\\sin\\alpha$, $\\cos(\\pi+\\alpha)=-\\cos\\alpha$",
+   "VD|Giá trị lượng giác đặc biệt: $\\sin30^\\circ=\\dfrac12$, $\\cos30^\\circ=\\dfrac{\\sqrt3}{2}$; $\\sin45^\\circ=\\cos45^\\circ=\\dfrac{\\sqrt2}{2}$; $\\sin60^\\circ=\\dfrac{\\sqrt3}{2}$, $\\cos60^\\circ=\\dfrac12$; $\\tan45^\\circ=1$",
+  ]},
+  {n:"Công thức lượng giác",i:[
+   "CT|Công thức cộng: $\\sin(a\\pm b)=\\sin a\\cos b\\pm\\cos a\\sin b$; $\\cos(a\\pm b)=\\cos a\\cos b\\mp\\sin a\\sin b$",
+   "CT|Công thức nhân đôi: $\\sin2a=2\\sin a\\cos a$; $\\cos2a=\\cos^2a-\\sin^2a=2\\cos^2a-1=1-2\\sin^2a$; $\\tan2a=\\dfrac{2\\tan a}{1-\\tan^2a}$",
+   "CT|Công thức hạ bậc: $\\sin^2a=\\dfrac{1-\\cos2a}{2}$; $\\cos^2a=\\dfrac{1+\\cos2a}{2}$; $\\tan^2a=\\dfrac{1-\\cos2a}{1+\\cos2a}$",
+   "CT|Biến đổi tổng thành tích: $\\sin A+\\sin B=2\\sin\\dfrac{A+B}{2}\\cos\\dfrac{A-B}{2}$; $\\sin A-\\sin B=2\\cos\\dfrac{A+B}{2}\\sin\\dfrac{A-B}{2}$; $\\cos A+\\cos B=2\\cos\\dfrac{A+B}{2}\\cos\\dfrac{A-B}{2}$; $\\cos A-\\cos B=-2\\sin\\dfrac{A+B}{2}\\sin\\dfrac{A-B}{2}$",
+   "CT|Biến đổi tích thành tổng: $\\sin A\\cos B=\\dfrac12\\big[\\sin(A+B)+\\sin(A-B)\\big]$; $\\cos A\\cos B=\\dfrac12\\big[\\cos(A-B)+\\cos(A+B)\\big]$; $\\sin A\\sin B=\\dfrac12\\big[\\cos(A-B)-\\cos(A+B)\\big]$",
+  ]},
+  {n:"Hàm số lượng giác",i:[
+   "DN|Hàm số $y=\\sin x$, $y=\\cos x$: tập xác định $\\mathbb{R}$, tập giá trị $[-1;1]$, tuần hoàn chu kì $2\\pi$; $y=\\sin x$ là hàm số lẻ, $y=\\cos x$ là hàm số chẵn",
+   "DN|Hàm số $y=\\tan x$: tập xác định $\\mathbb{R}\\setminus\\left\\{\\frac{\\pi}{2}+k\\pi, k\\in\\mathbb{Z}\\right\\}$, tập giá trị $\\mathbb{R}$, tuần hoàn chu kì $\\pi$, là hàm số lẻ; $y=\\cot x$: tập xác định $\\mathbb{R}\\setminus\\{k\\pi, k\\in\\mathbb{Z}\\}$, tập giá trị $\\mathbb{R}$, tuần hoàn chu kì $\\pi$, là hàm số lẻ",
+   "LY|Đồ thị $y=\\sin x$, $y=\\cos x$ có dạng đường hình sin, lặp lại hình dạng sau mỗi chu kì $2\\pi$; đồ thị $y=\\tan x$, $y=\\cot x$ có các đường tiệm cận đứng tại những điểm hàm số không xác định",
+  ]},
+  {n:"Phương trình lượng giác cơ bản",i:[
+   "CT|$\\sin x=m$: nếu $|m|\\leq1$ thì $x=\\arcsin m+k2\\pi$ hoặc $x=\\pi-\\arcsin m+k2\\pi$ ($k\\in\\mathbb{Z}$); vô nghiệm nếu $|m|>1$",
+   "CT|$\\cos x=m$: nếu $|m|\\leq1$ thì $x=\\pm\\arccos m+k2\\pi$ ($k\\in\\mathbb{Z}$); vô nghiệm nếu $|m|>1$",
+   "CT|$\\tan x=m$: $x=\\arctan m+k\\pi$ (với mọi $m\\in\\mathbb{R}$); $\\cot x=m$: $x=\\text{arccot}\\,m+k\\pi$ ($k\\in\\mathbb{Z}$)",
+   "VD|Ví dụ: Giải $2\\sin x-1=0$. Ta có $\\sin x=\\dfrac12=\\sin\\dfrac{\\pi}{6}$, suy ra $x=\\dfrac{\\pi}{6}+k2\\pi$ hoặc $x=\\dfrac{5\\pi}{6}+k2\\pi$ ($k\\in\\mathbb{Z}$)",
+  ]},
+  {n:"Một số phương trình lượng giác thường gặp",i:[
+   "CT|Phương trình bậc nhất đối với $\\sin x,\\cos x$: $a\\sin x+b\\cos x=c$ ($a^2+b^2\\neq0$), có nghiệm $\\Leftrightarrow a^2+b^2\\geq c^2$; cách giải: chia hai vế cho $\\sqrt{a^2+b^2}$ để đưa về $\\sin(x+\\varphi)=\\dfrac{c}{\\sqrt{a^2+b^2}}$, với $\\cos\\varphi=\\dfrac{a}{\\sqrt{a^2+b^2}}$, $\\sin\\varphi=\\dfrac{b}{\\sqrt{a^2+b^2}}$",
+   "CT|Phương trình bậc hai đối với một hàm số lượng giác: đặt $t=\\sin x$ hoặc $t=\\cos x$ (điều kiện $-1\\leq t\\leq1$), hoặc $t=\\tan x$ (mọi $t$), đưa phương trình về bậc hai theo $t$, giải tìm $t$ rồi giải tiếp phương trình lượng giác cơ bản",
+   "CT|Phương trình đẳng cấp bậc hai đối với $\\sin x,\\cos x$: $a\\sin^2x+b\\sin x\\cos x+c\\cos^2x=d$; xét $\\cos x=0$ riêng, sau đó chia hai vế cho $\\cos^2x$ ($\\cos x\\neq0$) để đưa về phương trình bậc hai theo $\\tan x$",
+   "VD|Ví dụ (bậc hai đối với $\\sin$): Giải $2\\sin^2x-3\\sin x+1=0$. Đặt $t=\\sin x$ ($-1\\leq t\\leq1$): $2t^2-3t+1=0 \\Leftrightarrow (t-1)(2t-1)=0 \\Leftrightarrow t=1$ hoặc $t=\\dfrac12$. Với $t=1$: $x=\\dfrac{\\pi}{2}+k2\\pi$. Với $t=\\dfrac12$: $x=\\dfrac{\\pi}{6}+k2\\pi$ hoặc $x=\\dfrac{5\\pi}{6}+k2\\pi$",
+   "VD|Ví dụ (bậc nhất đối với $\\sin,\\cos$): Giải $\\sqrt3\\sin x+\\cos x=1$. Có $\\sqrt{a^2+b^2}=2$: $\\dfrac{\\sqrt3}{2}\\sin x+\\dfrac12\\cos x=\\dfrac12 \\Leftrightarrow \\sin\\left(x+\\dfrac{\\pi}{6}\\right)=\\dfrac12$, suy ra $x=k2\\pi$ hoặc $x=\\dfrac{2\\pi}{3}+k2\\pi$",
+  ]},
+  {n:"Dãy số",i:[
+   "DN|Dãy số là một hàm số xác định trên tập số nguyên dương $\\mathbb{N}^*$ (hoặc một tập con dạng $\\{1,2,\\ldots,m\\}$), kí hiệu $u_n=u(n)$; có thể cho dãy số bằng công thức số hạng tổng quát, bằng phương pháp truy hồi (cho số hạng đầu và công thức tính $u_{n+1}$ theo $u_n$), hoặc bằng cách liệt kê các số hạng",
+   "TC|Dãy số $(u_n)$ gọi là tăng nếu $u_{n+1}>u_n$ với mọi $n$; giảm nếu $u_{n+1}<u_n$ với mọi $n$; bị chặn trên nếu tồn tại số $M$ sao cho $u_n\\leq M$ với mọi $n$, bị chặn dưới nếu tồn tại số $m$ sao cho $u_n\\geq m$ với mọi $n$",
+  ]},
+  {n:"Cấp số cộng",i:[
+   "DN|Cấp số cộng là dãy số mà $u_{n+1}=u_n+d$ với mọi $n\\geq1$, trong đó $d$ (không đổi) gọi là công sai",
+   "CT|Số hạng tổng quát: $u_n=u_1+(n-1)d$",
+   "TC|Ba số hạng liên tiếp $u_{k-1},u_k,u_{k+1}$ của một cấp số cộng thỏa $u_k=\\dfrac{u_{k-1}+u_{k+1}}{2}$ ($u_k$ là trung bình cộng của hai số hạng kề nó)",
+   "CT|Tổng $n$ số hạng đầu: $S_n=\\dfrac{n}{2}(u_1+u_n)=\\dfrac{n}{2}\\big(2u_1+(n-1)d\\big)$",
+   "VD|Ví dụ: Cấp số cộng có $u_1=3$, $d=4$. Tính $u_{10}$ và $S_{10}$. $u_{10}=u_1+9d=3+36=39$; $S_{10}=\\dfrac{10}{2}(u_1+u_{10})=5(3+39)=210$",
+  ]},
+  {n:"Cấp số nhân",i:[
+   "DN|Cấp số nhân là dãy số mà $u_{n+1}=u_n\\cdot q$ với mọi $n\\geq1$ ($u_1\\neq0$), trong đó $q$ (không đổi) gọi là công bội",
+   "CT|Số hạng tổng quát: $u_n=u_1\\cdot q^{n-1}$",
+   "TC|Ba số hạng liên tiếp $u_{k-1},u_k,u_{k+1}$ (khác $0$) của một cấp số nhân thỏa $u_k^2=u_{k-1}\\cdot u_{k+1}$ ($u_k$ là trung bình nhân của hai số hạng kề nó)",
+   "CT|Tổng $n$ số hạng đầu: $S_n=u_1\\cdot\\dfrac{1-q^n}{1-q}$ ($q\\neq1$); nếu $q=1$ thì $S_n=n\\cdot u_1$",
+   "VD|Ví dụ: Cấp số nhân có $u_1=2$, $q=3$. Tính $u_5$ và $S_5$. $u_5=u_1\\cdot q^4=2\\cdot81=162$; $S_5=u_1\\cdot\\dfrac{1-q^5}{1-q}=2\\cdot\\dfrac{1-243}{1-3}=242$",
+  ]},
+  {n:"Cấp số nhân lùi vô hạn",i:[
+   "DN|Cấp số nhân lùi vô hạn là một cấp số nhân vô hạn có công bội $q$ thỏa $|q|<1$",
+   "CT|Tổng của cấp số nhân lùi vô hạn: $S=u_1+u_1q+u_1q^2+\\cdots=\\dfrac{u_1}{1-q}$ ($|q|<1$)",
+   "VD|Ví dụ (ứng dụng): Viết số thập phân vô hạn tuần hoàn $0{,}1111\\ldots$ dưới dạng phân số. Ta có $0{,}1111\\ldots=\\dfrac{1}{10}+\\dfrac{1}{100}+\\dfrac{1}{1000}+\\cdots$ là tổng cấp số nhân lùi vô hạn với $u_1=\\dfrac{1}{10}$, $q=\\dfrac{1}{10}$: $S=\\dfrac{u_1}{1-q}=\\dfrac{1/10}{9/10}=\\dfrac{1}{9}$",
+  ]},
+  {n:"Dạng toán vận dụng dãy số – cấp số",i:[
+   "DT|Các dạng toán thường gặp: xác định các yếu tố ($u_1,d,q,n$) của cấp số cộng/nhân từ các dữ kiện cho trước (thường lập hệ phương trình từ hai hoặc ba số hạng); giải bài toán thực tế bằng cấp số cộng (đại lượng tăng/giảm đều đặn mỗi kỳ: tiền lương tăng dần, số ghế mỗi hàng...) hoặc cấp số nhân (lãi suất kép, tăng trưởng theo tỉ lệ phần trăm cố định mỗi kỳ, phân rã phóng xạ)",
+   "VD|Ví dụ (xác định cấp số cộng): Tìm cấp số cộng có $u_3=7$ và $u_7=19$. Ta có $u_7-u_3=4d=12\\Rightarrow d=3$; $u_1=u_3-2d=7-6=1$. Vậy $u_1=1$, $d=3$",
+   "VD|Ví dụ (thực tế bằng cấp số nhân): Một người gửi tiết kiệm $100$ triệu đồng với lãi suất kép $6\\%$/năm, không rút trong $3$ năm. Số tiền qua các năm lập thành cấp số nhân với công bội $q=1{,}06$: số tiền sau $3$ năm là $100\\cdot(1{,}06)^3\\approx119{,}1$ triệu đồng",
+  ]},
+  {n:"Giới hạn của dãy số",i:[
+   "CT|Giới hạn cơ bản: $\\displaystyle\\lim_{n\\to\\infty}\\dfrac{1}{n}=0$; $\\displaystyle\\lim_{n\\to\\infty}\\dfrac{1}{n^k}=0$ ($k$ nguyên dương); $\\displaystyle\\lim_{n\\to\\infty}q^n=0$ nếu $|q|<1$",
+   "CT|Nếu $\\lim u_n=a$, $\\lim v_n=b$ (hữu hạn) thì $\\lim(u_n\\pm v_n)=a\\pm b$; $\\lim(u_n\\cdot v_n)=a\\cdot b$; $\\lim\\dfrac{u_n}{v_n}=\\dfrac{a}{b}$ (nếu $b\\neq0$)",
+   "DN|Dãy số $(u_n)$ có giới hạn $+\\infty$, kí hiệu $\\lim u_n=+\\infty$, nếu $u_n$ có thể lớn hơn một số dương bất kì kể từ một số hạng nào đó trở đi; tương tự định nghĩa $\\lim u_n=-\\infty$",
+   "LY|Tổng của một cấp số nhân lùi vô hạn cũng là một giới hạn dãy số: $S=\\displaystyle\\lim_{n\\to\\infty}S_n=\\dfrac{u_1}{1-q}$ ($|q|<1$)",
+  ]},
+  {n:"Giới hạn của hàm số",i:[
+   "DN|$\\displaystyle\\lim_{x\\to x_0}f(x)=L$ nếu với mọi dãy $(x_n)$, $x_n\\neq x_0$, $x_n\\to x_0$, ta đều có $f(x_n)\\to L$",
+   "CT|Các phép toán về giới hạn hàm số tương tự dãy số: giới hạn của tổng, hiệu, tích, thương (mẫu khác $0$) của các hàm có giới hạn hữu hạn tại $x_0$",
+   "CT|Giới hạn một bên: $\\displaystyle\\lim_{x\\to x_0^+}f(x)$ (giới hạn phải), $\\displaystyle\\lim_{x\\to x_0^-}f(x)$ (giới hạn trái); hàm số có giới hạn tại $x_0$ $\\Leftrightarrow$ giới hạn trái $=$ giới hạn phải",
+   "CT|Giới hạn tại vô cực: $\\displaystyle\\lim_{x\\to+\\infty}\\dfrac{1}{x}=0$; $\\displaystyle\\lim_{x\\to+\\infty}\\dfrac{c}{x^k}=0$ ($k$ nguyên dương, $c$ là hằng số)",
+   "CT|Khử dạng vô định $\\dfrac{0}{0}$: phân tích tử và mẫu thành nhân tử để rút gọn; nếu có căn thức, nhân cả tử và mẫu với biểu thức liên hợp. Khử dạng vô định $\\dfrac{\\infty}{\\infty}$: chia cả tử và mẫu cho lũy thừa cao nhất của biến",
+   "VD|Ví dụ (phân tích nhân tử): $\\displaystyle\\lim_{x\\to2}\\dfrac{x^2-4}{x-2}=\\lim_{x\\to2}\\dfrac{(x-2)(x+2)}{x-2}=\\lim_{x\\to2}(x+2)=4$",
+   "VD|Ví dụ (nhân liên hợp): $\\displaystyle\\lim_{x\\to0}\\dfrac{\\sqrt{x+1}-1}{x}=\\lim_{x\\to0}\\dfrac{x}{x\\big(\\sqrt{x+1}+1\\big)}=\\lim_{x\\to0}\\dfrac{1}{\\sqrt{x+1}+1}=\\dfrac12$",
+  ]},
+  {n:"Hàm số liên tục",i:[
+   "DN|Hàm số $f(x)$ liên tục tại $x_0$ khi $f(x)$ xác định tại $x_0$ và $\\displaystyle\\lim_{x\\to x_0}f(x)=f(x_0)$",
+   "DN|Hàm số liên tục trên một khoảng nếu liên tục tại mọi điểm của khoảng đó; liên tục trên đoạn $[a;b]$ nếu liên tục trên $(a;b)$ và $\\displaystyle\\lim_{x\\to a^+}f(x)=f(a)$, $\\displaystyle\\lim_{x\\to b^-}f(x)=f(b)$",
+   "LY|Hàm đa thức liên tục trên $\\mathbb{R}$; hàm phân thức hữu tỉ (thương của hai đa thức) liên tục trên tập xác định của nó (nơi mẫu khác $0$)",
+   "TC|(Định lí giá trị trung gian) Nếu $f$ liên tục trên $[a;b]$ và $f(a)\\cdot f(b)<0$ thì tồn tại ít nhất một điểm $c\\in(a;b)$ sao cho $f(c)=0$ — dùng để chứng minh phương trình có nghiệm trên một khoảng",
+   "VD|Ví dụ: Chứng minh phương trình $x^3-3x+1=0$ có ít nhất một nghiệm thuộc khoảng $(0;1)$. Xét $f(x)=x^3-3x+1$ liên tục trên $\\mathbb{R}$; $f(0)=1>0$, $f(1)=-1<0$, do $f(0)\\cdot f(1)<0$ nên tồn tại $c\\in(0;1)$ sao cho $f(c)=0$",
+  ]},
+  {n:"Lũy thừa với số mũ thực",i:[
+   "DN|Với $a>0$: lũy thừa số mũ nguyên $a^n=a\\cdot a\\cdots a$ ($n$ thừa số, $n$ nguyên dương), $a^0=1$, $a^{-n}=\\dfrac{1}{a^n}$; số mũ hữu tỉ $a^{m/n}=\\sqrt[n]{a^m}$ ($n$ nguyên dương); số mũ thực được định nghĩa là giới hạn của lũy thừa với số mũ hữu tỉ",
+   "CT|Tính chất (với $a,b>0$): $a^m\\cdot a^n=a^{m+n}$; $\\dfrac{a^m}{a^n}=a^{m-n}$; $(a^m)^n=a^{mn}$; $(ab)^n=a^nb^n$; $\\left(\\dfrac{a}{b}\\right)^n=\\dfrac{a^n}{b^n}$",
+   "DN|Căn bậc $n$ ($n\\geq2$) của số thực $a$ là số $b$ sao cho $b^n=a$; nếu $n$ lẻ thì mọi $a$ đều có duy nhất một căn bậc $n$; nếu $n$ chẵn thì cần $a\\geq0$, kí hiệu căn không âm là $\\sqrt[n]{a}$",
+  ]},
+  {n:"Lôgarit",i:[
+   "DN|Với $a>0,a\\neq1,x>0$: $\\log_ax=\\alpha \\Leftrightarrow a^\\alpha=x$; lôgarit thập phân $\\log x=\\log_{10}x$; lôgarit tự nhiên $\\ln x=\\log_ex$",
+   "CT|Tính chất cơ bản: $\\log_a1=0$; $\\log_aa=1$; $a^{\\log_ax}=x$; $\\log_a(a^x)=x$",
+   "CT|Quy tắc tính lôgarit: $\\log_a(xy)=\\log_ax+\\log_ay$; $\\log_a\\dfrac{x}{y}=\\log_ax-\\log_ay$; $\\log_a(x^k)=k\\log_ax$; công thức đổi cơ số $\\log_ab=\\dfrac{\\log_cb}{\\log_ca}$ ($c>0,c\\neq1$), hệ quả $\\log_ab=\\dfrac{1}{\\log_ba}$",
+   "VD|Ví dụ: Tính $\\log_28+\\log_2\\dfrac14$. Ta có $=\\log_2(2^3)+\\log_2(2^{-2})=3+(-2)=1$",
+  ]},
+  {n:"Hàm số mũ và hàm số lôgarit",i:[
+   "DN|Hàm số mũ $y=a^x$ ($a>0,a\\neq1$): tập xác định $\\mathbb{R}$, tập giá trị $(0;+\\infty)$, đồng biến nếu $a>1$, nghịch biến nếu $0<a<1$; đồ thị luôn đi qua điểm $(0;1)$ và nằm phía trên trục hoành",
+   "DN|Hàm số lôgarit $y=\\log_ax$ ($a>0,a\\neq1$): tập xác định $(0;+\\infty)$, tập giá trị $\\mathbb{R}$, đồng biến nếu $a>1$, nghịch biến nếu $0<a<1$; đồ thị luôn đi qua điểm $(1;0)$",
+   "LY|Đồ thị $y=a^x$ và $y=\\log_ax$ (cùng cơ số $a$) đối xứng nhau qua đường thẳng $y=x$, vì đây là hai hàm số ngược nhau",
+  ]},
+  {n:"Phương trình mũ và phương trình lôgarit",i:[
+   "CT|Phương trình mũ cơ bản $a^x=b$ ($a>0,a\\neq1$): có nghiệm duy nhất $x=\\log_ab$ nếu $b>0$; vô nghiệm nếu $b\\leq0$",
+   "CT|Phương trình lôgarit cơ bản $\\log_ax=b$ ($a>0,a\\neq1$): có nghiệm duy nhất $x=a^b$ (luôn thỏa điều kiện $x>0$)",
+   "CT|Phương pháp thường dùng: đưa về cùng cơ số ($a^{f(x)}=a^{g(x)}\\Leftrightarrow f(x)=g(x)$, tương tự với lôgarit kèm điều kiện xác định); đặt ẩn phụ (khi phương trình có dạng đa thức theo $a^x$ hoặc $\\log_ax$); mũ hóa hoặc lôgarit hóa hai vế",
+   "VD|Ví dụ (đưa về cùng cơ số): Giải $2^{x^2-3x}=4$. Ta có $4=2^2$: $x^2-3x=2 \\Leftrightarrow x^2-3x-2=0 \\Leftrightarrow x=\\dfrac{3\\pm\\sqrt{17}}{2}$",
+   "VD|Ví dụ (đặt ẩn phụ): Giải $\\log_2^2x-3\\log_2x+2=0$ (điều kiện $x>0$). Đặt $t=\\log_2x$: $t^2-3t+2=0 \\Leftrightarrow t=1$ hoặc $t=2$. Với $t=1$: $x=2$; với $t=2$: $x=4$",
+  ]},
+  {n:"Bất phương trình mũ và lôgarit",i:[
+   "CT|Bất phương trình mũ $a^{f(x)}>a^{g(x)}$: nếu $a>1$ thì tương đương $f(x)>g(x)$; nếu $0<a<1$ thì tương đương $f(x)<g(x)$ (đổi chiều)",
+   "CT|Bất phương trình lôgarit $\\log_af(x)>\\log_ag(x)$ (với $f(x),g(x)>0$): nếu $a>1$ thì tương đương $f(x)>g(x)$; nếu $0<a<1$ thì tương đương $f(x)<g(x)$",
+   "VD|Ví dụ: Giải $\\left(\\dfrac12\\right)^x>8$. Ta có $8=\\left(\\dfrac12\\right)^{-3}$, cơ số $\\dfrac12<1$ nên đổi chiều: $x<-3$",
+  ]},
+  {n:"Ứng dụng thực tế của hàm số mũ và lôgarit",i:[
+   "DT|Các bài toán thực tế thường dùng công thức mũ để mô hình hóa tăng trưởng/suy giảm theo tỉ lệ phần trăm cố định mỗi kì: lãi kép, tăng trưởng dân số, phân rã phóng xạ, khấu hao tài sản — và dùng lôgarit để giải ngược tìm thời gian $n$ khi biết giá trị cuối",
+   "CT|Lãi kép: $A=P(1+r)^n$ ($P$: vốn ban đầu, $r$: lãi suất mỗi kì, $n$: số kì); suy ra $n=\\log_{1+r}\\dfrac{A}{P}=\\dfrac{\\ln(A/P)}{\\ln(1+r)}$. Phân rã phóng xạ: khối lượng còn lại sau thời gian $t$ là $m(t)=m_0\\left(\\dfrac12\\right)^{t/T}$ ($T$: chu kì bán rã)",
+   "VD|Ví dụ: Gửi tiết kiệm $50$ triệu đồng, lãi suất $7\\%$/năm (lãi kép). Hỏi sau bao nhiêu năm số tiền đạt ít nhất $100$ triệu đồng? Cần $50(1{,}07)^n\\geq100 \\Leftrightarrow 1{,}07^n\\geq2 \\Leftrightarrow n\\geq\\log_{1{,}07}2=\\dfrac{\\ln2}{\\ln1{,}07}\\approx10{,}24$. Vậy cần ít nhất $11$ năm",
+  ]},
+  {n:"Định nghĩa và ý nghĩa của đạo hàm",i:[
+   "DN|Đạo hàm của $f(x)$ tại $x_0$: $f'(x_0)=\\displaystyle\\lim_{\\Delta x\\to0}\\dfrac{f(x_0+\\Delta x)-f(x_0)}{\\Delta x}$",
+   "LY|Ý nghĩa hình học: $f'(x_0)$ là hệ số góc của tiếp tuyến với đồ thị $y=f(x)$ tại điểm $M_0(x_0;f(x_0))$; phương trình tiếp tuyến: $y=f'(x_0)(x-x_0)+f(x_0)$",
+   "LY|Ý nghĩa vật lí: nếu $s=s(t)$ là phương trình chuyển động thì vận tốc tức thời tại thời điểm $t_0$ là $v(t_0)=s'(t_0)$; gia tốc tức thời là $a(t_0)=v'(t_0)$",
+  ]},
+  {n:"Quy tắc tính đạo hàm",i:[
+   "CT|Đạo hàm tổng/hiệu/tích/thương: $(u\\pm v)'=u'\\pm v'$; $(ku)'=ku'$ ($k$ hằng số); $(uv)'=u'v+uv'$; $\\left(\\dfrac{u}{v}\\right)'=\\dfrac{u'v-uv'}{v^2}$ ($v\\neq0$)",
+   "CT|Đạo hàm hàm hợp: nếu $y=f(u)$ với $u=u(x)$ thì $y'_x=f'(u)\\cdot u'(x)$",
+   "CT|Đạo hàm hàm hợp dạng lũy thừa và căn: $(u^n)'=nu^{n-1}u'$; $(\\sqrt{u})'=\\dfrac{u'}{2\\sqrt{u}}$ ($u>0$)",
+  ]},
+  {n:"Bảng đạo hàm các hàm số sơ cấp cơ bản",i:[
+   "CT|Lũy thừa, căn: $(x^n)'=nx^{n-1}$; $(\\sqrt{x})'=\\dfrac{1}{2\\sqrt{x}}$ ($x>0$)",
+   "CT|Lượng giác: $(\\sin x)'=\\cos x$; $(\\cos x)'=-\\sin x$; $(\\tan x)'=\\dfrac{1}{\\cos^2x}$; $(\\cot x)'=-\\dfrac{1}{\\sin^2x}$",
+   "CT|Mũ, lôgarit: $(e^x)'=e^x$; $(a^x)'=a^x\\ln a$; $(\\ln x)'=\\dfrac{1}{x}$ ($x>0$); $(\\log_ax)'=\\dfrac{1}{x\\ln a}$",
+  ]},
+  {n:"Đạo hàm cấp hai. Ứng dụng viết phương trình tiếp tuyến",i:[
+   "DN|Đạo hàm cấp hai: $f''(x)=\\big[f'(x)\\big]'$; nếu $s=s(t)$ là phương trình chuyển động thì gia tốc tức thời $a(t)=s''(t)$",
+   "CT|Phương trình tiếp tuyến của đồ thị $(C): y=f(x)$ tại điểm có hoành độ $x_0$: $y=f'(x_0)(x-x_0)+f(x_0)$",
+   "VD|Ví dụ: Viết phương trình tiếp tuyến của đồ thị $y=x^3-3x+1$ tại điểm có hoành độ $x_0=1$. Ta có $y'=3x^2-3$, $y'(1)=0$; $y(1)=-1$. Tiếp tuyến: $y=0\\cdot(x-1)+(-1)=-1$",
+   "VD|Ví dụ (vật lí): Một vật chuyển động theo phương trình $s(t)=t^3-6t^2+9t$ (m, $t$ tính bằng giây). Tính vận tốc và gia tốc tại $t=2$. $v(t)=s'(t)=3t^2-12t+9$, $v(2)=-3$ m/s; $a(t)=s''(t)=6t-12$, $a(2)=0$ m/s$^2$",
+  ]},
+ ]},
+ {n:"Hình học & Đo lường",t:[
+  {n:"Đại cương về đường thẳng và mặt phẳng",i:[
+   "DN|Mặt phẳng hoàn toàn xác định khi: đi qua 3 điểm không thẳng hàng; hoặc đi qua 1 đường thẳng và 1 điểm không thuộc đường thẳng đó; hoặc chứa 2 đường thẳng cắt nhau; hoặc chứa 2 đường thẳng song song. Kí hiệu $mp(ABC)$ hay $(P)$",
+   "TC|Hệ tiên đề: (1) Có một và chỉ một đường thẳng đi qua 2 điểm phân biệt; (2) Có một và chỉ một mặt phẳng đi qua 3 điểm không thẳng hàng; (3) Nếu đường thẳng $d$ có 2 điểm phân biệt cùng thuộc mặt phẳng $(P)$ thì mọi điểm của $d$ đều thuộc $(P)$, kí hiệu $d\\subset(P)$; (4) Tồn tại 4 điểm không cùng thuộc một mặt phẳng",
+   "DT|Tìm giao tuyến của $(P)$ và $(Q)$: tìm 2 điểm chung phân biệt. Sơ đồ chứng minh dạng hệ: $\\begin{cases}M\\in(P)\\cap(Q)\\\\N\\in(P)\\cap(Q)\\end{cases}\\Rightarrow (P)\\cap(Q)=MN$",
+   "DT|Tìm giao điểm của đường thẳng $d$ với mặt phẳng $(P)$: tìm trong $(P)$ một đường thẳng $d'$ cắt $d$ tại $I$. Khi đó $\\begin{cases}I\\in d\\\\I\\in d'\\subset(P)\\end{cases}\\Rightarrow I=d\\cap(P)$",
+   "DT|Chứng minh 3 điểm thẳng hàng: chứng minh 3 điểm đó cùng thuộc 2 mặt phẳng phân biệt, khi đó chúng cùng thuộc giao tuyến (là một đường thẳng) nên thẳng hàng. Chứng minh 3 đường thẳng đồng quy: chứng minh giao điểm của 2 đường thẳng cũng là điểm chung của mặt phẳng chứa đường thứ ba với đường thứ ba đó",
+   "VD|Ví dụ: Cho hình chóp $S.ABCD$ có đáy $ABCD$ là hình bình hành tâm $O$. Tìm giao tuyến của $(SAC)$ và $(SBD)$. Lời giải: $S$ là điểm chung thứ nhất; $O\\in AC\\subset(SAC)$ và $O\\in BD\\subset(SBD)$ nên $O$ là điểm chung thứ hai. Vậy $(SAC)\\cap(SBD)=SO$",
+  ]},
+  {n:"Hai đường thẳng song song trong không gian",i:[
+   "DN|Vị trí tương đối của 2 đường thẳng $a,b$ trong không gian: cắt nhau (có đúng 1 điểm chung); song song (đồng phẳng và không có điểm chung); trùng nhau (có từ 2 điểm chung trở lên); chéo nhau (không cùng thuộc một mặt phẳng nào)",
+   "TC|Tiên đề Euclid trong không gian: qua một điểm nằm ngoài một đường thẳng cho trước, có một và chỉ một đường thẳng song song với đường thẳng đó",
+   "TC|Tính chất bắc cầu (dạng hệ): $\\begin{cases}a\\parallel b\\\\b\\parallel c\\end{cases}\\Rightarrow a\\parallel c$ (hai đường thẳng phân biệt cùng song song với đường thẳng thứ ba thì song song với nhau)",
+   "TC|Định lí về giao tuyến (dạng hệ): $\\begin{cases}a\\subset(P),\\ b\\subset(Q)\\\\(P)\\cap(Q)=c\\\\a\\parallel b\\end{cases}\\Rightarrow c\\parallel a\\parallel b$ hoặc $c$ trùng $a$ hoặc $c$ trùng $b$",
+   "VD|Ví dụ: Cho hình chóp $S.ABCD$ có đáy $ABCD$ là hình thang với $AB\\parallel CD$. Tìm giao tuyến của $(SAB)$ và $(SCD)$. Lời giải: $S$ là điểm chung; $AB\\subset(SAB)$, $CD\\subset(SCD)$, $AB\\parallel CD$ nên theo định lí về giao tuyến, giao tuyến là đường thẳng $d$ qua $S$ và $d\\parallel AB\\parallel CD$",
+  ]},
+  {n:"Đường thẳng song song với mặt phẳng",i:[
+   "DN|Vị trí tương đối của đường thẳng $d$ và mặt phẳng $(P)$: $d\\subset(P)$ (chứa); $d\\cap(P)=\\{A\\}$ (cắt nhau); $d\\parallel(P)$ (song song — không có điểm chung)",
+   "DH|Dấu hiệu nhận biết (dạng hệ): $\\begin{cases}d\\not\\subset(P)\\\\d\\parallel d'\\\\d'\\subset(P)\\end{cases}\\Rightarrow d\\parallel(P)$",
+   "TC|Định lí tìm giao tuyến (dạng hệ): $\\begin{cases}d\\parallel(P)\\\\d\\subset(Q)\\\\(P)\\cap(Q)=d'\\end{cases}\\Rightarrow d\\parallel d'$. Hệ quả: nếu $a,b$ chéo nhau thì có duy nhất một mặt phẳng chứa $a$ và song song với $b$",
+   "DT|Cách chứng minh $d\\parallel(P)$: tìm trong $(P)$ một đường thẳng song song với $d$, thường dùng đường trung bình của tam giác/hình thang hoặc định lí Ta-lét đảo",
+   "VD|Ví dụ: Cho tứ diện $ABCD$, gọi $M,N$ lần lượt là trung điểm $AB,AC$. Chứng minh $MN\\parallel(BCD)$. Lời giải: $MN$ là đường trung bình của $\\triangle ABC$ nên $MN\\parallel BC$. Mà $BC\\subset(BCD)$ và $MN\\not\\subset(BCD)$ nên $MN\\parallel(BCD)$",
+  ]},
+  {n:"Hai mặt phẳng song song",i:[
+   "DN|$(P)\\parallel(Q)$ khi $(P)$ và $(Q)$ không có điểm chung nào",
+   "DH|Dấu hiệu nhận biết (dạng hệ): $\\begin{cases}a,b\\subset(P),\\ a\\cap b=I\\\\a\\parallel(Q),\\ b\\parallel(Q)\\end{cases}\\Rightarrow (P)\\parallel(Q)$",
+   "TC|Định lí giao tuyến song song (dạng hệ): $\\begin{cases}(P)\\parallel(Q)\\\\(R)\\cap(P)=a\\\\(R)\\cap(Q)=b\\end{cases}\\Rightarrow a\\parallel b$",
+   "TC|Định lí Ta-lét trong không gian: ba mặt phẳng đôi một song song chắn trên hai cát tuyến bất kì những đoạn thẳng tương ứng tỉ lệ: nếu $(P)\\parallel(Q)\\parallel(R)$ cắt 2 đường thẳng lần lượt tại $A,B,C$ và $A',B',C'$ thì $\\dfrac{AB}{A'B'}=\\dfrac{BC}{B'C'}=\\dfrac{AC}{A'C'}$",
+   "TC|Qua một điểm nằm ngoài một mặt phẳng cho trước, có một và chỉ một mặt phẳng song song với mặt phẳng đó",
+   "VD|Ví dụ: Cho hình hộp $ABCD.A'B'C'D'$. Chứng minh $(BDA')\\parallel(B'D'C)$. Lời giải: Tứ giác $BDD'B'$ có $BB'\\parallel DD'$, $BB'=DD'$ nên là hình bình hành, suy ra $BD\\parallel B'D'$. Tứ giác $DA'B'C$ có $DA'\\parallel CB'$, $DA'=CB'$ (cùng là ảnh tịnh tiến của cạnh $AA'$) nên cũng là hình bình hành, suy ra $DA'\\parallel CB'$. Mặt phẳng $(BDA')$ chứa 2 đường thẳng cắt nhau $BD, DA'$ lần lượt song song với $(B'D'C)$ nên $(BDA')\\parallel(B'D'C)$",
+  ]},
+  {n:"Hình lăng trụ và hình hộp",i:[
+   "DN|Hình lăng trụ là hình đa diện có 2 đáy là 2 đa giác bằng nhau nằm trên 2 mặt phẳng song song, các mặt bên là hình bình hành, các cạnh bên song song và bằng nhau",
+   "DN|Hình hộp là hình lăng trụ có đáy là hình bình hành (cả 6 mặt của hình hộp đều là hình bình hành)",
+   "TC|Trong hình hộp, 4 đường chéo $AC', BD', CA', DB'$ đồng quy tại một điểm — trung điểm chung của mỗi đường chéo, gọi là tâm của hình hộp",
+   "VD|Ví dụ: Cho hình hộp $ABCD.A'B'C'D'$, gọi $O$ là trung điểm $AC'$. Chứng minh $O$ cũng là trung điểm của $BD'$. Lời giải: $ABC'D'$ là hình bình hành (vì $AB\\parallel D'C'$, $AB=D'C'$ do cùng song song và bằng $DC$) nên 2 đường chéo $AC'$ và $BD'$ cắt nhau tại trung điểm mỗi đường, tức $O$ là trung điểm $BD'$",
+  ]},
+  {n:"Phép chiếu song song. Hình biểu diễn của hình không gian",i:[
+   "DN|Phép chiếu song song lên mặt phẳng $(P)$ theo phương $l$ (không song song $(P)$): với điểm $M$ bất kì, ảnh $M'$ của $M$ là giao điểm của đường thẳng qua $M$ song song (hoặc trùng) với $l$ với mặt phẳng $(P)$",
+   "TC|Phép chiếu song song biến đường thẳng thành đường thẳng, biến 2 đường thẳng song song thành 2 đường thẳng song song hoặc trùng nhau, và không làm thay đổi tỉ số độ dài của 2 đoạn thẳng nằm trên 2 đường thẳng song song (hoặc trùng nhau)",
+   "LY|Quy tắc vẽ hình biểu diễn: hình biểu diễn của tam giác cân, tam giác đều, tam giác vuông thường vẽ là một tam giác thường; của hình bình hành, hình vuông, hình chữ nhật, hình thoi thường vẽ là một hình bình hành; hình biểu diễn của đường tròn thường vẽ là một hình elip",
+  ]},
+  {n:"Vectơ trong không gian",i:[
+   "DN|Vectơ trong không gian và các phép toán (cộng, trừ, nhân với số) được định nghĩa hoàn toàn tương tự trong mặt phẳng. Ba vectơ gọi là đồng phẳng nếu giá của chúng cùng song song với một mặt phẳng",
+   "CT|Tích vô hướng của 2 vectơ: $\\vec a\\cdot\\vec b=|\\vec a|\\cdot|\\vec b|\\cdot\\cos(\\vec a,\\vec b)$. Hai vectơ vuông góc khi và chỉ khi $\\vec a\\cdot\\vec b=0$",
+   "CT|Quy tắc hình hộp: với hình hộp $ABCD.A'B'C'D'$, ta có $\\vec{AC'}=\\vec{AB}+\\vec{AD}+\\vec{AA'}$",
+   "TC|Điều kiện đồng phẳng: 3 vectơ $\\vec a,\\vec b,\\vec c$ (với $\\vec a,\\vec b$ không cùng phương) đồng phẳng khi và chỉ khi tồn tại các số $m,n$ sao cho $\\vec c=m\\vec a+n\\vec b$",
+  ]},
+  {n:"Hai đường thẳng vuông góc",i:[
+   "DN|Góc giữa 2 đường thẳng $a,b$ trong không gian là góc giữa 2 đường thẳng $a',b'$ lần lượt song song (hoặc trùng) với $a,b$ và cùng đi qua 1 điểm; góc này nhận giá trị từ $0^\\circ$ đến $90^\\circ$",
+   "CT|$a\\perp b \\Leftrightarrow \\vec u_a\\cdot\\vec u_b=0$, với $\\vec u_a,\\vec u_b$ là các vectơ chỉ phương của $a,b$",
+   "DT|Cách tìm góc giữa 2 đường thẳng chéo nhau: dời một (hoặc cả hai) đường thẳng về cùng đi qua 1 điểm chung (thường là trung điểm hoặc đỉnh có sẵn) để tạo tam giác dễ tính, hoặc dùng công thức tích vô hướng của vectơ chỉ phương",
+   "VD|Ví dụ: Cho tứ diện đều $ABCD$ cạnh $a$. Chứng minh $AB\\perp CD$. Lời giải: Gọi $M$ là trung điểm $CD$. Do $\\triangle ACD$ và $\\triangle BCD$ đều nên $AM\\perp CD$ và $BM\\perp CD$. Vì $AM, BM$ cắt nhau tại $M$ và cùng nằm trong $(ABM)$ nên $CD\\perp(ABM)$, suy ra $CD\\perp AB$",
+  ]},
+  {n:"Đường thẳng vuông góc với mặt phẳng",i:[
+   "DN|$d\\perp(P)$ khi $d$ vuông góc với mọi đường thẳng nằm trong $(P)$",
+   "DH|Dấu hiệu nhận biết (dạng hệ): $\\begin{cases}d\\perp a,\\ d\\perp b\\\\a,b\\subset(P),\\ a\\cap b=I\\end{cases}\\Rightarrow d\\perp(P)$",
+   "TC|Hệ quả: nếu $d\\perp(P)$ thì $d$ vuông góc với mọi đường thẳng nằm trong $(P)$; qua 1 điểm cho trước có duy nhất 1 mặt phẳng vuông góc với 1 đường thẳng cho trước, và duy nhất 1 đường thẳng vuông góc với 1 mặt phẳng cho trước",
+   "TC|Định lí ba đường vuông góc: cho $a\\subset(P)$ và đường thẳng $b\\not\\subset(P)$, $b\\not\\perp(P)$, gọi $b'$ là hình chiếu vuông góc của $b$ trên $(P)$. Khi đó $a\\perp b \\Leftrightarrow a\\perp b'$",
+   "DN|Góc giữa đường thẳng $d$ và mặt phẳng $(P)$ là góc giữa $d$ và hình chiếu vuông góc $d'$ của $d$ trên $(P)$ (quy ước bằng $90^\\circ$ nếu $d\\perp(P)$, bằng $0^\\circ$ nếu $d\\parallel(P)$ hoặc $d\\subset(P)$)",
+   "VD|Ví dụ: Cho hình chóp $S.ABCD$ có đáy $ABCD$ là hình vuông cạnh $a$, $SA\\perp(ABCD)$, $SA=a$. Tính góc giữa $SC$ và $(ABCD)$. Lời giải: Hình chiếu vuông góc của $SC$ lên $(ABCD)$ là $AC$ nên góc cần tìm là $\\widehat{SCA}$. Có $AC=a\\sqrt2$, $\\tan\\widehat{SCA}=\\dfrac{SA}{AC}=\\dfrac{a}{a\\sqrt2}=\\dfrac{1}{\\sqrt2}$, suy ra $\\widehat{SCA}\\approx 35^\\circ16'$",
+  ]},
+  {n:"Hai mặt phẳng vuông góc",i:[
+   "DN|Góc giữa 2 mặt phẳng cắt nhau là góc giữa 2 đường thẳng lần lượt vuông góc với mỗi mặt phẳng (bằng góc phẳng nhị diện tạo bởi giao tuyến); $(P)\\perp(Q)$ khi góc giữa chúng bằng $90^\\circ$",
+   "DH|Dấu hiệu nhận biết (dạng hệ): $\\begin{cases}d\\subset(P)\\\\d\\perp(Q)\\end{cases}\\Rightarrow (P)\\perp(Q)$",
+   "TC|Hệ quả quan trọng khi dựng hình (dạng hệ): $\\begin{cases}(P)\\perp(Q)\\\\(P)\\cap(Q)=d\\\\a\\subset(P),\\ a\\perp d\\end{cases}\\Rightarrow a\\perp(Q)$",
+   "TC|Nếu 2 mặt phẳng cắt nhau và cùng vuông góc với mặt phẳng thứ ba thì giao tuyến của chúng vuông góc với mặt phẳng thứ ba đó",
+   "VD|Ví dụ: Cho hình chóp $S.ABCD$ có đáy $ABCD$ là hình vuông, $SA\\perp(ABCD)$. Chứng minh $(SAC)\\perp(SBD)$. Lời giải: $BD\\perp AC$ (2 đường chéo hình vuông) và $BD\\perp SA$ (vì $SA\\perp(ABCD)$) nên $BD\\perp(SAC)$. Mà $BD\\subset(SBD)$ nên $(SBD)\\perp(SAC)$",
+  ]},
+  {n:"Khoảng cách trong không gian",i:[
+   "DN|Khoảng cách từ điểm $M$ đến đường thẳng $d$ (hoặc mặt phẳng $(P)$) là độ dài đoạn vuông góc hạ từ $M$ xuống $d$ (hoặc $(P)$) — ngắn nhất trong các đoạn nối $M$ với một điểm của $d$ (hoặc $(P)$)",
+   "DN|Khoảng cách giữa đường thẳng $a$ song song với mặt phẳng $(P)$ bằng khoảng cách từ một điểm bất kì của $a$ đến $(P)$; khoảng cách giữa 2 mặt phẳng song song bằng khoảng cách từ một điểm bất kì của mặt phẳng này đến mặt phẳng kia",
+   "DN|Đoạn vuông góc chung của 2 đường thẳng chéo nhau $a,b$ là đoạn $MN$ ($M\\in a,\\ N\\in b$) vuông góc với cả $a$ và $b$; khoảng cách giữa $a,b$ bằng độ dài $MN$",
+   "DT|Cách dựng đoạn vuông góc chung của 2 đường thẳng chéo nhau $a,b$: dựng mặt phẳng $(P)$ chứa $b$ và song song với $a$; khi đó khoảng cách giữa $a,b$ bằng khoảng cách từ một điểm bất kì của $a$ đến $(P)$",
+   "VD|Ví dụ: Cho hình chóp $S.ABCD$ có đáy $ABCD$ là hình vuông cạnh $a$, $SA\\perp(ABCD)$, $SA=a$. Tính khoảng cách từ $A$ đến $(SCD)$. Lời giải: Kẻ $AH\\perp SD$ tại $H$. Vì $CD\\perp AD$ và $CD\\perp SA$ nên $CD\\perp(SAD)$, suy ra $CD\\perp AH$; kết hợp $AH\\perp SD$ ta có $AH\\perp(SCD)$, nên $d(A,(SCD))=AH$. Trong tam giác vuông $SAD$: $\\dfrac{1}{AH^2}=\\dfrac{1}{SA^2}+\\dfrac{1}{AD^2}=\\dfrac{2}{a^2}$, suy ra $AH=\\dfrac{a\\sqrt2}{2}$",
+  ]},
+  {n:"Thể tích khối chóp, khối lăng trụ",i:[
+   "CT|Thể tích khối chóp: $V=\\dfrac{1}{3}S_{\\text{đáy}}\\cdot h$. Thể tích khối lăng trụ: $V=S_{\\text{đáy}}\\cdot h$",
+  ]},
+ ]},
+ {n:"Thống kê & Xác suất",t:[
+  {n:"Mẫu số liệu ghép nhóm. Tần số tích lũy",i:[
+   "DN|Mẫu số liệu ghép nhóm là mẫu số liệu được trình bày dưới dạng bảng tần số ghép nhóm gồm các nhóm (nửa khoảng) $[a_i;a_{i+1})$ và tần số $n_i$ là số giá trị của mẫu thuộc nhóm đó",
+   "CT|Giá trị đại diện của nhóm $[a_i;a_{i+1})$ là trung điểm $x_i=\\dfrac{a_i+a_{i+1}}{2}$",
+   "DN|Tần số tích lũy của một nhóm là tổng tần số của nhóm đó và của tất cả các nhóm đứng trước nó trong bảng",
+   "VD|Ví dụ (dùng xuyên suốt các mục sau): Khảo sát thời gian tự học (giờ/tuần) của $40$ học sinh, thu được bảng tần số ghép nhóm: $[0;2)$: $4$; $[2;4)$: $8$; $[4;6)$: $14$; $[6;8)$: $10$; $[8;10)$: $4$ (đơn vị: học sinh). Giá trị đại diện các nhóm lần lượt là $1,3,5,7,9$; tần số tích lũy lần lượt là $4,12,26,36,40$",
+  ]},
+  {n:"Số trung bình, trung vị, mốt của mẫu số liệu ghép nhóm",i:[
+   "CT|Số trung bình: $\\bar x=\\dfrac{\\displaystyle\\sum_{i=1}^k n_ix_i}{n}$, với $x_i$ là giá trị đại diện nhóm $i$, $n=\\displaystyle\\sum_{i=1}^k n_i$",
+   "CT|Trung vị: nếu nhóm chứa trung vị là $[a_m;a_{m+1})$, $C$ là tần số tích lũy của các nhóm đứng trước nhóm đó, $n_m$ là tần số nhóm đó thì $M_e=a_m+\\dfrac{\\frac{n}{2}-C}{n_m}(a_{m+1}-a_m)$",
+   "CT|Mốt: nhóm chứa mốt là nhóm có tần số lớn nhất $[a_m;a_{m+1})$; gọi $n_{m-1},n_{m+1}$ là tần số của 2 nhóm liền kề thì $M_o=a_m+\\dfrac{n_m-n_{m-1}}{(n_m-n_{m-1})+(n_m-n_{m+1})}(a_{m+1}-a_m)$",
+   "VD|Ví dụ: Với bảng thời gian tự học ở trên ($n=40$): $\\bar x=\\dfrac{4\\cdot1+8\\cdot3+14\\cdot5+10\\cdot7+4\\cdot9}{40}=\\dfrac{204}{40}=5{,}1$. Trung vị rơi vào nhóm $[4;6)$ (vì $\\frac{n}{2}=20$, tần số tích lũy trước đó là $12$): $M_e=4+\\dfrac{20-12}{14}\\cdot2\\approx5{,}14$. Mốt thuộc nhóm $[4;6)$ (tần số lớn nhất $=14$): $M_o=4+\\dfrac{14-8}{(14-8)+(14-10)}\\cdot2=5{,}2$",
+   "LY|Số trung bình dễ bị ảnh hưởng bởi các giá trị bất thường (ngoại lệ); trung vị ổn định hơn nên thường được ưu tiên khi mẫu số liệu có giá trị bất thường",
+  ]},
+  {n:"Khoảng biến thiên, khoảng tứ phân vị của mẫu số liệu ghép nhóm",i:[
+   "CT|Khoảng biến thiên $R=a_{k+1}-a_1$, với $a_1$ là đầu mút trái của nhóm đầu, $a_{k+1}$ là đầu mút phải của nhóm cuối",
+   "CT|Tứ phân vị $Q_1,Q_3$: xác định nhóm chứa $Q_1$ (tương ứng $Q_3$) bằng vị trí $\\dfrac{n}{4}$ (tương ứng $\\dfrac{3n}{4}$) rồi tính theo công thức nội suy giống trung vị",
+   "CT|Khoảng tứ phân vị $\\Delta_Q=Q_3-Q_1$; một giá trị được coi là bất thường (ngoại lệ) nếu nó nằm ngoài đoạn $[Q_1-1{,}5\\Delta_Q;\\ Q_3+1{,}5\\Delta_Q]$",
+   "VD|Ví dụ: Với bảng thời gian tự học ở trên: $Q_1$ ứng với vị trí $\\frac{n}{4}=10$, rơi vào nhóm $[2;4)$ (tần số tích lũy trước đó là $4$): $Q_1=2+\\dfrac{10-4}{8}\\cdot2=3{,}5$. $Q_3$ ứng với vị trí $\\frac{3n}{4}=30$, rơi vào nhóm $[6;8)$ (tần số tích lũy trước đó là $26$): $Q_3=6+\\dfrac{30-26}{10}\\cdot2=6{,}8$. Vậy $\\Delta_Q=6{,}8-3{,}5=3{,}3$",
+  ]},
+  {n:"Phương sai và độ lệch chuẩn của mẫu số liệu ghép nhóm",i:[
+   "CT|Phương sai $s^2=\\dfrac{1}{n}\\displaystyle\\sum_{i=1}^k n_i(x_i-\\bar x)^2$; độ lệch chuẩn $s=\\sqrt{s^2}$",
+   "LY|Độ lệch chuẩn $s$ càng nhỏ thì dữ liệu càng tập trung quanh số trung bình (độ phân tán càng thấp); dùng $s$ để so sánh độ đồng đều giữa các mẫu số liệu có cùng đơn vị",
+   "VD|Ví dụ: Với bảng thời gian tự học ở trên ($\\bar x=5{,}1$): $s^2=\\dfrac{1}{40}\\big[4(1-5{,}1)^2+8(3-5{,}1)^2+14(5-5{,}1)^2+10(7-5{,}1)^2+4(9-5{,}1)^2\\big]=\\dfrac{199{,}6}{40}=4{,}99$, suy ra $s=\\sqrt{4{,}99}\\approx2{,}23$",
+  ]},
+  {n:"Biến cố hợp, biến cố giao, biến cố đối",i:[
+   "DN|Cho phép thử với không gian mẫu $\\Omega$. Biến cố hợp $A\\cup B$ xảy ra khi $A$ xảy ra hoặc $B$ xảy ra; biến cố giao $A\\cap B$ (còn viết $AB$) xảy ra khi cả $A$ và $B$ cùng xảy ra",
+   "DN|Hai biến cố $A,B$ xung khắc khi $A\\cap B=\\varnothing$, tức chúng không thể đồng thời xảy ra",
+   "DN|Biến cố đối của $A$, kí hiệu $\\bar A$, là biến cố \\\"$A$ không xảy ra\\\"; ta có $\\Omega=A\\cup\\bar A$ và $A\\cap\\bar A=\\varnothing$",
+   "CT|$P(\\bar A)=1-P(A)$",
+   "DN|Hai biến cố $A,B$ độc lập khi việc xảy ra hay không xảy ra của biến cố này không làm ảnh hưởng tới xác suất xảy ra của biến cố kia",
+  ]},
+  {n:"Quy tắc cộng xác suất",i:[
+   "CT|Quy tắc cộng tổng quát: $P(A\\cup B)=P(A)+P(B)-P(A\\cap B)$",
+   "CT|Nếu $A,B$ xung khắc thì $P(A\\cup B)=P(A)+P(B)$",
+   "LY|Mở rộng cho $n$ biến cố đôi một xung khắc $A_1,A_2,\\ldots,A_n$: $P(A_1\\cup A_2\\cup\\cdots\\cup A_n)=P(A_1)+P(A_2)+\\cdots+P(A_n)$",
+   "VD|Ví dụ: Một hộp có 5 viên bi đỏ, 3 viên bi xanh, 2 viên bi vàng. Lấy ngẫu nhiên 1 viên. Tính xác suất lấy được bi đỏ hoặc bi xanh. Lời giải: gọi $A$: \\\"lấy được bi đỏ\\\", $B$: \\\"lấy được bi xanh\\\"; $A,B$ xung khắc. $P(A)=\\dfrac{5}{10}=\\dfrac{1}{2}$, $P(B)=\\dfrac{3}{10}$. Vậy $P(A\\cup B)=\\dfrac{1}{2}+\\dfrac{3}{10}=\\dfrac{4}{5}$",
+  ]},
+  {n:"Quy tắc nhân xác suất cho biến cố độc lập",i:[
+   "CT|Nếu $A,B$ độc lập thì $P(A\\cap B)=P(A)\\cdot P(B)$",
+   "LY|Mở rộng cho $n$ biến cố độc lập: $P(A_1\\cap A_2\\cap\\cdots\\cap A_n)=P(A_1)\\cdot P(A_2)\\cdots P(A_n)$",
+   "DH|Dấu hiệu nhận biết 2 biến cố độc lập trong bài toán thực tế: chúng gắn với 2 phép thử tách biệt nhau (ví dụ 2 người bắn súng khác nhau, 2 lần gieo súc sắc khác nhau, lấy vật có hoàn lại)",
+   "VD|Ví dụ: Một xạ thủ bắn 2 phát đạn độc lập vào bia, xác suất bắn trúng mỗi phát lần lượt là $0{,}7$ và $0{,}8$. Tính xác suất cả 2 phát đều trúng. Lời giải: gọi $A$: phát 1 trúng, $B$: phát 2 trúng ($A,B$ độc lập). $P(AB)=0{,}7\\times 0{,}8=0{,}56$",
+  ]},
+  {n:"Dạng toán vận dụng quy tắc cộng và nhân xác suất",i:[
+   "VD|Ví dụ (dùng biến cố đối): Một xạ thủ bắn 2 phát đạn độc lập, xác suất trúng mỗi phát là $0{,}6$. Tính xác suất có ít nhất 1 phát trúng. Lời giải: gọi $A$: \\\"có ít nhất 1 phát trúng\\\", biến cố đối $\\bar A$: \\\"cả 2 phát đều trượt\\\". $P(\\bar A)=(1-0{,}6)(1-0{,}6)=0{,}16$. Vậy $P(A)=1-0{,}16=0{,}84$",
+   "VD|Ví dụ (kết hợp cộng và nhân): Hai xạ thủ $A,B$ bắn độc lập vào cùng một mục tiêu, xác suất bắn trúng lần lượt là $0{,}7$ và $0{,}6$. Tính xác suất mục tiêu bị trúng đạn. Lời giải: gọi $A,B$ là biến cố mỗi người bắn trúng (độc lập). $P(A\\cup B)=P(A)+P(B)-P(A)P(B)=0{,}7+0{,}6-0{,}42=0{,}88$",
+   "DT|Dạng toán \\\"có ít nhất 1 trong $n$ biến cố độc lập xảy ra\\\": dùng biến cố đối, $P(\\text{ít nhất 1 xảy ra})=1-\\displaystyle\\prod_{i=1}^n\\big(1-P(A_i)\\big)$",
+   "VD|Ví dụ (lấy có hoàn lại): Một hộp có 4 bi trắng, 6 bi đen. Lấy ngẫu nhiên có hoàn lại 2 lần, mỗi lần 1 viên. Tính xác suất trong 2 lần có đúng 1 lần lấy được bi trắng. Lời giải: $P(\\text{trắng})=0{,}4$, $P(\\text{đen})=0{,}6$ mỗi lần (độc lập). Có 2 trường hợp xung khắc: trắng-đen hoặc đen-trắng. $P=0{,}4\\times 0{,}6+0{,}6\\times 0{,}4=0{,}48$",
+  ]},
+ ]},
+]},
+{g:12,l:"Lớp 12",c:"#2a9d8f",s:[
+ {n:"Đại số & Giải tích",t:[
+  {n:"Tính đơn điệu và cực trị của hàm số",i:[
+   "TC|Cho hàm số $f$ có đạo hàm trên khoảng $(a;b)$: nếu $f'(x)>0$ với mọi $x\\in(a;b)$ thì $f$ đồng biến trên $(a;b)$; nếu $f'(x)<0$ với mọi $x\\in(a;b)$ thì $f$ nghịch biến trên $(a;b)$; nếu $f'(x)=0$ với mọi $x\\in(a;b)$ thì $f$ không đổi trên $(a;b)$",
+   "DT|Quy tắc xét tính đơn điệu: (1) tìm tập xác định; (2) tính $f'(x)$, tìm các điểm mà $f'(x)=0$ hoặc $f'(x)$ không xác định; (3) lập bảng xét dấu $f'(x)$; (4) kết luận các khoảng đồng biến, nghịch biến",
+   "DN|$x_0$ là điểm cực đại (cực tiểu) của hàm số $f$ nếu tồn tại khoảng $(a;b)$ chứa $x_0$ sao cho $f(x)<f(x_0)$ (tương ứng $f(x)>f(x_0)$) với mọi $x\\in(a;b)\\setminus\\{x_0\\}$; khi đó $f(x_0)$ gọi là giá trị cực đại (cực tiểu)",
+   "DH|Định lí (dấu hiệu qua đạo hàm cấp một): nếu $f'(x)$ đổi dấu từ dương sang âm khi $x$ qua $x_0$ thì $x_0$ là điểm cực đại; nếu $f'(x)$ đổi dấu từ âm sang dương khi $x$ qua $x_0$ thì $x_0$ là điểm cực tiểu; nếu $f'(x)$ không đổi dấu thì $x_0$ không phải điểm cực trị",
+   "CT|Dấu hiệu qua đạo hàm cấp hai (khi $f''(x_0)\\neq 0$): nếu $f'(x_0)=0$ và $f''(x_0)<0$ thì $x_0$ là điểm cực đại; nếu $f'(x_0)=0$ và $f''(x_0)>0$ thì $x_0$ là điểm cực tiểu",
+   "VD|Ví dụ: Tìm khoảng đơn điệu và cực trị của $y=x^3-3x^2-9x+5$. Lời giải: $y'=3x^2-6x-9=3(x-3)(x+1)$, $y'=0\\Leftrightarrow x=-1$ hoặc $x=3$. Lập bảng xét dấu: $y'>0$ trên $(-\\infty;-1)$ và $(3;+\\infty)$; $y'<0$ trên $(-1;3)$. Vậy hàm số đồng biến trên $(-\\infty;-1)$ và $(3;+\\infty)$, nghịch biến trên $(-1;3)$; đạt cực đại tại $x=-1$ với $y_{CĐ}=10$, đạt cực tiểu tại $x=3$ với $y_{CT}=-22$",
+  ]},
+  {n:"Giá trị lớn nhất, giá trị nhỏ nhất của hàm số",i:[
+   "DN|$M$ là giá trị lớn nhất của $f$ trên $D$ nếu $f(x)\\le M$ với mọi $x\\in D$ và tồn tại $x_0\\in D$ để $f(x_0)=M$, kí hiệu $M=\\max_D f(x)$; định nghĩa tương tự cho giá trị nhỏ nhất $\\min_D f(x)$",
+   "DT|Quy tắc tìm GTLN, GTNN của hàm số liên tục trên đoạn $[a;b]$: tính $f'(x)$; tìm các điểm $x_1,x_2,\\ldots,x_n\\in(a;b)$ mà $f'(x_i)=0$ hoặc $f'(x_i)$ không xác định; tính $f(a),f(b),f(x_1),\\ldots,f(x_n)$; số lớn nhất trong các giá trị đó là GTLN, số nhỏ nhất là GTNN",
+   "LY|Với hàm số liên tục trên một khoảng (không phải đoạn đóng) hoặc trên toàn trục số, dùng bảng biến thiên (dựa vào cực trị và giới hạn tại các đầu mút) để kết luận GTLN, GTNN — có thể không tồn tại",
+   "VD|Ví dụ: Tìm GTLN, GTNN của $f(x)=x^3-3x+2$ trên đoạn $[-2;2]$. Lời giải: $f'(x)=3x^2-3=0\\Leftrightarrow x=\\pm1$ (thuộc $(-2;2)$). Tính $f(-2)=0$, $f(-1)=4$, $f(1)=0$, $f(2)=4$. Vậy $\\max_{[-2;2]}f(x)=4$ (tại $x=-1$ hoặc $x=2$), $\\min_{[-2;2]}f(x)=0$ (tại $x=-2$ hoặc $x=1$)",
+  ]},
+  {n:"Đường tiệm cận của đồ thị hàm số",i:[
+   "DN|Đường thẳng $y=L$ là tiệm cận ngang của đồ thị hàm số $y=f(x)$ nếu $\\displaystyle\\lim_{x\\to+\\infty}f(x)=L$ hoặc $\\displaystyle\\lim_{x\\to-\\infty}f(x)=L$",
+   "DN|Đường thẳng $x=x_0$ là tiệm cận đứng của đồ thị hàm số $y=f(x)$ nếu ít nhất một trong các giới hạn một phía $\\displaystyle\\lim_{x\\to x_0^+}f(x)$, $\\displaystyle\\lim_{x\\to x_0^-}f(x)$ bằng $+\\infty$ hoặc $-\\infty$",
+   "DN|Đường thẳng $y=ax+b$ ($a\\neq 0$) là tiệm cận xiên của đồ thị hàm số $y=f(x)$ nếu $\\displaystyle\\lim_{x\\to+\\infty}[f(x)-(ax+b)]=0$ hoặc $\\displaystyle\\lim_{x\\to-\\infty}[f(x)-(ax+b)]=0$",
+   "CT|Cách tìm hệ số của tiệm cận xiên: $a=\\displaystyle\\lim_{x\\to\\pm\\infty}\\dfrac{f(x)}{x}$, $b=\\displaystyle\\lim_{x\\to\\pm\\infty}[f(x)-ax]$",
+   "VD|Ví dụ: Tìm các đường tiệm cận của đồ thị $y=\\dfrac{x^2+1}{x}=x+\\dfrac{1}{x}$. Lời giải: Vì $\\displaystyle\\lim_{x\\to 0^+}y=+\\infty$ nên $x=0$ là tiệm cận đứng. Vì $y-x=\\dfrac{1}{x}\\to 0$ khi $x\\to\\pm\\infty$ nên $y=x$ là tiệm cận xiên (kiểm tra bằng công thức: $a=\\lim\\dfrac{f(x)}{x}=1$, $b=\\lim[f(x)-x]=\\lim\\dfrac{1}{x}=0$)",
+  ]},
+  {n:"Khảo sát sự biến thiên và vẽ đồ thị hàm số",i:[
+   "LY|Các bước khảo sát hàm số: (1) tìm tập xác định; (2) xét sự biến thiên: tính $y'$, tìm điểm tới hạn, xét dấu $y'$, tìm cực trị, tính giới hạn tại vô cực (và tiệm cận nếu có), lập bảng biến thiên; (3) vẽ đồ thị: xác định giao điểm với $Ox,Oy$ và một số điểm đặc biệt, dựa vào bảng biến thiên và tính đối xứng để vẽ",
+   "DN|Đồ thị hàm bậc ba $y=ax^3+bx^2+cx+d$ ($a\\neq 0$) nhận điểm uốn làm tâm đối xứng; có hình dạng chữ N khi $a>0$ và chữ N ngược khi $a<0$ (có thể có 0 hoặc 2 điểm cực trị)",
+   "DN|Đồ thị hàm trùng phương $y=ax^4+bx^2+c$ ($a\\neq 0$) nhận trục $Oy$ làm trục đối xứng; có 1 hoặc 3 điểm cực trị tùy dấu của $a$ và $b$",
+   "DN|Đồ thị hàm phân thức $y=\\dfrac{ax+b}{cx+d}$ ($c\\neq 0$, $ad-bc\\neq 0$) có tiệm cận đứng $x=-\\dfrac{d}{c}$, tiệm cận ngang $y=\\dfrac{a}{c}$, và nhận giao điểm hai đường tiệm cận làm tâm đối xứng",
+   "VD|Ví dụ: Khảo sát và vẽ đồ thị hàm số $y=x^3-3x^2-9x+5$ (tiếp tục ví dụ ở mục Đơn điệu và cực trị). TXĐ: $\\mathbb{R}$. Sự biến thiên: đồng biến trên $(-\\infty;-1)$, $(3;+\\infty)$; nghịch biến trên $(-1;3)$; cực đại $(-1;10)$, cực tiểu $(3;-22)$; $\\displaystyle\\lim_{x\\to-\\infty}y=-\\infty$, $\\displaystyle\\lim_{x\\to+\\infty}y=+\\infty$ (không có tiệm cận vì là hàm đa thức). Đồ thị cắt $Oy$ tại $(0;5)$, có dạng chữ N vì hệ số $a=1>0$",
+  ]},
+  {n:"Ứng dụng đạo hàm giải quyết vấn đề thực tiễn",i:[
+   "DT|Các bước giải bài toán tối ưu bằng đạo hàm: (1) chọn ẩn số và đặt điều kiện cho ẩn; (2) biểu diễn đại lượng cần tìm GTLN/GTNN thành một hàm số theo ẩn đã chọn; (3) tìm GTLN/GTNN của hàm số đó trên miền xác định phù hợp (dùng bảng biến thiên); (4) đối chiếu điều kiện và kết luận",
+   "VD|Ví dụ: Một người muốn rào một mảnh vườn hình chữ nhật ven sông (không rào cạnh giáp sông) với tổng chiều dài rào là $100$ m. Tìm kích thước để diện tích lớn nhất. Lời giải: gọi $x$ (m) là chiều dài 2 cạnh vuông góc bờ sông ($0<x<50$), cạnh song song bờ sông là $100-2x$. Diện tích $S(x)=x(100-2x)=100x-2x^2$. $S'(x)=100-4x=0\\Leftrightarrow x=25$; $S''(x)=-4<0$ nên $x=25$ là điểm cực đại. Vậy kích thước tối ưu là $25$ m $\\times$ $50$ m, diện tích lớn nhất $S=1250$ m$^2$",
+   "VD|Ví dụ: Từ một tấm tôn hình vuông cạnh $12$ cm, người ta cắt bỏ 4 hình vuông cạnh $x$ ở 4 góc rồi gấp lên thành một hình hộp không nắp. Tìm $x$ để thể tích hộp lớn nhất. Lời giải: điều kiện $0<x<6$. Thể tích $V(x)=x(12-2x)^2$. $V'(x)=(12-2x)^2-4x(12-2x)=(12-2x)(12-6x)$; trên $(0;6)$, $V'(x)=0\\Leftrightarrow x=2$. Xét dấu: $V'(x)>0$ trên $(0;2)$, $V'(x)<0$ trên $(2;6)$ nên $x=2$ là điểm cực đại. Vậy $x=2$ cm cho thể tích lớn nhất $V=2\\cdot 8^2=128$ cm$^3$",
+  ]},
+  {n:"Nguyên hàm",i:[
+   "DN|$F(x)$ là một nguyên hàm của $f(x)$ trên $K$ nếu $F'(x)=f(x)$ với mọi $x\\in K$",
+   "TC|Nếu $F(x)$ là một nguyên hàm của $f(x)$ trên $K$ thì họ tất cả các nguyên hàm của $f(x)$ trên $K$ là $F(x)+C$ ($C$ là hằng số tùy ý), kí hiệu $\\displaystyle\\int f(x)\\,dx=F(x)+C$",
+   "TC|Tính chất: $\\displaystyle\\int [f(x)\\pm g(x)]\\,dx=\\int f(x)\\,dx\\pm\\int g(x)\\,dx$; $\\displaystyle\\int kf(x)\\,dx=k\\int f(x)\\,dx$ ($k\\neq 0$ là hằng số)",
+   "CT|Bảng nguyên hàm cơ bản: $\\displaystyle\\int x^n\\,dx=\\dfrac{x^{n+1}}{n+1}+C$ ($n\\neq -1$); $\\displaystyle\\int \\dfrac{1}{x}\\,dx=\\ln|x|+C$; $\\displaystyle\\int e^x\\,dx=e^x+C$; $\\displaystyle\\int a^x\\,dx=\\dfrac{a^x}{\\ln a}+C$ ($0<a\\neq 1$); $\\displaystyle\\int \\cos x\\,dx=\\sin x+C$; $\\displaystyle\\int \\sin x\\,dx=-\\cos x+C$; $\\displaystyle\\int \\dfrac{1}{\\cos^2x}\\,dx=\\tan x+C$; $\\displaystyle\\int \\dfrac{1}{\\sin^2x}\\,dx=-\\cot x+C$",
+   "VD|Ví dụ: Tìm nguyên hàm của $f(x)=3x^2-4x+5$. Lời giải: $\\displaystyle\\int(3x^2-4x+5)\\,dx=3\\cdot\\dfrac{x^3}{3}-4\\cdot\\dfrac{x^2}{2}+5x+C=x^3-2x^2+5x+C$",
+  ]},
+  {n:"Nguyên hàm của hàm hợp. Phương pháp đổi biến số",i:[
+   "CT|Nguyên hàm của hàm hợp (với $a\\neq 0$): $\\displaystyle\\int (ax+b)^n\\,dx=\\dfrac{(ax+b)^{n+1}}{a(n+1)}+C$ ($n\\neq -1$); $\\displaystyle\\int e^{ax+b}\\,dx=\\dfrac{e^{ax+b}}{a}+C$; $\\displaystyle\\int \\sin(ax+b)\\,dx=-\\dfrac{\\cos(ax+b)}{a}+C$; $\\displaystyle\\int \\cos(ax+b)\\,dx=\\dfrac{\\sin(ax+b)}{a}+C$",
+   "DT|Phương pháp đổi biến số: để tính $\\displaystyle\\int f(u(x))\\cdot u'(x)\\,dx$, đặt $u=u(x)$, khi đó $du=u'(x)\\,dx$ và tích phân trở thành $\\displaystyle\\int f(u)\\,du$; tính xong rồi thay $u$ trở lại theo $x$",
+   "VD|Ví dụ: Tính $\\displaystyle\\int x(x^2+1)^5\\,dx$. Lời giải: đặt $u=x^2+1\\Rightarrow du=2x\\,dx\\Rightarrow x\\,dx=\\dfrac{du}{2}$. Khi đó $\\displaystyle\\int x(x^2+1)^5\\,dx=\\int u^5\\cdot\\dfrac{du}{2}=\\dfrac{u^6}{12}+C=\\dfrac{(x^2+1)^6}{12}+C$",
+  ]},
+  {n:"Nguyên hàm từng phần",i:[
+   "CT|Công thức nguyên hàm từng phần: $\\displaystyle\\int u\\,dv=uv-\\int v\\,du$",
+   "LY|Quy tắc chọn $u,dv$: nếu biểu thức có $\\ln x$ thì đặt $u=\\ln x$; nếu là tích của đa thức với $e^x,\\sin x,\\cos x$ thì đặt $u$ là đa thức, $dv$ là phần còn lại (để bậc đa thức giảm dần sau mỗi lần lấy nguyên hàm từng phần)",
+   "VD|Ví dụ: Tính $\\displaystyle\\int xe^x\\,dx$. Lời giải: đặt $u=x,\\ dv=e^x\\,dx\\Rightarrow du=dx,\\ v=e^x$. Khi đó $\\displaystyle\\int xe^x\\,dx=xe^x-\\int e^x\\,dx=xe^x-e^x+C=e^x(x-1)+C$",
+   "VD|Ví dụ: Tính $\\displaystyle\\int x\\ln x\\,dx$. Lời giải: đặt $u=\\ln x,\\ dv=x\\,dx\\Rightarrow du=\\dfrac{dx}{x},\\ v=\\dfrac{x^2}{2}$. Khi đó $\\displaystyle\\int x\\ln x\\,dx=\\dfrac{x^2}{2}\\ln x-\\int\\dfrac{x^2}{2}\\cdot\\dfrac{1}{x}\\,dx=\\dfrac{x^2}{2}\\ln x-\\dfrac{x^2}{4}+C$",
+  ]},
+  {n:"Tích phân",i:[
+   "DN|Công thức Newton–Leibniz: nếu $F$ là một nguyên hàm của $f$ trên đoạn $[a;b]$ thì $\\displaystyle\\int_a^b f(x)\\,dx=F(b)-F(a)$",
+   "TC|Tính chất tích phân: $\\displaystyle\\int_a^a f(x)\\,dx=0$; $\\displaystyle\\int_a^b f(x)\\,dx=-\\int_b^a f(x)\\,dx$; $\\displaystyle\\int_a^b[f(x)\\pm g(x)]\\,dx=\\int_a^b f(x)\\,dx\\pm\\int_a^b g(x)\\,dx$; $\\displaystyle\\int_a^b kf(x)\\,dx=k\\int_a^b f(x)\\,dx$; $\\displaystyle\\int_a^b f(x)\\,dx=\\int_a^c f(x)\\,dx+\\int_c^b f(x)\\,dx$ ($a<c<b$)",
+   "DT|Đổi biến số và từng phần cho tích phân xác định: làm như với nguyên hàm nhưng đổi luôn cận theo biến mới (đổi biến) hoặc áp dụng trực tiếp công thức $\\displaystyle\\int_a^b u\\,dv=\\Big[uv\\Big]_a^b-\\int_a^b v\\,du$ (từng phần)",
+   "VD|Ví dụ: Tính $\\displaystyle\\int_0^1(3x^2-2x+1)\\,dx$. Lời giải: $\\displaystyle\\int_0^1(3x^2-2x+1)\\,dx=\\Big[x^3-x^2+x\\Big]_0^1=(1-1+1)-0=1$",
+   "VD|Ví dụ (đổi biến, đổi cận): Tính $\\displaystyle\\int_0^1 x(x^2+1)^5\\,dx$. Lời giải: đặt $u=x^2+1$; khi $x=0$ thì $u=1$, khi $x=1$ thì $u=2$; $x\\,dx=\\dfrac{du}{2}$. $\\displaystyle\\int_0^1 x(x^2+1)^5\\,dx=\\int_1^2 u^5\\cdot\\dfrac{du}{2}=\\Big[\\dfrac{u^6}{12}\\Big]_1^2=\\dfrac{64-1}{12}=\\dfrac{21}{4}$",
+  ]},
+  {n:"Ứng dụng hình học của tích phân",i:[
+   "CT|Diện tích hình phẳng giới hạn bởi $y=f(x)$, trục $Ox$, $x=a$, $x=b$: $S=\\displaystyle\\int_a^b |f(x)|\\,dx$",
+   "CT|Diện tích hình phẳng giới hạn bởi 2 đồ thị $y=f(x)$, $y=g(x)$ và $x=a,\\ x=b$: $S=\\displaystyle\\int_a^b |f(x)-g(x)|\\,dx$",
+   "CT|Thể tích khối tròn xoay khi quay hình phẳng giới hạn bởi $y=f(x)$, trục $Ox$, $x=a$, $x=b$ quanh trục $Ox$: $V=\\pi\\displaystyle\\int_a^b [f(x)]^2\\,dx$",
+   "CT|Thể tích khối tròn xoay khi quay miền giới hạn bởi $y=f(x)$, $y=g(x)$ ($f(x)\\ge g(x)\\ge 0$) trên $[a;b]$ quanh trục $Ox$: $V=\\pi\\displaystyle\\int_a^b \\big([f(x)]^2-[g(x)]^2\\big)\\,dx$",
+   "VD|Ví dụ: Tính diện tích hình phẳng giới hạn bởi $y=x^2-1$, trục $Ox$, $x=0$, $x=2$. Lời giải: $x^2-1=0$ tại $x=1\\in[0;2]$; trên $[0;1]$ có $x^2-1\\le 0$, trên $[1;2]$ có $x^2-1\\ge 0$. $S=\\displaystyle\\int_0^1(1-x^2)\\,dx+\\int_1^2(x^2-1)\\,dx=\\dfrac{2}{3}+\\dfrac{4}{3}=2$",
+   "VD|Ví dụ: Tính thể tích khối tròn xoay khi quay hình phẳng giới hạn bởi $y=\\sqrt{x}$, trục $Ox$, $x=0$, $x=4$ quanh trục $Ox$. Lời giải: $V=\\pi\\displaystyle\\int_0^4(\\sqrt{x})^2\\,dx=\\pi\\int_0^4 x\\,dx=\\pi\\Big[\\dfrac{x^2}{2}\\Big]_0^4=8\\pi$",
+  ]},
+  {n:"Phương trình, bất phương trình mũ và lôgarit",i:[
+   "CT|$a^x=a^m \\Leftrightarrow x=m$ ($0<a\\neq 1$); $\\log_ax=m \\Leftrightarrow x=a^m$ ($0<a\\neq 1$, $x>0$)",
+   "LY|Khi giải bất phương trình mũ/lôgarit: nếu $a>1$ giữ nguyên chiều bất đẳng thức, nếu $0<a<1$ thì đổi chiều",
+  ]},
+ ]},
+ {n:"Hình học & Đo lường",t:[
+  {n:"Vectơ và hệ tọa độ trong không gian Oxyz",i:[
+   "CT|Với $A(x_1;y_1;z_1)$, $B(x_2;y_2;z_2)$: $\\overrightarrow{AB}=(x_2-x_1;y_2-y_1;z_2-z_1)$; $AB=\\sqrt{(x_2-x_1)^2+(y_2-y_1)^2+(z_2-z_1)^2}$",
+   "CT|Tích vô hướng $\\vec{u}\\cdot\\vec{v}=x_1x_2+y_1y_2+z_1z_2$; $\\vec{u}\\perp\\vec{v} \\Leftrightarrow \\vec{u}\\cdot\\vec{v}=0$",
+   "CT|Tích có hướng $[\\vec{u},\\vec{v}]$ vuông góc với cả $\\vec{u}$ và $\\vec{v}$, dùng để tìm vectơ pháp tuyến của mặt phẳng",
+  ]},
+  {n:"Phương trình mặt phẳng, đường thẳng, mặt cầu",i:[
+   "CT|Phương trình mặt phẳng qua điểm có vectơ pháp tuyến $\\vec{n}=(A;B;C)$: $A(x-x_0)+B(y-y_0)+C(z-z_0)=0$",
+   "CT|Phương trình mặt cầu tâm $I(a;b;c)$ bán kính $R$: $(x-a)^2+(y-b)^2+(z-c)^2=R^2$",
+   "CT|Khoảng cách từ điểm $M_0$ đến mặt phẳng $Ax+By+Cz+D=0$: $d=\\dfrac{|Ax_0+By_0+Cz_0+D|}{\\sqrt{A^2+B^2+C^2}}$",
+  ]},
+ ]},
+ {n:"Thống kê & Xác suất",t:[
+  {n:"Xác suất có điều kiện — bản chất và công thức",i:[
+   "LY|Hiểu bản chất: $P(A|B)$ trả lời câu hỏi \\\"Biết chắc chắn $B$ đã xảy ra rồi, thì khả năng $A$ cũng xảy ra là bao nhiêu?\\\". Về bản chất ta không xét cả không gian mẫu $\\Omega$ nữa mà thu hẹp lại chỉ còn các kết quả thuộc $B$ (vì $B$ chắc chắn xảy ra), rồi tính xem trong phạm vi thu hẹp đó, tỉ lệ các kết quả thuộc $A$ là bao nhiêu",
+   "DN|Công thức: $P(A|B)=\\dfrac{P(A\\cap B)}{P(B)}$ (với $P(B)>0$) — đọc là \\\"xác suất của $A$ với điều kiện $B$\\\"",
+   "VD|Ví dụ (thấy rõ bản chất bằng đếm trực tiếp): Lớp có $40$ học sinh gồm $25$ nam, $15$ nữ; trong đó có $15$ nam và $9$ nữ thích môn Toán. Chọn ngẫu nhiên $1$ học sinh, biết đó là nam, tính xác suất học sinh đó thích Toán. Lời giải (đếm trực tiếp — thu hẹp không gian mẫu về $25$ bạn nam): trong $25$ nam có $15$ bạn thích Toán nên $P(\\text{thích Toán}|\\text{nam})=\\dfrac{15}{25}=0{,}6$. Kiểm tra lại bằng công thức: gọi $A$: \\\"thích Toán\\\", $B$: \\\"là nam\\\"; $P(B)=\\dfrac{25}{40}$, $P(A\\cap B)=\\dfrac{15}{40}$ nên $P(A|B)=\\dfrac{15/40}{25/40}=\\dfrac{15}{25}=0{,}6$ — khớp với cách đếm trực tiếp",
+   "LY|Lưu ý (học sinh rất hay nhầm): $P(A|B)$ và $P(B|A)$ là hai đại lượng khác nhau. Vẫn với ví dụ trên, nếu hỏi ngược lại \\\"biết học sinh thích Toán, tính xác suất đó là nam\\\" thì $P(B|A)=\\dfrac{15}{15+9}=\\dfrac{15}{24}=0{,}625$ — khác với $P(A|B)=0{,}6$ ở trên, vì mẫu số (không gian mẫu thu hẹp) là khác nhau: một bên thu hẹp theo \\\"nam\\\" ($25$ bạn), một bên thu hẹp theo \\\"thích Toán\\\" ($24$ bạn)",
+   "TC|Tính chất: $0\\le P(A|B)\\le 1$; $P(\\overline{A}|B)=1-P(A|B)$; nếu $A,B$ độc lập thì $P(A|B)=P(A)$ (biết $B$ xảy ra hay không cũng không làm thay đổi khả năng xảy ra của $A$)",
+  ]},
+  {n:"Công thức nhân xác suất. Sơ đồ hình cây",i:[
+   "CT|Từ định nghĩa xác suất có điều kiện suy ra công thức nhân xác suất: $P(A\\cap B)=P(B)\\cdot P(A|B)=P(A)\\cdot P(B|A)$",
+   "LY|Sơ đồ hình cây (công cụ trực quan nhất để giải các bài toán loại này): vẽ từ gốc, tầng thứ nhất tách thành các nhánh ứng với từng trường hợp có thể xảy ra trước (ví dụ nhánh $B$ và nhánh $\\overline{B}$), mỗi nhánh ghi xác suất $P(B)$, $P(\\overline{B})$; từ đầu mỗi nhánh đó lại tách tiếp thành các nhánh con (ví dụ $A$ và $\\overline{A}$), ghi các xác suất có điều kiện tương ứng $P(A|B)$, $P(\\overline{A}|B)$,... Xác suất của cả một đường đi từ gốc đến 1 nhánh lá bằng tích các xác suất ghi trên đường đi đó (chính là công thức nhân ở trên)",
+   "VD|Ví dụ: Một nhà máy có 2 dây chuyền sản xuất, dây chuyền I chiếm $70\\%$ sản lượng, dây chuyền II chiếm $30\\%$; tỉ lệ sản phẩm lỗi của dây chuyền I là $1\\%$, của dây chuyền II là $6\\%$. Vẽ sơ đồ cây: tầng 1 gồm 2 nhánh \\\"dây chuyền I\\\" ($0{,}7$) và \\\"dây chuyền II\\\" ($0{,}3$); từ mỗi nhánh tách tiếp thành \\\"lỗi\\\" và \\\"không lỗi\\\". Xác suất lấy được sản phẩm vừa do dây chuyền I sản xuất vừa bị lỗi là tích 2 xác suất trên đường đi đó: $P(\\text{I}\\cap\\text{lỗi})=0{,}7\\times 0{,}01=0{,}007$",
+  ]},
+  {n:"Công thức xác suất toàn phần",i:[
+   "LY|Hiểu bản chất: nếu biến cố $A$ có thể \\\"xảy ra theo nhiều con đường khác nhau\\\" (chẳng hạn sản phẩm lỗi có thể đến từ dây chuyền I hoặc dây chuyền II), thì xác suất của $A$ chính là tổng xác suất của $A$ theo từng con đường — tức cộng xác suất của tất cả các nhánh (trong sơ đồ cây) cùng dẫn đến $A$",
+   "CT|Công thức xác suất toàn phần (với $B,\\overline B$): $P(A)=P(B)\\cdot P(A|B)+P(\\overline{B})\\cdot P(A|\\overline{B})$. Mở rộng cho một hệ đầy đủ các biến cố $B_1,B_2,\\ldots,B_n$ (đôi một xung khắc, hợp bằng $\\Omega$): $P(A)=\\displaystyle\\sum_{i=1}^n P(B_i)\\cdot P(A|B_i)$",
+   "DT|Các bước áp dụng: (1) xác định hệ đầy đủ các \\\"nguyên nhân\\\" có thể dẫn đến $A$ (ví dụ: sản phẩm do dây chuyền nào sản xuất); (2) tìm xác suất mỗi nguyên nhân; (3) tìm xác suất có điều kiện của $A$ theo từng nguyên nhân; (4) nhân từng cặp rồi cộng lại theo công thức xác suất toàn phần (chính là cộng xác suất các nhánh của sơ đồ cây dẫn tới $A$)",
+   "VD|Ví dụ (tiếp ví dụ nhà máy ở mục trên): Tính xác suất lấy ngẫu nhiên 1 sản phẩm của nhà máy thì bị lỗi. Lời giải: gọi $B$: \\\"sản phẩm do dây chuyền I\\\", $A$: \\\"sản phẩm bị lỗi\\\". $P(A)=P(B)P(A|B)+P(\\overline B)P(A|\\overline B)=0{,}7\\times 0{,}01+0{,}3\\times 0{,}06=0{,}007+0{,}018=0{,}025$. Vậy tỉ lệ sản phẩm lỗi của cả nhà máy là $2{,}5\\%$",
+  ]},
+  {n:"Công thức Bayes",i:[
+   "LY|Hiểu bản chất: công thức Bayes dùng để \\\"suy ngược\\\". Xác suất toàn phần đi theo chiều thuận: biết nguyên nhân, tính xác suất kết quả; còn Bayes đi theo chiều ngược: đã thấy kết quả $A$ xảy ra rồi, hỏi ngược lại xem nó có khả năng đến từ nguyên nhân nào (như bài toán \\\"biết bệnh nhân xét nghiệm dương tính, tính xác suất bệnh nhân thực sự mắc bệnh\\\")",
+   "CT|Công thức Bayes: $P(B|A)=\\dfrac{P(B)\\cdot P(A|B)}{P(A)}$, trong đó $P(A)$ thường được tính trước bằng công thức xác suất toàn phần",
+   "VD|Ví dụ (tiếp ví dụ nhà máy): Lấy ngẫu nhiên 1 sản phẩm và thấy nó bị lỗi. Tính xác suất sản phẩm đó do dây chuyền II sản xuất. Lời giải: $P(\\overline B|A)=\\dfrac{P(\\overline B)\\cdot P(A|\\overline B)}{P(A)}=\\dfrac{0{,}3\\times 0{,}06}{0{,}025}=\\dfrac{0{,}018}{0{,}025}=0{,}72$. Nhận xét thú vị: ban đầu dây chuyền II chỉ chiếm $30\\%$ sản lượng, nhưng khi đã biết sản phẩm bị lỗi thì khả năng nó đến từ dây chuyền II tăng vọt lên $72\\%$ — vì dây chuyền II có tỉ lệ lỗi cao hơn hẳn (thông tin \\\"bị lỗi\\\" đã làm thay đổi đáng kể nhận định ban đầu, đây chính là ý nghĩa cốt lõi của suy luận Bayes)",
+  ]},
+ ]},
+]}
+];
+
+const TAG_MAP = {
+  DN:{label:"Định nghĩa", css:"var(--tag-dn)"},
+  CT:{label:"Công thức", css:"var(--tag-ct)"},
+  TC:{label:"Tính chất", css:"var(--tag-tc)"},
+  DH:{label:"Dấu hiệu", css:"var(--tag-dh)"},
+  LY:{label:"Lưu ý", css:"var(--tag-ly)"},
+  DT:{label:"Dạng toán", css:"var(--tag-dt)"},
+  VD:{label:"Ví dụ minh họa", css:"var(--tag-vd)"}
+};
+
+// ===================== TIỆN ÍCH =====================
+function normalize(s){
+  return (s||"").toString().normalize("NFD").replace(/[̀-ͯ]/g,"")
+    .replace(/đ/g,"d").replace(/Đ/g,"D").toLowerCase();
+}
+function escapeHtml(s){
+  return (s||"").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
+}
+function parseItem(raw){
+  const idx = raw.indexOf("|");
+  return {tag: raw.slice(0,idx), text: raw.slice(idx+1)};
+}
+
+// ===================== CHỈ MỤC TÌM KIẾM =====================
+const INDEX = [];
+DATA.forEach((grade, gi)=>{
+  grade.s.forEach((strand, si)=>{
+    strand.t.forEach((topic, ti)=>{
+      const id = gi+"-"+si+"-"+ti;
+      const itemsParsed = topic.i.map(parseItem);
+      const searchBlob = normalize(grade.l+" "+strand.n+" "+topic.n+" "+itemsParsed.map(x=>x.text).join(" "));
+      INDEX.push({
+        id, gi, si, ti,
+        gradeLabel:grade.l, gradeColor:grade.c,
+        strandName:strand.n, topicName:topic.n,
+        items:itemsParsed, searchBlob
+      });
+    });
+  });
+});
+const INDEX_BY_ID = {};
+INDEX.forEach(e=>INDEX_BY_ID[e.id]=e);
+const ALL_GRADES = DATA.map(g=>({g:g.g,l:g.l,c:g.c}));
+
+// ===================== TRẠNG THÁI =====================
+const STORE_KEY = "stth_state_v1";
+function defaultState(){
+  return {theme:"system", fontSize:2, hiddenGrades:[], favorites:[], history:[]};
+}
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(!raw) return defaultState();
+    const parsed = JSON.parse(raw);
+    return Object.assign(defaultState(), parsed);
+  }catch(e){ return defaultState(); }
+}
+function saveState(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
+}
+let state = loadState();
+
+// ===================== ÁP DỤNG GIAO DIỆN =====================
+function applyTheme(){
+  const root = document.documentElement;
+  if(state.theme === "light"){ root.setAttribute("data-theme","light"); }
+  else if(state.theme === "dark"){ root.setAttribute("data-theme","dark"); }
+  else { root.removeAttribute("data-theme"); }
+  document.querySelectorAll("#themeControl .seg-btn").forEach(b=>{
+    b.classList.toggle("active", b.dataset.theme === state.theme);
+  });
+}
+function applyFontSize(){
+  const scale = state.fontSize===1 ? 0.9 : state.fontSize===3 ? 1.16 : 1;
+  document.documentElement.style.setProperty("--fs-scale", scale);
+  document.querySelectorAll("#fontControl .seg-btn").forEach(b=>{
+    b.classList.toggle("active", Number(b.dataset.size) === state.fontSize);
+  });
+}
+
+// ===================== TOAST =====================
+let toastTimer=null;
+function showToast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove("show"), 1800);
+}
+
+// ===================== MATHJAX =====================
+function typesetMath(el){
+  if(window.MathJax && window.MathJax.typesetPromise){
+    window.MathJax.typesetPromise([el]).catch(()=>{});
+  }
+}
+
+// ===================== RENDER CÂY =====================
+const treeRoot = document.getElementById("treeRoot");
+function renderTree(){
+  treeRoot.innerHTML = "";
+  DATA.forEach((grade, gi)=>{
+    if(state.hiddenGrades.includes(grade.g)) return;
+    const det = document.createElement("details");
+    det.className = "grade";
+    det.dataset.grade = grade.g;
+    det.style.setProperty("--grade-color", grade.c);
+    const sum = document.createElement("summary");
+    sum.textContent = grade.l;
+    det.appendChild(sum);
+    const body = document.createElement("div");
+    body.className = "grade-body";
+    grade.s.forEach((strand, si)=>{
+      const sdet = document.createElement("details");
+      sdet.className = "strand";
+      const ssum = document.createElement("summary");
+      ssum.textContent = strand.n;
+      sdet.appendChild(ssum);
+      const sbody = document.createElement("div");
+      sbody.className = "strand-body";
+      strand.t.forEach((topic, ti)=>{
+        const id = gi+"-"+si+"-"+ti;
+        sbody.appendChild(renderTopicNode(id));
+      });
+      sdet.appendChild(sbody);
+      body.appendChild(sdet);
+    });
+    det.appendChild(body);
+    treeRoot.appendChild(det);
+  });
+  typesetMath(treeRoot);
+}
+function renderTopicNode(id){
+  const entry = INDEX_BY_ID[id];
+  const tdet = document.createElement("details");
+  tdet.className = "topic";
+  tdet.id = "topic-"+id;
+  tdet.dataset.id = id;
+  const tsum = document.createElement("summary");
+  const isFav = state.favorites.includes(id);
+  tsum.innerHTML = '<span class="topic-name"></span><button type="button" class="star-btn" data-fav="'+(isFav?1:0)+'">'+(isFav?"★":"☆")+'</button>';
+  tsum.querySelector(".topic-name").textContent = entry.topicName;
+  const starBtn = tsum.querySelector(".star-btn");
+  starBtn.addEventListener("click", (e)=>{
+    e.preventDefault(); e.stopPropagation();
+    toggleFavorite(id);
+  });
+  tdet.appendChild(tsum);
+  const ul = document.createElement("ul");
+  ul.className = "items";
+  entry.items.forEach(it=>{
+    const li = document.createElement("li");
+    li.className = "item-card";
+    const tagInfo = TAG_MAP[it.tag] || {label:it.tag, css:"var(--muted)"};
+    li.innerHTML = '<span class="item-tag" style="background:'+tagInfo.css+'">'+tagInfo.label+'</span><div class="item-text"></div>';
+    li.querySelector(".item-text").textContent = it.text;
+    ul.appendChild(li);
+  });
+  tdet.appendChild(ul);
+  tdet.addEventListener("toggle", ()=>{ if(tdet.open) addHistory(id); });
+  return tdet;
+}
+function refreshFavStars(){
+  document.querySelectorAll(".star-btn").forEach(btn=>{
+    const tdet = btn.closest(".topic");
+    if(!tdet) return;
+    const id = tdet.dataset.id;
+    const isFav = state.favorites.includes(id);
+    btn.dataset.fav = isFav?1:0;
+    btn.textContent = isFav?"★":"☆";
+  });
+}
+
+// ===================== YÊU THÍCH =====================
+function toggleFavorite(id){
+  const idx = state.favorites.indexOf(id);
+  if(idx>=0){ state.favorites.splice(idx,1); showToast("Đã bỏ khỏi Yêu thích"); }
+  else { state.favorites.push(id); showToast("Đã lưu vào Yêu thích"); }
+  saveState();
+  refreshFavStars();
+  renderFavList();
+}
+function renderFavList(){
+  const list = document.getElementById("favList");
+  const empty = document.getElementById("favEmpty");
+  list.innerHTML = "";
+  if(state.favorites.length===0){ empty.hidden=false; return; }
+  empty.hidden = true;
+  state.favorites.slice().reverse().forEach(id=>{
+    const entry = INDEX_BY_ID[id];
+    if(!entry) return;
+    const card = buildFlatCard(entry);
+    list.appendChild(card);
+  });
+}
+
+// ===================== LỊCH SỬ =====================
+function addHistory(id){
+  state.history = state.history.filter(h=>h.id!==id);
+  state.history.unshift({id, ts:Date.now()});
+  state.history = state.history.slice(0,20);
+  saveState();
+  renderHistoryList();
+}
+function formatRelative(ts){
+  const diff = Date.now()-ts;
+  const min = Math.floor(diff/60000);
+  if(min<1) return "Vừa xong";
+  if(min<60) return min+" phút trước";
+  const hr = Math.floor(min/60);
+  if(hr<24) return hr+" giờ trước";
+  const day = Math.floor(hr/24);
+  if(day<7) return day+" ngày trước";
+  return new Date(ts).toLocaleDateString("vi-VN");
+}
+function renderHistoryList(){
+  const list = document.getElementById("historyList");
+  const empty = document.getElementById("historyEmpty");
+  list.innerHTML = "";
+  if(state.history.length===0){ empty.hidden=false; return; }
+  empty.hidden = true;
+  state.history.forEach(h=>{
+    const entry = INDEX_BY_ID[h.id];
+    if(!entry) return;
+    const card = buildFlatCard(entry, formatRelative(h.ts));
+    list.appendChild(card);
+  });
+}
+document.getElementById("clearHistoryBtn").addEventListener("click", ()=>{
+  state.history = [];
+  saveState();
+  renderHistoryList();
+  showToast("Đã xóa lịch sử");
+});
+
+function buildFlatCard(entry, timeLabel){
+  const card = document.createElement("div");
+  card.className = "flat-card";
+  const main = document.createElement("div");
+  main.className = "flat-main";
+  const crumb = document.createElement("div");
+  crumb.className = "result-crumb";
+  crumb.innerHTML = '<span class="dot" style="background:'+entry.gradeColor+'"></span><span></span>';
+  crumb.querySelector("span:last-child").textContent = entry.gradeLabel+" · "+entry.strandName;
+  const name = document.createElement("div");
+  name.className = "result-name";
+  name.textContent = entry.topicName;
+  main.appendChild(crumb);
+  main.appendChild(name);
+  card.appendChild(main);
+  if(timeLabel){
+    const t = document.createElement("div");
+    t.className = "flat-time";
+    t.textContent = timeLabel;
+    card.appendChild(t);
+  }
+  card.addEventListener("click", ()=>openTopic(entry.id));
+  return card;
+}
+
+// ===================== MỞ 1 BÀI (từ tìm kiếm / yêu thích / lịch sử) =====================
+function openTopic(id){
+  const entry = INDEX_BY_ID[id];
+  if(!entry) return;
+  const gradeNum = DATA[entry.gi].g;
+  if(state.hiddenGrades.includes(gradeNum)){
+    state.hiddenGrades = state.hiddenGrades.filter(g=>g!==gradeNum);
+    saveState();
+    renderGradeToggles();
+    renderTree();
+  }
+  switchPanel("sotay");
+  clearSearchUI();
+  requestAnimationFrame(()=>{
+    const gdet = treeRoot.querySelector('details.grade[data-grade="'+gradeNum+'"]');
+    if(gdet) gdet.open = true;
+    const tdet = document.getElementById("topic-"+id);
+    if(!tdet) return;
+    const sdet = tdet.closest("details.strand");
+    if(sdet) sdet.open = true;
+    tdet.open = true;
+    addHistory(id);
+    setTimeout(()=>{
+      tdet.scrollIntoView({behavior:"smooth", block:"center"});
+      tdet.classList.add("flash");
+      setTimeout(()=>tdet.classList.remove("flash"), 1600);
+    }, 60);
+  });
+}
+
+// ===================== TÌM KIẾM =====================
+const searchInput = document.getElementById("searchInput");
+const clearSearchBtn = document.getElementById("clearSearch");
+const searchResultsEl = document.getElementById("searchResults");
+
+function clearSearchUI(){
+  searchInput.value = "";
+  clearSearchBtn.hidden = true;
+  searchResultsEl.hidden = true;
+  searchResultsEl.innerHTML = "";
+  treeRoot.hidden = false;
+}
+function highlightText(text, rawQuery){
+  if(!rawQuery) return escapeHtml(text);
+  try{
+    const norm = normalize(text);
+    const q = normalize(rawQuery);
+    const pos = norm.indexOf(q);
+    if(pos<0) return escapeHtml(text);
+    return escapeHtml(text.slice(0,pos)) + "<mark>" + escapeHtml(text.slice(pos,pos+rawQuery.length)) + "</mark>" + escapeHtml(text.slice(pos+rawQuery.length));
+  }catch(e){ return escapeHtml(text); }
+}
+function runSearch(raw){
+  const q = normalize(raw.trim());
+  if(!q){ clearSearchUI(); return; }
+  clearSearchBtn.hidden = false;
+  treeRoot.hidden = true;
+  const visible = INDEX.filter(e=>!state.hiddenGrades.includes(DATA[e.gi].g));
+  const scored = [];
+  visible.forEach(entry=>{
+    const nameNorm = normalize(entry.topicName);
+    if(entry.searchBlob.includes(q)){
+      let snippetItem = null;
+      for(const it of entry.items){ if(normalize(it.text).includes(q)){ snippetItem = it; break; } }
+      const score = nameNorm.includes(q) ? 0 : 1;
+      scored.push({entry, score, snippetItem});
+    }
+  });
+  scored.sort((a,b)=>a.score-b.score);
+  searchResultsEl.innerHTML = "";
+  if(scored.length===0){
+    searchResultsEl.innerHTML = '<p class="empty-state">Không tìm thấy nội dung phù hợp với "'+escapeHtml(raw)+'".</p>';
+  } else {
+    scored.slice(0,40).forEach(({entry, snippetItem})=>{
+      const card = document.createElement("div");
+      card.className = "result-card";
+      const crumb = '<div class="result-crumb"><span class="dot" style="background:'+entry.gradeColor+'"></span><span>'+escapeHtml(entry.gradeLabel+" · "+entry.strandName)+'</span></div>';
+      const name = '<div class="result-name">'+highlightText(entry.topicName, raw)+'</div>';
+      const snippet = snippetItem ? '<div class="result-snippet">'+highlightText(snippetItem.text, raw)+'</div>' : '';
+      card.innerHTML = crumb+name+snippet;
+      card.addEventListener("click", ()=>openTopic(entry.id));
+      searchResultsEl.appendChild(card);
+    });
+  }
+  searchResultsEl.hidden = false;
+  typesetMath(searchResultsEl);
+}
+searchInput.addEventListener("input", (e)=>runSearch(e.target.value));
+clearSearchBtn.addEventListener("click", ()=>{ clearSearchUI(); searchInput.focus(); });
+
+// ===================== TAB BAR =====================
+function switchPanel(name){
+  document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active", p.id === "panel-"+name));
+  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.toggle("active", b.dataset.panel === name));
+  if(name==="favorites") renderFavList();
+  if(name==="history") renderHistoryList();
+}
+document.querySelectorAll(".tab-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=>switchPanel(btn.dataset.panel));
+});
+
+// ===================== CÀI ĐẶT: GIAO DIỆN =====================
+document.querySelectorAll("#themeControl .seg-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    state.theme = btn.dataset.theme;
+    saveState();
+    applyTheme();
+  });
+});
+document.querySelectorAll("#fontControl .seg-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    state.fontSize = Number(btn.dataset.size);
+    saveState();
+    applyFontSize();
+  });
+});
+
+// ===================== CÀI ĐẶT: HIỂN THỊ KHỐI LỚP =====================
+function renderGradeToggles(){
+  const wrap = document.getElementById("gradeToggles");
+  wrap.innerHTML = "";
+  ALL_GRADES.forEach(g=>{
+    const label = document.createElement("label");
+    label.className = "grade-chip";
+    label.style.borderColor = g.c+"55";
+    const checked = !state.hiddenGrades.includes(g.g);
+    label.innerHTML = '<input type="checkbox" '+(checked?"checked":"")+' /><span>'+g.l+'</span>';
+    const input = label.querySelector("input");
+    input.addEventListener("change", ()=>{
+      if(input.checked){ state.hiddenGrades = state.hiddenGrades.filter(x=>x!==g.g); }
+      else { if(!state.hiddenGrades.includes(g.g)) state.hiddenGrades.push(g.g); }
+      saveState();
+      renderTree();
+    });
+    wrap.appendChild(label);
+  });
+}
+
+// ===================== MODAL DÙNG CHUNG =====================
+const modalOverlay = document.getElementById("modalOverlay");
+const modalTitle = document.getElementById("modalTitle");
+const modalBody = document.getElementById("modalBody");
+function openModal(title, bodyHtml){
+  modalTitle.textContent = title;
+  modalBody.innerHTML = bodyHtml;
+  modalOverlay.hidden = false;
+}
+function closeModal(){ modalOverlay.hidden = true; modalBody.innerHTML=""; }
+document.getElementById("modalClose").addEventListener("click", closeModal);
+modalOverlay.addEventListener("click", (e)=>{ if(e.target===modalOverlay) closeModal(); });
+
+// ===================== TẢI FILE (dùng capability "downloads" nếu có, nếu không thì tải trực tiếp) =====================
+async function offerDownload(filename, text){
+  if (window.claude && typeof window.claude.use === "function"){
+    try{
+      const downloads = await window.claude.use("downloads");
+      if(downloads){
+        await downloads.save({filename, data:text});
+        showToast("Đã lưu file");
+        return;
+      }
+    }catch(e){
+      if(e && e.code === "declined") return;
+      // các lỗi khác: thử phương án tải trực tiếp bên dưới
+    }
+  }
+  try{
+    const blob = new Blob([text], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  }catch(e2){
+    showToast("Không tải được file — hãy dùng nút Sao chép");
+  }
+}
+
+// ===================== XUẤT / NHẬP / XÓA DỮ LIỆU =====================
+document.getElementById("exportBtn").addEventListener("click", ()=>{
+  const payload = {v:1, exportedAt:new Date().toISOString(), state:state};
+  const json = JSON.stringify(payload, null, 2);
+  openModal("Xuất dữ liệu", ''+
+    '<p>Sao chép hoặc tải nội dung bên dưới để lưu Yêu thích, Lịch sử và Cài đặt.</p>'+
+    '<textarea id="exportArea" readonly></textarea>'+
+    '<div class="modal-actions">'+
+      '<button type="button" class="btn" id="copyExportBtn">Sao chép</button>'+
+      '<button type="button" class="btn" id="downloadExportBtn">Tải file .json</button>'+
+    '</div>'
+  );
+  document.getElementById("exportArea").value = json;
+  document.getElementById("copyExportBtn").addEventListener("click", async ()=>{
+    try{
+      await navigator.clipboard.writeText(json);
+      showToast("Đã sao chép vào bộ nhớ tạm");
+    }catch(e){
+      const ta = document.getElementById("exportArea");
+      ta.select();
+      try{ document.execCommand("copy"); showToast("Đã sao chép"); }
+      catch(e2){ showToast("Không thể sao chép tự động — hãy bôi đen và chép thủ công"); }
+    }
+  });
+  document.getElementById("downloadExportBtn").addEventListener("click", ()=>{
+    offerDownload("so-tay-toan-hoc-du-lieu.json", json);
+  });
+});
+
+document.getElementById("importBtn").addEventListener("click", ()=>{
+  openModal("Nhập dữ liệu", ''+
+    '<p>Dán nội dung JSON đã xuất trước đó, hoặc chọn file .json.</p>'+
+    '<input type="file" id="importFile" accept="application/json,.json" />'+
+    '<textarea id="importArea" placeholder="Dán JSON vào đây..."></textarea>'+
+    '<div class="modal-actions">'+
+      '<button type="button" class="btn" id="confirmImportBtn">Nhập dữ liệu</button>'+
+    '</div>'
+  );
+  document.getElementById("importFile").addEventListener("change", (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{ document.getElementById("importArea").value = reader.result; };
+    reader.readAsText(file);
+  });
+  document.getElementById("confirmImportBtn").addEventListener("click", ()=>{
+    const raw = document.getElementById("importArea").value.trim();
+    if(!raw){ showToast("Chưa có nội dung để nhập"); return; }
+    try{
+      const parsed = JSON.parse(raw);
+      const incoming = parsed && parsed.state ? parsed.state : parsed;
+      if(!incoming || typeof incoming !== "object") throw new Error("bad shape");
+      state = Object.assign(defaultState(), incoming);
+      saveState();
+      applyTheme(); applyFontSize(); renderGradeToggles(); renderTree(); renderFavList(); renderHistoryList();
+      closeModal();
+      showToast("Đã nhập dữ liệu thành công");
+    }catch(err){
+      showToast("File/nội dung không hợp lệ");
+    }
+  });
+});
+
+document.getElementById("resetBtn").addEventListener("click", ()=>{
+  openModal("Xóa toàn bộ dữ liệu?", ''+
+    '<p>Yêu thích, lịch sử và cài đặt hiển thị sẽ bị xóa khỏi thiết bị này. Hành động không thể hoàn tác.</p>'+
+    '<div class="modal-actions">'+
+      '<button type="button" class="btn" id="cancelResetBtn">Hủy</button>'+
+      '<button type="button" class="btn btn-danger" id="confirmResetBtn">Xóa toàn bộ</button>'+
+    '</div>'
+  );
+  document.getElementById("cancelResetBtn").addEventListener("click", closeModal);
+  document.getElementById("confirmResetBtn").addEventListener("click", ()=>{
+    state = defaultState();
+    saveState();
+    applyTheme(); applyFontSize(); renderGradeToggles(); renderTree(); renderFavList(); renderHistoryList();
+    closeModal();
+    showToast("Đã xóa toàn bộ dữ liệu cá nhân");
+  });
+});
+
+// ===================== KHỞI TẠO =====================
+applyTheme();
+applyFontSize();
+renderGradeToggles();
+renderTree();
+renderFavList();
+renderHistoryList();
+</script>
+</html>
