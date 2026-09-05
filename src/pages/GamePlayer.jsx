@@ -44,12 +44,14 @@ const GamePlayer = () => {
 
     const newPlayerId = Date.now().toString();
     setPlayerId(newPlayerId);
+    const avatarUrl = `https://robohash.org/${newPlayerId}?set=set2&size=150x150`;
 
     // Thêm người chơi vào phòng
     await set(ref(db, `rooms/${pin}/players/${newPlayerId}`), {
       name: name,
       score: 0,
-      currentAnswer: null
+      currentAnswer: null,
+      avatar: avatarUrl
     });
 
     setLocalGameState('PLAYING');
@@ -65,6 +67,8 @@ const GamePlayer = () => {
 
   const getMyData = () => roomData?.players?.[playerId];
   const me = getMyData();
+  const playersList = roomData?.players ? Object.values(roomData.players) : [];
+  const sortedPlayers = playersList.sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 5);
 
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4">
@@ -110,6 +114,9 @@ const GamePlayer = () => {
           
           {roomData.status === 'LOBBY' && (
             <div className="text-center">
+              <div className="w-32 h-32 bg-white/10 rounded-full mx-auto mb-6 border-4 border-emerald-500 p-2 overflow-hidden shadow-[0_0_20px_rgba(16,185,129,0.5)]">
+                 <img src={me?.avatar} alt="avatar" className="w-full h-full object-contain" />
+              </div>
               <h2 className="text-3xl font-bold text-white mb-4">Xin chào, {name}!</h2>
               <p className="text-xl text-emerald-400 font-medium">Bạn đã vào phòng. Đợi thầy giáo bắt đầu nhé...</p>
               <div className="mt-8">
@@ -157,13 +164,13 @@ const GamePlayer = () => {
           {roomData.status === 'REVEAL' && (
             <div className="text-center animate-fade-in">
                {me?.currentAnswer === roomData.questions[roomData.currentQuestionIndex].correctOption ? (
-                  <div className="bg-emerald-600 p-12 rounded-3xl shadow-2xl">
+                  <div className="bg-emerald-600 p-12 rounded-3xl shadow-2xl border-4 border-emerald-400">
                      <CheckCircle className="w-32 h-32 text-white mx-auto mb-6" />
                      <h2 className="text-4xl font-black text-white mb-2">CHÍNH XÁC!</h2>
                      <p className="text-2xl text-emerald-200">+100 điểm</p>
                   </div>
                ) : (
-                  <div className="bg-red-600 p-12 rounded-3xl shadow-2xl">
+                  <div className="bg-red-600 p-12 rounded-3xl shadow-2xl border-4 border-red-400">
                      <XCircle className="w-32 h-32 text-white mx-auto mb-6" />
                      <h2 className="text-4xl font-black text-white mb-2">SAI RỒI!</h2>
                      <p className="text-2xl text-red-200">Không sao, phục thù câu sau nhé!</p>
@@ -173,12 +180,34 @@ const GamePlayer = () => {
           )}
 
           {roomData.status === 'LEADERBOARD' && (
-             <div className="text-center animate-fade-in">
-               <h2 className="text-4xl font-bold text-white mb-4">Điểm của bạn:</h2>
-               <div className="text-8xl font-black text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]">
-                 {me?.score || 0}
+             <div className="w-full max-w-xl mx-auto animate-fade-in">
+               <div className="flex items-center justify-center gap-4 mb-8">
+                 <div className="w-20 h-20 bg-white/10 rounded-full border-4 border-yellow-400 p-1">
+                   <img src={me?.avatar} alt="avatar" className="w-full h-full object-contain" />
+                 </div>
+                 <div>
+                   <h2 className="text-2xl font-bold text-white">Điểm của bạn:</h2>
+                   <div className="text-4xl font-black text-yellow-400">{me?.score || 0}</div>
+                 </div>
                </div>
-               <p className="mt-8 text-xl text-gray-400">Hãy nhìn lên màn hình chính để xem Bảng Xếp Hạng nhé!</p>
+               
+               <div className="bg-slate-800/80 p-6 rounded-3xl border border-slate-700 shadow-xl">
+                 <h3 className="text-xl font-bold text-gray-400 mb-6 text-center">🏆 BẢNG XẾP HẠNG TOP 5</h3>
+                 <div className="space-y-3">
+                   {sortedPlayers.map((p, i) => (
+                     <div key={i} className={`flex justify-between items-center p-4 rounded-xl font-bold ${p.name === name ? 'bg-yellow-500/20 border border-yellow-500/50 text-white' : 'bg-slate-900/50 text-gray-300'}`}>
+                       <div className="flex items-center gap-3">
+                         <div className="w-8 h-8 flex items-center justify-center bg-slate-800 rounded-full text-sm">#{i+1}</div>
+                         <div className="w-10 h-10 bg-white/10 rounded-full overflow-hidden p-1">
+                           <img src={p.avatar} alt="avt" className="w-full h-full object-contain" />
+                         </div>
+                         <span>{p.name}</span>
+                       </div>
+                       <div className="text-xl">{p.score || 0}</div>
+                     </div>
+                   ))}
+                 </div>
+               </div>
              </div>
           )}
 

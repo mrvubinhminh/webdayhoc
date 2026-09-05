@@ -215,7 +215,12 @@ const GameHost = () => {
           
           <div className="flex flex-wrap gap-4 justify-center">
             {playersList.map((p, i) => (
-              <div key={i} className="bg-slate-700 px-6 py-3 rounded-full text-lg font-bold shadow-md animate-bounce-in">{p.name}</div>
+              <div key={i} className="bg-slate-700 pr-6 pl-2 py-2 rounded-full text-lg font-bold shadow-md animate-bounce-in flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/10 rounded-full overflow-hidden">
+                  <img src={p.avatar} alt="avt" className="w-full h-full object-contain" />
+                </div>
+                {p.name}
+              </div>
             ))}
           </div>
         </div>
@@ -299,6 +304,9 @@ const GameHost = () => {
                    <div key={i} className={`flex justify-between items-center p-6 rounded-2xl text-2xl font-bold ${i === 0 ? 'bg-gradient-to-r from-yellow-600 to-yellow-400 text-black scale-105 shadow-xl' : 'bg-slate-800 text-white'}`}>
                      <div className="flex items-center gap-4">
                        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl ${i === 0 ? 'bg-black/20 text-black' : 'bg-slate-700'}`}>#{i+1}</div>
+                       <div className="w-14 h-14 bg-white/20 rounded-full overflow-hidden p-1 border-2 border-white/30">
+                         <img src={p.avatar} alt="avt" className="w-full h-full object-contain" />
+                       </div>
                        <span>{p.name}</span>
                      </div>
                      <div className="text-3xl font-black">{p.score || 0} pt</div>
