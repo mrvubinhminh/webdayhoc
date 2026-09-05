@@ -6,8 +6,8 @@ const StudentsMenu = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('10');
 
-  // Discover all HTML files in public/models
-  const files = import.meta.glob('/public/students/**/*.html');
+  // Discover all HTML files
+  const files = import.meta.glob('/public/students/**/*.html', { query: '?url' });
   const studentPaths = Object.keys(files);
 
   const parsedStudents = studentPaths.map(path => {

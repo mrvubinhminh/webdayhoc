@@ -7,7 +7,7 @@ const ModelsMenu = () => {
   const [activeTab, setActiveTab] = useState('10');
 
   // Discover all HTML files in public/models
-  const files = import.meta.glob('/public/models/**/*.html');
+  const files = import.meta.glob('/public/models/**/*.html', { query: '?url' });
   const modelPaths = Object.keys(files);
 
   const parsedModels = modelPaths.map(path => {

@@ -115,7 +115,7 @@ const GlobalSearch = () => {
     );
 
     // 2. Dynamic items from public folder
-    const files = import.meta.glob('/public/**/*.html');
+    const files = import.meta.glob('/public/**/*.html', { query: '?url' });
     Object.keys(files).forEach(path => {
       // Match something like /public/tools/10/file-name.html
       const match = path.match(/\/public\/(tools|models|students|games)\/([a-zA-Z0-9_-]+)\/(.+)\.html$/);

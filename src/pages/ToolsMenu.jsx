@@ -7,7 +7,7 @@ const ToolsMenu = () => {
   const [activeTab, setActiveTab] = useState('10');
 
   // Discover all HTML files in public/models
-  const files = import.meta.glob('/public/tools/**/*.html');
+  const files = import.meta.glob('/public/tools/**/*.html', { query: '?url' });
   const toolPaths = Object.keys(files);
 
   const parsedTools = toolPaths.map(path => {
