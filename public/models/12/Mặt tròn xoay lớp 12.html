@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô phỏng 3D Mặt Tròn Xoay & Trải Phẳng</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- KaTeX for Math Formulas -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+    <!-- Three.js Import Map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #ffffff; color: #1e293b; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+        .pointer-events-auto { pointer-events: auto; }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        }
+        
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 18px; width: 18px; border-radius: 50%; background: #2563eb; cursor: pointer; margin-top: -7px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #cbd5e1; border-radius: 2px; }
+        
+        .expanded-panel {
+            position: fixed !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) !important;
+            width: 90vw !important; max-width: 900px !important; height: auto !important; max-height: 90vh !important;
+            z-index: 100 !important; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+        }
+        .expanded-panel #info-content { padding: 2rem !important; gap: 1.5rem !important; }
+        .expanded-panel #math-formula { font-size: 2.2rem !important; padding: 2rem !important; min-height: 160px !important; }
+        .expanded-panel #math-result { font-size: 1.25rem !important; line-height: 2.2rem !important; padding: 1.5rem !important; }
+        .expanded-panel h3 { font-size: 1.5rem !important; }
+        
+        .minimized-panel {
+            background: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+            border: none !important; box-shadow: none !important; pointer-events: none;
+        }
+        .minimized-panel .panel-header { background: transparent !important; border-bottom: none !important; pointer-events: auto; }
+        .minimized-panel .panel-title { opacity: 0; pointer-events: none; }
+        .minimized-panel #control-footer-hint { display: none !important; }
+        .minimized-panel label { text-shadow: 0 0 6px rgba(255,255,255,0.9), 0 0 2px rgba(255,255,255,1) !important; }
+        
+        .minimized-panel #controls-container { opacity: 0.35; transition: opacity 0.3s ease; pointer-events: auto; }
+        .minimized-panel #controls-container:hover { opacity: 1; }
+        .minimized-panel input[type=range]::-webkit-slider-runnable-track { background: rgba(203, 213, 225, 0.5) !important; }
+        .minimized-panel input[type=range]::-webkit-slider-thumb { background: rgba(37, 99, 235, 0.6) !important; box-shadow: none !important; }
+    </style>
+
+    <script>
+        window.togglePanel = function(contentId, iconId) {
+            const content = document.getElementById(contentId);
+            const icon = document.getElementById(iconId);
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden'); icon.classList.remove('-rotate-90');
+            } else {
+                content.classList.add('hidden'); icon.classList.add('-rotate-90');
+            }
+        };
+
+        window.toggleExpand = function() {
+            const panel = document.getElementById('info-panel');
+            const overlay = document.getElementById('expand-overlay');
+            const icon = document.getElementById('expand-icon');
+
+            if (panel.classList.contains('expanded-panel')) {
+                panel.classList.remove('expanded-panel'); overlay.classList.add('hidden');
+                icon.innerHTML = '<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>';
+            } else {
+                panel.classList.add('expanded-panel'); overlay.classList.remove('hidden');
+                document.getElementById('info-content').classList.remove('hidden');
+                document.getElementById('info-icon').classList.remove('-rotate-90');
+                icon.innerHTML = '<path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>';
+            }
+        };
+
+        window.toggleControlPanel = function() {
+            const panel = document.getElementById('bottom-panel');
+            const icon = document.getElementById('control-icon');
+            if (panel.classList.contains('minimized-panel')) {
+                panel.classList.remove('minimized-panel'); icon.classList.remove('-rotate-90');
+            } else {
+                panel.classList.add('minimized-panel'); icon.classList.add('-rotate-90');
+            }
+        };
+
+        window.toggleFullScreen = function() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => console.warn(err));
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        };
+
+        document.addEventListener('fullscreenchange', () => {
+            const icon = document.getElementById('fullscreen-icon');
+            if (document.fullscreenElement) {
+                icon.innerHTML = '<path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/>';
+            } else {
+                icon.innerHTML = '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>';
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key.toLowerCase() === 'f' && event.target.tagName !== 'INPUT') window.toggleFullScreen();
+        });
+    </script>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    <div id="ui-layer" class="absolute top-0 left-0 w-full h-full pointer-events-none flex flex-col justify-between p-3 md:p-5 z-10">
+        <div id="expand-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 hidden transition-all duration-300 pointer-events-auto" onclick="toggleExpand()"></div>
+
+        <!-- TOP ROW -->
+        <div class="flex flex-col md:flex-row justify-between items-start gap-4 w-full relative">
+            <!-- Menu Trái -->
+            <div class="w-full md:w-[330px] glass-panel rounded-xl pointer-events-auto shrink-0 flex flex-col transition-all duration-300 max-h-[85vh] overflow-hidden flex">
+                <div class="p-4 flex justify-between items-center cursor-pointer select-none shrink-0" onclick="togglePanel('mode-content', 'mode-icon')">
+                    <h1 class="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-blue-700 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-teal-600"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                        Mặt Tròn Xoay 12
+                    </h1>
+                    <svg id="mode-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-500 transition-transform duration-300 -rotate-90"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                
+                <div id="mode-content" class="px-4 pb-4 space-y-2 overflow-y-auto hidden-scrollbar hidden">
+                    <button id="btn-mode-1" class="w-full text-left px-4 py-2.5 rounded-lg transition font-semibold text-sm shadow-sm">1. Tạo Hình Trụ (Quay HCN)</button>
+                    <button id="btn-mode-2" class="w-full text-left px-4 py-2.5 rounded-lg transition font-semibold text-sm shadow-sm">2. Tạo Hình Nón (Quay Tam giác)</button>
+                    <button id="btn-mode-3" class="w-full text-left px-4 py-2.5 rounded-lg transition font-semibold text-sm shadow-sm">3. Tạo Mặt Cầu (Quay Nửa ĐTròn)</button>
+                    <button id="btn-mode-4" class="w-full text-left px-4 py-2.5 rounded-lg transition font-semibold text-sm shadow-sm">4. Thiết diện Hình Trụ (// Trục)</button>
+                    <button id="btn-mode-5" class="w-full text-left px-4 py-2.5 rounded-lg transition font-semibold text-sm shadow-sm">5. Thiết diện Hình Nón (Qua đỉnh)</button>
+                    <button id="btn-mode-6" class="w-full text-left px-4 py-2.5 rounded-lg transition font-semibold text-sm shadow-sm">6. Trải phẳng Hình Trụ</button>
+                    <button id="btn-mode-7" class="w-full text-left px-4 py-2.5 rounded-lg transition font-semibold text-sm shadow-sm">7. Trải phẳng Hình Nón</button>
+                    <button id="btn-mode-8" class="w-full text-left px-4 py-2.5 rounded-lg transition font-semibold text-sm shadow-sm">8. Giao tuyến Trụ và Mặt phẳng</button>
+                    <button id="btn-mode-9" class="w-full text-left px-4 py-2.5 rounded-lg transition font-semibold text-sm shadow-sm">9. Đường đi ngắn nhất (Nhện & Ruồi)</button>
+                    <button id="btn-mode-10" class="w-full text-left px-4 py-2.5 rounded-lg transition font-semibold text-sm shadow-sm">10. Thể tích Khối Tròn Xoay (Parabol)</button>
+                </div>
+            </div>
+
+            <!-- Bảng Công thức Phải -->
+            <div id="info-panel" class="w-full md:w-[380px] glass-panel rounded-xl pointer-events-auto shrink-0 flex flex-col transition-all duration-300 relative z-20">
+                <div class="p-4 flex justify-between items-center select-none border-b border-slate-100">
+                    <h3 class="font-bold text-teal-700 text-lg flex items-center gap-2 cursor-pointer" onclick="togglePanel('info-content', 'info-icon')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        Lý thuyết & Kết quả
+                    </h3>
+                    <div class="flex items-center gap-3">
+                        <button onclick="toggleFullScreen()" class="text-slate-400 hover:text-blue-600 transition-colors" title="Toàn màn hình (Phím F)">
+                            <svg id="fullscreen-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+                        </button>
+                        <button onclick="toggleExpand()" class="text-slate-400 hover:text-blue-600 transition-colors" title="Phóng to bảng">
+                            <svg id="expand-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+                        </button>
+                        <svg id="info-icon" onclick="togglePanel('info-content', 'info-icon')" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-500 cursor-pointer transition-transform duration-300 -rotate-90"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </div>
+                </div>
+                
+                <div id="info-content" class="p-4 flex flex-col gap-3 hidden">
+                    <div id="math-formula" class="bg-slate-100 p-3 rounded-lg overflow-x-auto text-center border border-slate-200 shadow-inner min-h-[80px] flex items-center justify-center text-lg text-slate-800 transition-all duration-300"></div>
+                    <div id="math-result" class="text-sm text-slate-700 space-y-2 font-mono bg-white p-3 rounded-lg border border-slate-200 shadow-sm transition-all duration-300"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM ROW -->
+        <div class="w-full flex justify-center relative mt-4">
+            <div id="bottom-panel" class="w-full md:w-[700px] glass-panel rounded-xl pointer-events-auto flex flex-col transition-all duration-300 shadow-xl border-t-4 border-t-blue-500 minimized-panel">
+                <div class="panel-header p-3 px-5 flex justify-between items-center cursor-pointer select-none border-b border-slate-100 bg-white/50 rounded-t-xl transition-all duration-300" onclick="toggleControlPanel()">
+                    <h2 class="panel-title text-base font-bold text-slate-800 flex items-center gap-2 transition-opacity duration-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                        Bảng điều khiển thông số
+                    </h2>
+                    <svg id="control-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-500 transition-transform duration-300 -rotate-90"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                
+                <div id="control-content" class="p-4 transition-all duration-300">
+                    <div id="controls-container"></div>
+                    <div id="control-footer-hint" class="mt-4 pt-3 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-2 text-xs text-slate-600">
+                        <span class="font-medium">🖱️ Kéo chuột: Xoay | Lăn: Thu phóng | Chuột phải: Di chuyển</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        let scene, camera, renderer, controls;
+        let objectsGroup = new THREE.Group();
+        let dynamicMesh = null;
+        let dynamicLine = null;
+        let currentMode = 1;
+        
+        // State
+        const state = {
+            m1: { r: 3, h: 5, angle: 360 },
+            m2: { r: 3, h: 5, angle: 360 },
+            m3: { R: 4, angle: 360 },
+            m4: { r: 3, h: 6, d: 1.5 },
+            m5: { r: 4, h: 6, angle: 30 },
+            m6: { r: 3, h: 5, t: 0 },
+            m7: { r: 3, h: 5, t: 0 },
+            m8: { r: 3, h: 6, angle: 30 },
+            m9: { r: 3, h: 6, t: 0 },
+            m10: { a: 0.5, h: 4, angle: 360 }
+        };
+
+        const mathFormula = document.getElementById('math-formula');
+        const mathResult = document.getElementById('math-result');
+        const controlsContainer = document.getElementById('controls-container');
+
+        // --- CORE PARAMETRIC SURFACE HELPER ---
+        // Tạo mặt phẳng linh hoạt dựa vào hàm lưới u,v thuộc [0,1]
+        function createParametricSurface(uSteps, vSteps, func, color, opacity=0.8, side=THREE.DoubleSide) {
+            const geom = new THREE.BufferGeometry();
+            const vertices = [];
+            const indices = [];
+
+            for (let j = 0; j <= vSteps; j++) {
+                const v = j / vSteps;
+                for (let i = 0; i <= uSteps; i++) {
+                    const u = i / uSteps;
+                    const p = func(u, v);
+                    vertices.push(p.x, p.y, p.z);
+                }
+            }
+
+            for (let j = 0; j < vSteps; j++) {
+                for (let i = 0; i < uSteps; i++) {
+                    const a = i + (uSteps + 1) * j;
+                    const b = i + (uSteps + 1) * (j + 1);
+                    const c = (i + 1) + (uSteps + 1) * (j + 1);
+                    const d = (i + 1) + (uSteps + 1) * j;
+                    indices.push(a, b, d);
+                    indices.push(b, c, d);
+                }
+            }
+
+            geom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            geom.setIndex(indices);
+            geom.computeVertexNormals();
+            const mat = new THREE.MeshPhongMaterial({ color, side, transparent: opacity<1, opacity, shininess: 80 });
+            return new THREE.Mesh(geom, mat);
+        }
+
+        // Cập nhật tọa độ đỉnh siêu tốc
+        function updateParametricSurface(mesh, uSteps, vSteps, func) {
+            const positions = mesh.geometry.attributes.position.array;
+            let idx = 0;
+            for (let j = 0; j <= vSteps; j++) {
+                const v = j / vSteps;
+                for (let i = 0; i <= uSteps; i++) {
+                    const p = func(i/uSteps, v);
+                    positions[idx++] = p.x;
+                    positions[idx++] = p.y;
+                    positions[idx++] = p.z;
+                }
+            }
+            mesh.geometry.attributes.position.needsUpdate = true;
+            mesh.geometry.computeVertexNormals();
+        }
+
+        // Tạo đường dẫn (Path) thay đổi theo t
+        function updateParametricLine(line, steps, func) {
+            const positions = line.geometry.attributes.position.array;
+            let idx = 0;
+            for (let i = 0; i <= steps; i++) {
+                const p = func(i/steps);
+                positions[idx++] = p.x;
+                positions[idx++] = p.y;
+                positions[idx++] = p.z;
+            }
+            line.geometry.attributes.position.needsUpdate = true;
+        }
+
+        function createParametricLine(steps, func, color, linewidth=3) {
+            const geom = new THREE.BufferGeometry();
+            const vertices = [];
+            for (let i = 0; i <= steps; i++) {
+                const p = func(i/steps);
+                vertices.push(p.x, p.y, p.z);
+            }
+            geom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            return new THREE.Line(geom, new THREE.LineBasicMaterial({ color, linewidth }));
+        }
+
+        function drawAxis() {
+            const matZ = new THREE.LineBasicMaterial({ color: 0x1d4ed8, linewidth: 2 });
+            objectsGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,-10), new THREE.Vector3(0,0,10)]), matZ));
+        }
+
+        function clearAll() {
+            while (objectsGroup.children.length > 0) {
+                const child = objectsGroup.children[0];
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+                    else child.material.dispose();
+                }
+                objectsGroup.remove(child);
+            }
+            dynamicMesh = null;
+            dynamicLine = null;
+        }
+
+        // --- INIT ---
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xffffff);
+            
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.up.set(0, 0, 1);
+            camera.position.set(12, -14, 10);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+            
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true; controls.dampingFactor = 0.05;
+            
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(10, -20, 20);
+            scene.add(dirLight);
+            
+            const gridHelper = new THREE.GridHelper(20, 20, 0x94a3b8, 0xe2e8f0);
+            gridHelper.rotation.x = Math.PI / 2;
+            scene.add(gridHelper);
+
+            scene.add(objectsGroup);
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            for(let i=1; i<=10; i++) {
+                document.getElementById(`btn-mode-${i}`).addEventListener('click', () => switchMode(i));
+            }
+
+            switchMode(1);
+            animate();
+        }
+
+        function updateMath(tex, res) {
+            katex.render(tex, mathFormula, { throwOnError: false, displayMode: true });
+            const renderedRes = res.replace(/\$(.*?)\$/g, (m, math) => {
+                try { return katex.renderToString(math, { throwOnError: false }); } catch(e) { return m; }
+            });
+            mathResult.innerHTML = renderedRes;
+        }
+
+        function buildUI(html) { controlsContainer.innerHTML = html; }
+
+        // --- 1. Tạo Hình Trụ (Quay HCN) ---
+        function getM1Func(u, v) {
+            const r = state.m1.r, h = state.m1.h, angleMax = state.m1.angle * Math.PI / 180;
+            const theta = v * angleMax;
+            return new THREE.Vector3(r * Math.cos(theta), r * Math.sin(theta), u * h);
+        }
+        function renderM1() {
+            if(!dynamicMesh) {
+                clearAll(); drawAxis();
+                dynamicMesh = createParametricSurface(1, 60, getM1Func, 0x3b82f6, 0.6);
+                objectsGroup.add(dynamicMesh);
+            } else {
+                updateParametricSurface(dynamicMesh, 1, 60, getM1Func);
+            }
+            
+            // Vẽ Hình chữ nhật xoay theo góc lớn nhất
+            const oldPlane = objectsGroup.getObjectByName('hcn');
+            if(oldPlane) objectsGroup.remove(oldPlane);
+            
+            const theta = state.m1.angle * Math.PI / 180;
+            const r = state.m1.r, h = state.m1.h;
+            const geom = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0,0,0), new THREE.Vector3(r * Math.cos(theta), r * Math.sin(theta), 0),
+                new THREE.Vector3(r * Math.cos(theta), r * Math.sin(theta), h), new THREE.Vector3(0,0,h), new THREE.Vector3(0,0,0)
+            ]);
+            const rect = new THREE.Line(geom, new THREE.LineBasicMaterial({color: 0xdc2626, linewidth: 3}));
+            rect.name = 'hcn';
+            objectsGroup.add(rect);
+
+            updateMath(`S_{xq} = 2\\pi r h, \\quad V = \\pi r^2 h`, 
+                `<div>Quay hình chữ nhật kích thước $r=${r}, h=${h}$ quanh trục.</div>
+                <div>Góc quay: $${state.m1.angle}^\\circ$. Thể tích $V = ${(Math.PI * r*r*h).toFixed(1)}$</div>`);
+        }
+
+        // --- 2. Tạo Hình Nón (Quay Tam giác) ---
+        function getM2Func(u, v) {
+            const r = state.m2.r, h = state.m2.h, angleMax = state.m2.angle * Math.PI / 180;
+            const theta = v * angleMax;
+            const rad = r * (1 - u); // Đỉnh ở u=1 (z=h)
+            return new THREE.Vector3(rad * Math.cos(theta), rad * Math.sin(theta), u * h);
+        }
+        function renderM2() {
+            if(!dynamicMesh) {
+                clearAll(); drawAxis();
+                dynamicMesh = createParametricSurface(10, 60, getM2Func, 0x10b981, 0.6);
+                objectsGroup.add(dynamicMesh);
+            } else { updateParametricSurface(dynamicMesh, 10, 60, getM2Func); }
+            
+            const oldPlane = objectsGroup.getObjectByName('tg');
+            if(oldPlane) objectsGroup.remove(oldPlane);
+            
+            const theta = state.m2.angle * Math.PI / 180;
+            const r = state.m2.r, h = state.m2.h;
+            const geom = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0,0,0), new THREE.Vector3(r * Math.cos(theta), r * Math.sin(theta), 0),
+                new THREE.Vector3(0,0,h), new THREE.Vector3(0,0,0)
+            ]);
+            const tri = new THREE.Line(geom, new THREE.LineBasicMaterial({color: 0xdc2626, linewidth: 3}));
+            tri.name = 'tg';
+            objectsGroup.add(tri);
+
+            const l = Math.sqrt(r*r+h*h);
+            updateMath(`S_{xq} = \\pi r l, \\quad V = \\frac{1}{3}\\pi r^2 h`, 
+                `<div>Đường sinh $l = \\sqrt{r^2+h^2} = ${l.toFixed(2)}$.</div>
+                <div>Thể tích $V = \\frac{1}{3}\\pi \\cdot ${r}^2 \\cdot ${h} = ${(Math.PI*r*r*h/3).toFixed(1)}$</div>`);
+        }
+
+        // --- 3. Tạo Mặt Cầu (Quay Nửa đường tròn) ---
+        function getM3Func(u, v) {
+            const R = state.m3.R, angleMax = state.m3.angle * Math.PI / 180;
+            const theta = v * angleMax; // longitude
+            const phi = u * Math.PI - Math.PI/2; // latitude (từ -pi/2 đến pi/2)
+            return new THREE.Vector3(R * Math.cos(phi) * Math.cos(theta), R * Math.cos(phi) * Math.sin(theta), R * Math.sin(phi));
+        }
+        function renderM3() {
+            if(!dynamicMesh) {
+                clearAll(); drawAxis();
+                dynamicMesh = createParametricSurface(30, 60, getM3Func, 0xf59e0b, 0.6);
+                objectsGroup.add(dynamicMesh);
+            } else { updateParametricSurface(dynamicMesh, 30, 60, getM3Func); }
+            
+            const oldPlane = objectsGroup.getObjectByName('arc');
+            if(oldPlane) objectsGroup.remove(oldPlane);
+            
+            const R = state.m3.R, theta = state.m3.angle * Math.PI / 180;
+            const pts = [];
+            for(let i=0; i<=30; i++) {
+                const phi = (i/30)*Math.PI - Math.PI/2;
+                pts.push(new THREE.Vector3(R * Math.cos(phi) * Math.cos(theta), R * Math.cos(phi) * Math.sin(theta), R * Math.sin(phi)));
+            }
+            pts.push(new THREE.Vector3(0,0,-R)); // Nối về gốc để tạo hình khép kín dọc trục Z
+            const arc = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color: 0xdc2626, linewidth: 3}));
+            arc.name = 'arc';
+            objectsGroup.add(arc);
+
+            updateMath(`S = 4\\pi R^2, \\quad V = \\frac{4}{3}\\pi R^3`, 
+                `<div>Quay nửa đường tròn bán kính $R=${R}$ quanh trục tọa độ.</div>
+                <div>Thể tích $V = ${(4/3 * Math.PI * R*R*R).toFixed(1)}$</div>`);
+        }
+
+        // --- 4. Thiết diện Hình Trụ ---
+        function renderM4() {
+            clearAll();
+            const r = state.m4.r, h = state.m4.h, d = state.m4.d;
+            
+            // Vẽ Trụ mờ
+            const cyl = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 64), new THREE.MeshPhongMaterial({color: 0x3b82f6, transparent:true, opacity: 0.15}));
+            cyl.rotation.x = Math.PI/2; cyl.position.z = h/2;
+            objectsGroup.add(cyl);
+
+            let resultHtml = "";
+            if(d > r) {
+                resultHtml = `<div>Mặt phẳng không cắt hình trụ ($d > r$).</div>`;
+            } else {
+                const width = 2 * Math.sqrt(r*r - d*d);
+                const geom = new THREE.BufferGeometry().setFromPoints([
+                    new THREE.Vector3(width/2, d, 0), new THREE.Vector3(-width/2, d, 0),
+                    new THREE.Vector3(-width/2, d, h), new THREE.Vector3(width/2, d, h), new THREE.Vector3(width/2, d, 0)
+                ]);
+                const plane = new THREE.Mesh(new THREE.PlaneGeometry(width, h), new THREE.MeshBasicMaterial({color: 0xdc2626, side: THREE.DoubleSide, transparent:true, opacity:0.5}));
+                plane.rotation.x = Math.PI/2; plane.position.set(0, d, h/2);
+                objectsGroup.add(plane);
+                objectsGroup.add(new THREE.Line(geom, new THREE.LineBasicMaterial({color: 0x7f1d1d, linewidth: 3})));
+
+                // Đoạn thẳng d
+                objectsGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,d,0)]), new THREE.LineDashedMaterial({color: 0x000, dashSize: 0.2, gapSize:0.1})));
+
+                resultHtml = `<div>Thiết diện là Hình chữ nhật có bề rộng $w = 2\\sqrt{r^2-d^2} = ${width.toFixed(2)}$.</div>
+                <div class="mt-2 text-rose-600 font-bold">Diện tích $S = w \\cdot h = ${(width*h).toFixed(2)}$</div>`;
+            }
+
+            updateMath(`w = 2\\sqrt{r^2 - d^2}, \\quad S = w \\cdot h`, resultHtml);
+        }
+
+        // --- 5. Thiết diện Hình Nón ---
+        function renderM5() {
+            clearAll();
+            const r = state.m5.r, h = state.m5.h, angleDeg = state.m5.angle;
+            const rad = angleDeg * Math.PI/180;
+            
+            const cone = new THREE.Mesh(new THREE.ConeGeometry(r, h, 64), new THREE.MeshPhongMaterial({color: 0x10b981, transparent:true, opacity: 0.15}));
+            cone.rotation.x = Math.PI/2; cone.position.z = h/2;
+            objectsGroup.add(cone);
+
+            // Gốc tọa độ là tâm đáy, đỉnh S ở (0,0,h)
+            // Mp cắt đi qua S, nghiêng góc alpha so với trục Z (trục nón)
+            // Phương trình mp: y = (h - z) * tan(alpha)
+            
+            const d_center = h * Math.tan(rad); // Khoảng cách từ tâm đáy tới giao tuyến trên mp Oxy
+            let resultHtml = "";
+
+            if(d_center >= r) {
+                resultHtml = `<div>Mặt phẳng chỉ chạm đỉnh nón hoặc nằm ngoài đáy. Góc cắt quá lớn.</div>`;
+            } else {
+                const x_cut = Math.sqrt(r*r - d_center*d_center); // Nửa độ dài dây cung đáy
+                const P1 = new THREE.Vector3(x_cut, d_center, 0);
+                const P2 = new THREE.Vector3(-x_cut, d_center, 0);
+                const S = new THREE.Vector3(0, 0, h);
+
+                const geom = new THREE.BufferGeometry().setFromPoints([P1, P2, S, P1]);
+                objectsGroup.add(new THREE.Line(geom, new THREE.LineBasicMaterial({color: 0xdc2626, linewidth: 3})));
+                
+                // Vẽ mặt phẳng tam giác
+                const geomFace = new THREE.BufferGeometry();
+                geomFace.setAttribute('position', new THREE.Float32BufferAttribute([P1.x,P1.y,P1.z, P2.x,P2.y,P2.z, S.x,S.y,S.z], 3));
+                geomFace.computeVertexNormals();
+                objectsGroup.add(new THREE.Mesh(geomFace, new THREE.MeshBasicMaterial({color: 0xdc2626, side: THREE.DoubleSide, transparent:true, opacity:0.5})));
+
+                // Vẽ góc alpha
+                objectsGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([S, new THREE.Vector3(0,0,0)]), new THREE.LineDashedMaterial({color: 0x000, dashSize:0.2, gapSize:0.1})));
+                objectsGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([S, new THREE.Vector3(0, d_center, 0)]), new THREE.LineDashedMaterial({color: 0xdc2626, dashSize:0.2, gapSize:0.1})));
+
+                const baseEdge = 2 * x_cut;
+                const slantH = Math.sqrt(h*h + d_center*d_center);
+                const area = 0.5 * baseEdge * slantH;
+
+                resultHtml = `<div>Thiết diện là Tam giác cân với dây cung đáy $AB = 2\\sqrt{r^2-(h\\tan\\alpha)^2} = ${baseEdge.toFixed(2)}$.</div>
+                <div class="mt-2 text-rose-600 font-bold">Diện tích $S = \\frac{1}{2} \\cdot AB \\cdot SH = ${area.toFixed(2)}$</div>`;
+            }
+            updateMath(`\\Delta SAB \\text{ cân tại } S, \\quad d(O, AB) = h \\tan \\alpha`, resultHtml);
+        }
+
+        // --- 6. Trải phẳng Hình Trụ (Morphing) ---
+        function getM6Func(u, v) {
+            const r = state.m6.r, h = state.m6.h, t = state.m6.t; // t=0 (flat), t=1 (cyl)
+            const W = 2 * Math.PI * r;
+            // Phẳng: z=u*h, x=(v-0.5)*W, y=0
+            const pFlat = new THREE.Vector3((v - 0.5) * W, 0, u * h);
+            // Trụ: 
+            const angle = v * 2 * Math.PI;
+            // Offset y để lúc trải phẳng nó nằm tiếp xúc mặt bàn
+            const pCyl = new THREE.Vector3(r * Math.sin(angle), -r * Math.cos(angle) + r, u * h);
+            return pFlat.lerp(pCyl, t);
+        }
+        function renderM6() {
+            if(!dynamicMesh) {
+                clearAll();
+                dynamicMesh = createParametricSurface(5, 60, getM6Func, 0x3b82f6, 0.8);
+                objectsGroup.add(dynamicMesh);
+            } else { updateParametricSurface(dynamicMesh, 5, 60, getM6Func); }
+            
+            const t = state.m6.t;
+            updateMath(`S_{xq} = 2\\pi r h \\quad (\\text{Bằng diện tích HCN})`, 
+                `<div>Quá trình: Kéo thanh trượt để "bóc" hình trụ. Độ mở: ${( (1-t)*100 ).toFixed(0)}%.</div>
+                <div>Hình trụ khi trải phẳng ra mặt phẳng sẽ là một hình chữ nhật có chiều dài đúng bằng chu vi đáy $2\\pi r$.</div>`);
+        }
+
+        // --- 7. Trải phẳng Hình Nón (Morphing) ---
+        function getM7Func(u, v) {
+            const r = state.m7.r, h = state.m7.h, t = state.m7.t; // t=0 (flat), t=1 (cone)
+            const L = Math.sqrt(r*r + h*h);
+            const theta = 2 * Math.PI * r / L; // Góc của hình quạt khi trải phẳng
+            
+            // Phẳng: Đỉnh ở O. Góc quạt phân bố từ -theta/2 đến theta/2
+            const angleF = (v - 0.5) * theta;
+            const radF = (1 - u) * L; // u=0 là đáy, u=1 là đỉnh
+            // Đặt trên mp z=0, chĩa xuống trục y âm để dễ nhìn
+            const pFlat = new THREE.Vector3(radF * Math.sin(angleF), -radF * Math.cos(angleF) + L, 0); 
+            
+            // Nón: Đỉnh ở (0,L,0) (offset để khớp với mp). 
+            const angleC = v * 2 * Math.PI;
+            const radC = (1 - u) * r;
+            const zC = u * h; // Đỉnh ở z=h, đáy z=0. Đổi một chút để mượt.
+            const pCyl = new THREE.Vector3(radC * Math.sin(angleC), radC * Math.cos(angleC) + L - r, zC);
+            // Để nón úp xuống đỉnh O:
+            const pCone = new THREE.Vector3(radC * Math.sin(angleC), -radC * Math.cos(angleC) + r, (1-u)*h);
+
+            return pFlat.lerp(pCone, t);
+        }
+        function renderM7() {
+            if(!dynamicMesh) {
+                clearAll();
+                dynamicMesh = createParametricSurface(10, 60, getM7Func, 0x10b981, 0.8);
+                objectsGroup.add(dynamicMesh);
+            } else { updateParametricSurface(dynamicMesh, 10, 60, getM7Func); }
+
+            const L = Math.sqrt(state.m7.r**2 + state.m7.h**2);
+            updateMath(`S_{xq} = \\pi r l \\quad (\\text{Bằng diện tích hình quạt})`, 
+                `<div>Quá trình: Mức độ cuộn: ${(state.m7.t*100).toFixed(0)}%.</div>
+                <div>Hình nón khi trải phẳng là một hình quạt tròn bán kính $l = ${L.toFixed(2)}$ và độ dài cung bằng chu vi đáy $2\\pi r$.</div>`);
+        }
+
+        // --- 8. Giao tuyến Trụ và Mặt phẳng ---
+        function renderM8() {
+            clearAll();
+            const r = state.m8.r, h = state.m8.h, angle = state.m8.angle * Math.PI / 180;
+            
+            const cyl = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 64, 1, true), new THREE.MeshPhongMaterial({color: 0x3b82f6, transparent:true, opacity: 0.15, side: THREE.DoubleSide}));
+            cyl.rotation.x = Math.PI/2; cyl.position.z = h/2;
+            objectsGroup.add(cyl);
+
+            // Plane: z = h/2 + x * tan(angle)
+            const planeGeom = new THREE.PlaneGeometry(r*3, r*3);
+            const planeMat = new THREE.MeshBasicMaterial({color: 0x059669, transparent:true, opacity: 0.4, side:THREE.DoubleSide});
+            const plane = new THREE.Mesh(planeGeom, planeMat);
+            plane.position.z = h/2;
+            plane.rotation.y = -angle; // Nghiêng quanh trục Y
+            objectsGroup.add(plane);
+
+            // Ellipse (x = r cos t, y = r sin t, z = h/2 + r cos t * tan angle)
+            const pts = [];
+            for(let i=0; i<=64; i++) {
+                const t = i/64 * 2 * Math.PI;
+                pts.push(new THREE.Vector3(r * Math.cos(t), r * Math.sin(t), h/2 + r * Math.cos(t) * Math.tan(angle)));
+            }
+            objectsGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color: 0xdc2626, linewidth: 4})));
+
+            const a = r / Math.cos(angle);
+            const b = r;
+            updateMath(`\\text{Giao tuyến là Elip: } a = \\frac{r}{\\cos\\alpha}, b = r`, 
+                `<div>Trục lớn $2a = ${(2*a).toFixed(2)}$, Trục nhỏ $2b = ${(2*b).toFixed(2)}$.</div>
+                <div class="mt-2 text-rose-600 font-bold">Diện tích Elip $S = \\pi ab = ${(Math.PI*a*b).toFixed(2)}$</div>`);
+        }
+
+        // --- 9. Bò trên Hình trụ (Đường đi ngắn nhất) ---
+        function renderM9() {
+            // Sử dụng logic Morphing của M6 nhưng vẽ thêm 1 đường Line!
+            if(!dynamicMesh) {
+                clearAll();
+                dynamicMesh = createParametricSurface(5, 60, getM6Func, 0x94a3b8, 0.4);
+                objectsGroup.add(dynamicMesh);
+                // Đường Line
+                dynamicLine = createParametricLine(50, getM9PathFunc, 0xdc2626, 4);
+                objectsGroup.add(dynamicLine);
+            } else { 
+                updateParametricSurface(dynamicMesh, 5, 60, getM6Func); 
+                updateParametricLine(dynamicLine, 50, getM9PathFunc);
+            }
+
+            const t = state.m6.t; // Dùng chung biến t của m6 cho hàm getM6Func
+            const W = 2 * Math.PI * state.m6.r;
+            const dist = Math.sqrt((W/2)**2 + state.m6.h**2);
+            
+            updateMath(`d_{\\min} = \\sqrt{(\\pi r)^2 + h^2}`, 
+                `<div>Quá trình trải phẳng: ${( (1-t)*100 ).toFixed(0)}%.</div>
+                <div>Đường đi ngắn nhất từ A (đáy) tới B (đỉnh đối diện) khi cuộn lại là một đường xoắn ốc, nhưng khi trải phẳng nó là một **đường thẳng**! Độ dài $d = ${dist.toFixed(2)}$</div>`);
+        }
+        function getM9PathFunc(s) {
+            // s từ 0 đến 1
+            // Đi từ v=0.5 (giữa - điểm đáy) đến v=1 (cạnh phải - điểm đỉnh)
+            const u = s; // Chiều cao tăng dần
+            const v = 0.5 + s * 0.5; // Góc xoay nửa vòng
+            return getM6Func(u, v);
+        }
+
+        // --- 10. Thể tích Tròn xoay (Parabol) ---
+        function getM10Func(u, v) {
+            const a = state.m10.a, h = state.m10.h, angleMax = state.m10.angle * Math.PI/180;
+            const x = u * h;
+            const r = a * x * x; // y = a*x^2
+            const theta = v * angleMax;
+            return new THREE.Vector3(x, r * Math.cos(theta), r * Math.sin(theta));
+        }
+        function renderM10() {
+            if(!dynamicMesh) {
+                clearAll(); 
+                // Draw axis
+                const mat = new THREE.LineBasicMaterial({ color: 0x1d4ed8, linewidth: 2 });
+                objectsGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(state.m10.h + 2,0,0)]), mat));
+
+                dynamicMesh = createParametricSurface(40, 60, getM10Func, 0xf43f5e, 0.7);
+                objectsGroup.add(dynamicMesh);
+            } else { updateParametricSurface(dynamicMesh, 40, 60, getM10Func); }
+
+            const a = state.m10.a, h = state.m10.h;
+            const vol = Math.PI * (a*a) * Math.pow(h, 5) / 5;
+            
+            updateMath(`V = \\pi \\int_{0}^{h} (a x^2)^2 dx = \\frac{\\pi a^2 h^5}{5}`, 
+                `<div>Quay hình phẳng giới hạn bởi $y = ${a}x^2$, $y=0$, $x=${h}$ quanh trục Ox tạo ra khối giống chiếc ly.</div>
+                <div class="mt-2 text-rose-600 font-bold">Thể tích $V = ${vol.toFixed(2)}$</div>`);
+        }
+
+
+        function switchMode(mode) {
+            currentMode = mode;
+            [1,2,3,4,5,6,7,8,9,10].forEach(i => {
+                const btn = document.getElementById(`btn-mode-${i}`);
+                if (i === mode) btn.className = "w-full text-left px-4 py-2.5 rounded-lg bg-teal-600 font-bold text-sm text-white shadow-md border border-teal-500";
+                else btn.className = "w-full text-left px-4 py-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 font-semibold text-sm text-slate-700 border border-slate-200";
+            });
+
+            // Gán lại t=0 (phẳng) cho mode 6, 7, 9 để xem animation mở ra
+            state.m6.t = 0; state.m7.t = 0;
+
+            if(mode === 1) buildUI(`<div class="flex gap-4">
+                <label class="text-xs font-bold w-1/2">Bán kính r: <span class="text-blue-600">${state.m1.r}</span><input type="range" min="1" max="5" step="0.5" value="${state.m1.r}" oninput="state.m1.r=parseFloat(this.value); renderM1(); this.previousElementSibling.innerText=this.value"></label>
+                <label class="text-xs font-bold w-1/2">Góc quay: <span class="text-blue-600">${state.m1.angle}°</span><input type="range" min="10" max="360" step="1" value="${state.m1.angle}" oninput="state.m1.angle=parseFloat(this.value); renderM1(); this.previousElementSibling.innerText=this.value+'°'"></label>
+            </div>`);
+            else if(mode === 2) buildUI(`<div class="flex gap-4">
+                <label class="text-xs font-bold w-1/2">Bán kính r: <span class="text-blue-600">${state.m2.r}</span><input type="range" min="1" max="5" step="0.5" value="${state.m2.r}" oninput="state.m2.r=parseFloat(this.value); renderM2(); this.previousElementSibling.innerText=this.value"></label>
+                <label class="text-xs font-bold w-1/2">Góc quay: <span class="text-blue-600">${state.m2.angle}°</span><input type="range" min="10" max="360" step="1" value="${state.m2.angle}" oninput="state.m2.angle=parseFloat(this.value); renderM2(); this.previousElementSibling.innerText=this.value+'°'"></label>
+            </div>`);
+            else if(mode === 3) buildUI(`<div class="flex gap-4">
+                <label class="text-xs font-bold w-1/2">Bán kính R: <span class="text-blue-600">${state.m3.R}</span><input type="range" min="1" max="6" step="0.5" value="${state.m3.R}" oninput="state.m3.R=parseFloat(this.value); renderM3(); this.previousElementSibling.innerText=this.value"></label>
+                <label class="text-xs font-bold w-1/2">Góc quay: <span class="text-blue-600">${state.m3.angle}°</span><input type="range" min="10" max="360" step="1" value="${state.m3.angle}" oninput="state.m3.angle=parseFloat(this.value); renderM3(); this.previousElementSibling.innerText=this.value+'°'"></label>
+            </div>`);
+            else if(mode === 4) buildUI(`<label class="text-xs font-bold">K/c đến trục d: <span class="text-blue-600">${state.m4.d}</span><input type="range" min="0" max="4" step="0.1" value="${state.m4.d}" oninput="state.m4.d=parseFloat(this.value); renderM4(); this.previousElementSibling.innerText=this.value"></label>`);
+            else if(mode === 5) buildUI(`<label class="text-xs font-bold">Góc nghiêng mặt cắt: <span class="text-blue-600">${state.m5.angle}°</span><input type="range" min="0" max="60" step="1" value="${state.m5.angle}" oninput="state.m5.angle=parseFloat(this.value); renderM5(); this.previousElementSibling.innerText=this.value+'°'"></label>`);
+            else if(mode === 6) buildUI(`<label class="text-xs font-bold">Kéo để Cuộn / Trải phẳng: <span class="text-blue-600">0%</span><input type="range" min="0" max="1" step="0.01" value="${state.m6.t}" oninput="state.m6.t=parseFloat(this.value); renderM6(); this.previousElementSibling.innerText=Math.round((1-this.value)*100)+'%'"></label>`);
+            else if(mode === 7) buildUI(`<label class="text-xs font-bold">Kéo để Cuộn / Trải phẳng: <span class="text-blue-600">0%</span><input type="range" min="0" max="1" step="0.01" value="${state.m7.t}" oninput="state.m7.t=parseFloat(this.value); renderM7(); this.previousElementSibling.innerText=Math.round(this.value*100)+'%'"></label>`);
+            else if(mode === 8) buildUI(`<label class="text-xs font-bold">Góc cắt $\\alpha$: <span class="text-blue-600">${state.m8.angle}°</span><input type="range" min="0" max="60" step="1" value="${state.m8.angle}" oninput="state.m8.angle=parseFloat(this.value); renderM8(); this.previousElementSibling.innerText=this.value+'°'"></label>`);
+            else if(mode === 9) buildUI(`<label class="text-xs font-bold">Trải phẳng để xem đường đi ngắn nhất: <span class="text-blue-600">0%</span><input type="range" min="0" max="1" step="0.01" value="${state.m6.t}" oninput="state.m6.t=parseFloat(this.value); renderM9(); this.previousElementSibling.innerText=Math.round((1-this.value)*100)+'%'"></label>`);
+            else if(mode === 10) buildUI(`<div class="flex gap-4">
+                <label class="text-xs font-bold w-1/2">Hệ số Parabol a: <span class="text-blue-600">${state.m10.a}</span><input type="range" min="0.1" max="1" step="0.1" value="${state.m10.a}" oninput="state.m10.a=parseFloat(this.value); renderM10(); this.previousElementSibling.innerText=this.value"></label>
+                <label class="text-xs font-bold w-1/2">Góc xoay: <span class="text-blue-600">${state.m10.angle}°</span><input type="range" min="10" max="360" step="1" value="${state.m10.angle}" oninput="state.m10.angle=parseFloat(this.value); renderM10(); this.previousElementSibling.innerText=this.value+'°'"></label>
+            </div>`);
+
+            clearAll(); // Phải gọi ở đây để hủy biến dynamicMesh trước khi chuyển mode
+            window[`renderM${mode}`]();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.state = state;
+        window.renderM1 = renderM1; window.renderM2 = renderM2; window.renderM3 = renderM3;
+        window.renderM4 = renderM4; window.renderM5 = renderM5; window.renderM6 = renderM6;
+        window.renderM7 = renderM7; window.renderM8 = renderM8; window.renderM9 = renderM9;
+        window.renderM10 = renderM10;
+
+        window.onload = init;
+    </script>
+</body>
+</html>
