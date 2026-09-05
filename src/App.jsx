@@ -17,13 +17,14 @@ import StudentsMenu from './pages/StudentsMenu';
 import StudentIframeWrapper from './pages/StudentIframeWrapper';
 import Sunflowers from './components/Sunflowers';
 import LoginScreen from './components/LoginScreen';
+import GameHost from './pages/GameHost';
+import GamePlayer from './pages/GamePlayer';
 
 const EXPECTED_HASH = "ebe106819f36f460184a887c06e18115a19f5d15ce570f9a2318c6f44b78476a";
 
 const AppContent = () => {
   const location = useLocation();
-  const isGameRoute = location.pathname.startsWith('/game/') || location.pathname.startsWith('/game-nhung/') || location.pathname.startsWith('/tool/') || location.pathname.startsWith('/models/view/') || location.pathname.startsWith('/tools/view/') || location.pathname.startsWith('/students/view/');
-
+  const isGameRoute = location.pathname.startsWith('/game/') || location.pathname.startsWith('/play') || location.pathname.startsWith('/game-nhung/') || location.pathname.startsWith('/tool/') || location.pathname.startsWith('/models/view/') || location.pathname.startsWith('/tools/view/') || location.pathname.startsWith('/students/view/');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
@@ -75,6 +76,8 @@ const AppContent = () => {
             <Route path="/game/keo-co" element={<TugOfWarGame />} />
             <Route path="/tool/vong-quay" element={<StudentSpinner />} />
             <Route path="/game-nhung/:gameId" element={<GameIframeWrapper />} />
+            <Route path="/game/host" element={<GameHost />} />
+            <Route path="/play" element={<GamePlayer />} />
           </Routes>
           
           {!isGameRoute && <Footer />}

@@ -7,6 +7,13 @@ const GamesMenu = () => {
 
   const games = [
     {
+      id: 'host',
+      title: 'Tạo Trò Chơi (Giáo Viên)',
+      icon: <Users className="w-8 h-8" />,
+      color: 'from-emerald-500 to-teal-700',
+      path: '/game/host'
+    },
+    {
       id: 'millionaire',
       title: 'Ai Là Triệu Phú',
       icon: <Trophy className="w-8 h-8" />,
