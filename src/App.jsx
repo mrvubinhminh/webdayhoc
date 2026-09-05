@@ -28,6 +28,9 @@ const AppContent = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
+  // Các route công khai - không cần đăng nhập
+  const isPublicRoute = location.pathname === '/play' || location.pathname === '/game/host';
+
   useEffect(() => {
     const storedHash = localStorage.getItem('math_assistant_auth');
     if (storedHash === EXPECTED_HASH) {
@@ -37,7 +40,17 @@ const AppContent = () => {
   }, []);
 
   if (isCheckingAuth) {
-    return null; // Or a loading spinner
+    return null;
+  }
+
+  // Nếu là route công khai (học sinh tham gia hoặc giáo viên host), không cần đăng nhập
+  if (isPublicRoute) {
+    return (
+      <Routes>
+        <Route path="/game/host" element={<GameHost />} />
+        <Route path="/play" element={<GamePlayer />} />
+      </Routes>
+    );
   }
 
   return (
@@ -76,8 +89,6 @@ const AppContent = () => {
             <Route path="/game/keo-co" element={<TugOfWarGame />} />
             <Route path="/tool/vong-quay" element={<StudentSpinner />} />
             <Route path="/game-nhung/:gameId" element={<GameIframeWrapper />} />
-            <Route path="/game/host" element={<GameHost />} />
-            <Route path="/play" element={<GamePlayer />} />
           </Routes>
           
           {!isGameRoute && <Footer />}
