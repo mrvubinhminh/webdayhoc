@@ -60,61 +60,41 @@ const THEMES = [
   {
     id: 'cosmos',
     name: '🌌 Vũ Trụ',
-    bg: 'bg-[#020617]',
     bgStyle: { background: 'linear-gradient(135deg, #020617 0%, #0f172a 40%, #1e1b4b 100%)', backgroundImage: 'radial-gradient(circle at 20% 80%, rgba(99,102,241,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(6,182,212,0.1) 0%, transparent 50%)' },
     questionBg: 'bg-slate-800/90 text-white',
-    optionColors: ['bg-indigo-600 border-indigo-800', 'bg-violet-600 border-violet-800', 'bg-cyan-600 border-cyan-800', 'bg-purple-600 border-purple-800'],
     timerColor: 'text-cyan-400',
-    headerBg: 'bg-slate-900/80 backdrop-blur-md border-b border-slate-700',
-    accent: 'text-cyan-400',
     preview: 'from-indigo-900 via-slate-900 to-violet-900'
   },
   {
     id: 'forest',
     name: '🌿 Rừng Xanh',
-    bg: 'bg-emerald-950',
     bgStyle: { background: 'linear-gradient(135deg, #022c22 0%, #064e3b 50%, #065f46 100%)', backgroundImage: 'radial-gradient(circle at 50% 100%, rgba(16,185,129,0.2) 0%, transparent 60%)' },
     questionBg: 'bg-emerald-900/80 text-white border border-emerald-700',
-    optionColors: ['bg-emerald-600 border-emerald-800', 'bg-teal-600 border-teal-800', 'bg-lime-600 border-lime-800', 'bg-green-600 border-green-800'],
     timerColor: 'text-lime-400',
-    headerBg: 'bg-emerald-950/80 backdrop-blur-md border-b border-emerald-800',
-    accent: 'text-emerald-400',
     preview: 'from-emerald-900 via-teal-900 to-green-900'
   },
   {
     id: 'fire',
     name: '🔥 Lửa Thiêng',
-    bg: 'bg-orange-950',
     bgStyle: { background: 'linear-gradient(135deg, #1c0a00 0%, #431407 50%, #7c2d12 100%)', backgroundImage: 'radial-gradient(circle at 50% 120%, rgba(251,146,60,0.3) 0%, transparent 60%)' },
     questionBg: 'bg-orange-900/70 text-white border border-orange-700',
-    optionColors: ['bg-red-600 border-red-800', 'bg-orange-600 border-orange-800', 'bg-yellow-600 border-yellow-800', 'bg-rose-600 border-rose-800'],
     timerColor: 'text-orange-400',
-    headerBg: 'bg-orange-950/80 backdrop-blur-md border-b border-orange-800',
-    accent: 'text-orange-400',
     preview: 'from-red-900 via-orange-900 to-yellow-900'
   },
   {
     id: 'ocean',
     name: '🌊 Đại Dương',
-    bg: 'bg-blue-950',
     bgStyle: { background: 'linear-gradient(180deg, #0c1445 0%, #0a2463 50%, #023e8a 100%)', backgroundImage: 'radial-gradient(ellipse at 50% 150%, rgba(56,189,248,0.2) 0%, transparent 60%)' },
     questionBg: 'bg-blue-900/80 text-white border border-blue-700',
-    optionColors: ['bg-blue-600 border-blue-800', 'bg-sky-600 border-sky-800', 'bg-cyan-600 border-cyan-800', 'bg-indigo-600 border-indigo-800'],
     timerColor: 'text-sky-400',
-    headerBg: 'bg-blue-950/80 backdrop-blur-md border-b border-blue-800',
-    accent: 'text-sky-400',
     preview: 'from-blue-900 via-sky-900 to-cyan-900'
   },
   {
     id: 'candy',
     name: '🍭 Kẹo Ngọt',
-    bg: 'bg-pink-950',
     bgStyle: { background: 'linear-gradient(135deg, #1a0a1e 0%, #2d1b69 50%, #1e1b4b 100%)', backgroundImage: 'radial-gradient(circle at 80% 20%, rgba(236,72,153,0.2) 0%, transparent 50%), radial-gradient(circle at 20% 80%, rgba(167,139,250,0.2) 0%, transparent 50%)' },
     questionBg: 'bg-pink-900/70 text-white border border-pink-700',
-    optionColors: ['bg-pink-600 border-pink-800', 'bg-fuchsia-600 border-fuchsia-800', 'bg-purple-600 border-purple-800', 'bg-rose-600 border-rose-800'],
     timerColor: 'text-fuchsia-400',
-    headerBg: 'bg-pink-950/80 backdrop-blur-md border-b border-pink-800',
-    accent: 'text-pink-400',
     preview: 'from-pink-900 via-fuchsia-900 to-purple-900'
   },
 ];
@@ -454,11 +434,10 @@ const GameHost = () => {
 
       {localGameState === 'PLAYING' && roomData && (
         <div className="w-full px-4 mt-4">
-          <div className="flex justify-between items-center mb-6">
-            <div className="text-2xl font-bold text-gray-400">Câu hỏi {roomData.currentQuestionIndex + 1}/{roomData.questions.length}</div>
+          <div className="flex justify-end items-center mb-6">
             
             {(roomData.status === 'QUESTION' || roomData.status === 'REVEAL') && (
-               <div className="text-3xl font-black bg-black/30 px-6 py-2 rounded-xl border border-white/10 flex items-center gap-3 backdrop-blur-md">
+               <div className="text-3xl font-black bg-black/30 px-6 py-2 rounded-xl border border-white/10 flex items-center gap-3 backdrop-blur-md mr-auto">
                  ⏳ <span className={timeLeft <= 10 ? 'text-red-400 animate-pulse' : theme.timerColor}>{timeLeft}s</span>
                </div>
             )}
@@ -502,10 +481,10 @@ const GameHost = () => {
                 {/* 4 ô đáp án */}
                 <div className="grid grid-cols-2 gap-4 md:gap-5">
                   {[
-                    { text: q.optionA, style: theme.optionColors[0] },
-                    { text: q.optionB, style: theme.optionColors[1] },
-                    { text: q.optionC, style: theme.optionColors[2] },
-                    { text: q.optionD, style: theme.optionColors[3] }
+                    { text: q.optionA, style: 'bg-red-500 border-red-700' },
+                    { text: q.optionB, style: 'bg-blue-500 border-blue-700' },
+                    { text: q.optionC, style: 'bg-yellow-500 border-yellow-700' },
+                    { text: q.optionD, style: 'bg-emerald-500 border-emerald-700' }
                   ].map((opt, i) => (
                     <div key={i} className={`${opt.style.split(' ')[0]} text-white p-5 md:p-7 rounded-2xl text-xl md:text-3xl font-bold shadow-lg border-b-8 ${opt.style.split(' ')[1]} flex items-center justify-center text-center gap-3`}>
                       <span className="text-white/60 font-black shrink-0">{['A','B','C','D'][i]}.</span>
