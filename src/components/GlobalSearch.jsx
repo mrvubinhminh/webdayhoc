@@ -101,7 +101,17 @@ const GlobalSearch = () => {
       { title: 'TẠO VIDEO', path: `/students/view/external/${encodeURIComponent('https://cuonsachkidieu.vercel.app/')}`, category: 'Tiện ích dạy học' },
       { title: 'MÃ TIKZ SANG GEO', path: `/students/view/external/${encodeURIComponent('https://tikztogeo.vercel.app/')}`, category: 'Tiện ích dạy học' },
       { title: 'SCRPIT GEO V1', path: `/students/view/external/${encodeURIComponent('https://geovascript.vercel.app/')}`, category: 'Tiện ích dạy học' },
-      { title: 'SCRPIT GEO V2', path: `/students/view/external/${encodeURIComponent('https://taohinhdongvtl.vercel.app/')}`, category: 'Tiện ích dạy học' }
+      { title: 'SCRPIT GEO V2', path: `/students/view/external/${encodeURIComponent('https://taohinhdongvtl.vercel.app/')}`, category: 'Tiện ích dạy học' },
+      { title: 'ĐƯA TÀI LIỆU VÀO. NHẬN MARKDOWN RA.', path: `/students/view/external/${encodeURIComponent('https://vutienluc-docs.vercel.app/')}`, category: 'Tiện ích dạy học' },
+      { title: 'MD TO EPUB PRO', path: `/students/view/external/${encodeURIComponent('https://dichsach.vercel.app/')}`, category: 'Tiện ích dạy học' },
+      { title: 'VĂN BẢN → GIỌNG NÓI TIẾNG VIỆT', path: `/students/view/external/${encodeURIComponent('https://vanbanvaloinoi.vercel.app/')}`, category: 'Tiện ích dạy học' },
+      { title: 'QUÉT GOOGLE DRIVE VÀ XUẤT DANH SÁCH RA GOOGLE SHEET HOẶC GOOGLE DOC.', path: `/students/view/external/${encodeURIComponent('https://script.google.com/macros/s/AKfycbzCosxbuJsYsVsyEm3YeqNcD0DzPMM8XU8x_SVuYFNSYTIjcMcmFhhGmQIvYYe1r3WSIA/exec')}`, category: 'Tiện ích dạy học' },
+      { title: 'TẠO BẢN SAO GOOGLE SHEETS & THƯ MỤC DRIVE MỘT CÁCH DỄ DÀNG', path: `/students/view/external/${encodeURIComponent('https://script.google.com/macros/s/AKfycbwdGun2DI6zO305El_Tc5HnZdHRkY8Nv3xwKp-IwKjD3fi34CpghYsGquUzldMOpY6yIQ/exec')}`, category: 'Tiện ích dạy học' },
+      { title: 'QUẢN LÝ TRUNG TÂM', path: `/students/view/external/${encodeURIComponent('https://binhminhvanhoa.vercel.app/')}`, category: 'Tiện ích dạy học' },
+      { title: 'TRÌNH TẠO BÀI GIẢNG PRO', path: `/students/view/external/${encodeURIComponent('https://pptonline-self.vercel.app/')}`, category: 'Tiện ích dạy học' },
+      { title: 'TRÌNH TẠO PROMPT SINH ĐỀ K12ONLINE', path: `/students/view/external/${encodeURIComponent('https://k12allin1.vercel.app/')}`, category: 'Tiện ích dạy học' },
+      { title: 'TRÌNH TẠO BÀI GIẢNG PRO (TOÁN & QUIZ & ENDING)', path: `/students/view/external/${encodeURIComponent('https://slide-lac.vercel.app/')}`, category: 'Tiện ích dạy học' },
+      { title: 'CẨM NANG TIỆN ÍCH GIÁO VIÊN', path: `/students/view/external/${encodeURIComponent('https://camnanggiaovien.vercel.app/')}`, category: 'Tiện ích dạy học' }
     );
 
     // 2. Dynamic items from public folder
