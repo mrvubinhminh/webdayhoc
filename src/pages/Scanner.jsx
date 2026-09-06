@@ -97,7 +97,8 @@ const Scanner = () => {
     const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
 
     if (code) {
-      processQR(code);
+      const info = processQR(code);
+      
       // Vẽ viền quanh QR để GV thấy
       ctx.beginPath();
       ctx.moveTo(code.location.topLeftCorner.x, code.location.topLeftCorner.y);
@@ -105,28 +106,35 @@ const Scanner = () => {
       ctx.lineTo(code.location.bottomRightCorner.x, code.location.bottomRightCorner.y);
       ctx.lineTo(code.location.bottomLeftCorner.x, code.location.bottomLeftCorner.y);
       ctx.lineTo(code.location.topLeftCorner.x, code.location.topLeftCorner.y);
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = "#10B981"; // Emerald 500
+      ctx.lineWidth = 6;
+      ctx.strokeStyle = info ? (info.isCorrect ? "#10B981" : "#EF4444") : "#3B82F6"; // Emerald, Red, or Blue
       ctx.stroke();
+      
+      if (info) {
+        ctx.fillStyle = info.isCorrect ? "#10B981" : "#EF4444";
+        ctx.font = "bold 28px sans-serif";
+        const text = `Nhóm ${info.teamNum}: ${['A','B','C','D'][info.answer-1]}`;
+        ctx.fillText(text, code.location.topLeftCorner.x, code.location.topLeftCorner.y - 10);
+      }
     }
 
     requestRef.current = requestAnimationFrame(tick);
   };
 
-  const processQR = async (code) => {
-    if (roomData?.status !== 'QUESTION') return;
+  const processQR = (code) => {
+    if (roomData?.status !== 'QUESTION') return null;
     
     const currentQ = roomData.questions[roomData.currentQuestionIndex];
-    if (currentQ.type === 'TLN') return; // Không hỗ trợ quét TLN
+    if (currentQ.type === 'TLN') return null; // Không hỗ trợ quét TLN
 
     const data = code.data; // e.g. TEAM_1
-    if (!data.startsWith('TEAM_')) return;
+    if (!data.startsWith('TEAM_')) return null;
     
     const teamNum = parseInt(data.replace('TEAM_', ''));
     const teamId = `team_${teamNum}`;
     
     // Check if team is in the game
-    if (!roomData.players || !roomData.players[teamId]) return;
+    if (!roomData.players || !roomData.players[teamId]) return null;
 
     // Calculate orientation
     const dx = code.location.topRightCorner.x - code.location.topLeftCorner.x;
@@ -139,12 +147,16 @@ const Scanner = () => {
     else if (angle > 45 && angle <= 135) answer = 4; // D (Rotated Right, D is Up)
     else answer = 3; // C (Upside Down)
 
+    const isCorrect = answer === currentQ.correctOption;
+
     // Only update if answer changed
     const currentAnsInFirebase = roomData.players[teamId].currentAnswer;
     if (currentAnsInFirebase !== answer) {
-      await set(ref(db, `rooms/${pin}/players/${teamId}/currentAnswer`), answer);
+      set(ref(db, `rooms/${pin}/players/${teamId}/currentAnswer`), answer);
       setScannedTeams(prev => ({ ...prev, [teamId]: answer }));
     }
+    
+    return { teamNum, answer, isCorrect };
   };
 
   useEffect(() => {
@@ -207,14 +219,17 @@ const Scanner = () => {
           <div className="bg-slate-800 p-4 rounded-b-2xl border border-slate-700 max-h-48 overflow-y-auto">
             <h3 className="text-emerald-400 font-bold mb-2">Đã nhận diện: {Object.keys(scannedTeams).length} nhóm</h3>
             <div className="flex flex-wrap gap-2">
-               {Object.entries(scannedTeams).map(([teamId, ans]) => (
-                 <div key={teamId} className="bg-slate-700 px-3 py-1 rounded-full flex items-center gap-2 border border-slate-600">
-                   <span className="text-white font-bold">{roomData?.players?.[teamId]?.name || teamId}</span>
-                   <span className="text-emerald-400 font-black px-2 bg-slate-800 rounded">
-                     {['A', 'B', 'C', 'D'][ans - 1]}
-                   </span>
-                 </div>
-               ))}
+               {Object.entries(scannedTeams).map(([teamId, ans]) => {
+                 const isCorrect = ans === roomData?.questions?.[roomData?.currentQuestionIndex]?.correctOption;
+                 return (
+                   <div key={teamId} className={`px-3 py-1 rounded-full flex items-center gap-2 border ${isCorrect ? 'bg-emerald-900/50 border-emerald-500/50' : 'bg-red-900/50 border-red-500/50'}`}>
+                     <span className="text-white font-bold">{roomData?.players?.[teamId]?.name || teamId}</span>
+                     <span className={`font-black px-2 bg-slate-800 rounded ${isCorrect ? 'text-emerald-400' : 'text-red-400'}`}>
+                       {['A', 'B', 'C', 'D'][ans - 1]}
+                     </span>
+                   </div>
+                 );
+               })}
                {Object.keys(scannedTeams).length === 0 && (
                  <div className="text-gray-500 italic text-sm">Chưa có kết quả... Hướng camera vào tờ giấy QR.</div>
                )}
