@@ -569,7 +569,11 @@ const TreasurePlayer = () => {
 
             return (
               <div className="w-full max-w-md flex flex-col items-center gap-4 px-4">
-                <div className="w-full max-w-[300px]">
+                {/* Chưa gieo thì nút là chính nên bản đồ thu nhỏ; gieo xong mới phóng to xem mình đi tới đâu */}
+                <div
+                  className="w-full transition-all duration-500"
+                  style={{ maxWidth: me?.hasRolled || !me?.canRoll ? 340 : 190 }}
+                >
                   <TreasureBoard
                     size={size}
                     bgUrl={settings.boardBgUrl}

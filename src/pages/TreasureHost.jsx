@@ -1003,6 +1003,22 @@ const TreasureHost = () => {
             </div>
           </div>
 
+          {/* Mini bản đồ luôn hiện khi đang hỏi / xem đáp án để lớp không mất mạch cục diện */}
+          {roomData.settings?.boardEnabled && (roomData.status === 'QUESTION' || roomData.status === 'REVEAL') && (
+            <div className="fixed bottom-4 right-4 w-40 md:w-52 z-30 opacity-90 hover:opacity-100 transition-opacity">
+              <div className="bg-black/60 backdrop-blur-md rounded-2xl p-2 border border-amber-500/40">
+                <TreasureBoard
+                  size={activeBoardSize}
+                  bgUrl={roomData.settings?.boardBgUrl}
+                  specialCells={roomData.settings?.specialCells || {}}
+                  teams={boardTeams}
+                  compact
+                />
+                <p className="text-center text-amber-300 text-[10px] font-bold mt-1.5">🗺️ Cục diện bản đồ</p>
+              </div>
+            </div>
+          )}
+
           {roomData.status === 'STAR_PICK' && (() => {
             const starPickers = playersList.filter(p => p.starActive);
             const remainQ = (roomData.questions?.length || 0) - roomData.currentQuestionIndex;
@@ -1157,15 +1173,17 @@ const TreasureHost = () => {
             const rolled = eligible.filter(p => p.hasRolled);
             const lastMover = playersList.find(p => p.hasRolled && p.justLanded);
             return (
-              <div className="animate-fade-in grid lg:grid-cols-[1.2fr_1fr] gap-6 items-start">
-                {/* Bản đồ */}
-                <div>
+              <div className="animate-fade-in grid lg:grid-cols-[minmax(0,2fr)_minmax(300px,1fr)] gap-6 items-start">
+                {/* Bản đồ — nhân vật chính, giới hạn theo chiều cao màn chiếu */}
+                <div className="mx-auto w-full" style={{ maxWidth: 'min(100%, 74vh)' }}>
                   <TreasureBoard
                     size={activeBoardSize}
                     bgUrl={roomData.settings?.boardBgUrl}
                     specialCells={roomData.settings?.specialCells || {}}
                     teams={boardTeams}
                     highlightCell={lastMover?.position || null}
+                    scale="stage"
+                    legend
                   />
                 </div>
 
