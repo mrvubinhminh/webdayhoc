@@ -100,11 +100,13 @@ const TreasureBoard = ({
               key={cell}
               style={{ gridRow: row, gridColumn: col }}
               className={`relative border ${ring} rounded-md flex items-center justify-center transition-all duration-300 ${
-                isHighlight ? 'bg-yellow-300/40 scale-105 z-20 shadow-[0_0_20px_rgba(250,204,21,0.9)]' : 'bg-black/15'
-              } ${special > 0 ? 'bg-emerald-500/15' : ''} ${special < 0 ? 'bg-red-500/15' : ''}`}
+                isHighlight
+                  ? 'bg-yellow-300/40 scale-105 z-20 shadow-[0_0_20px_rgba(250,204,21,0.9)]'
+                  : bgUrl ? 'bg-black/5' : 'bg-black/15'
+              } ${special > 0 ? 'bg-emerald-500/25' : ''} ${special < 0 ? 'bg-red-500/25' : ''}`}
             >
               {/* Số ô */}
-              <span className={`absolute top-0.5 left-1 font-bold text-white/50 ${numberCls}`}>
+              <span className={`absolute top-0.5 left-1 font-bold ${bgUrl ? 'text-white/90 drop-shadow-[0_1px_3px_rgba(0,0,0,1)]' : 'text-white/50'} ${numberCls}`}>
                 {cell}
               </span>
 

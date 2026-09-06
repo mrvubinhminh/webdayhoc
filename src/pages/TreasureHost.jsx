@@ -1037,13 +1037,7 @@ const TreasureHost = () => {
 
             return (
               <div className="fixed inset-0 z-50 flex flex-col" style={theme.bgStyle}>
-                {roomData.settings?.boardBgUrl && (
-                  <div
-                    className="absolute inset-0 bg-cover bg-center opacity-25"
-                    style={{ backgroundImage: `url(${roomData.settings.boardBgUrl})` }}
-                  />
-                )}
-
+                {/* Ảnh nền thuộc về bản đồ, chỉ nằm sau lưới ô — không phủ ra toàn màn hình */}
                 <div className="relative z-10 flex flex-col h-full p-4 md:p-6">
                   {/* Thanh trên */}
                   <div className="shrink-0 flex items-center justify-between gap-4 mb-4">
