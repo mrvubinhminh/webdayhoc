@@ -298,7 +298,7 @@ const GamePlayer = () => {
               )}
             </div>
             );
-          })}
+          })()}
 
           {roomData.status === 'REVEAL' && (() => {
              const currentQ = roomData.questions?.[roomData.currentQuestionIndex];
