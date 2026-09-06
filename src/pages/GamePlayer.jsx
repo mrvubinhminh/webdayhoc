@@ -5,6 +5,30 @@ import { db } from '../firebase';
 import { ref, set, onValue, get, update } from 'firebase/database';
 import MathText from '../components/MathText';
 
+const AVATAR_STYLES = [
+  { name: '🔴 Đỏ', bg: '#FF6B6B', emoji: '😊' },
+  { name: '🟠 Cam', bg: '#FFA500', emoji: '😄' },
+  { name: '🟡 Vàng', bg: '#FFD93D', emoji: '😆' },
+  { name: '🟢 Xanh Lá', bg: '#6BCB77', emoji: '🤗' },
+  { name: '🔵 Xanh Dương', bg: '#4D96FF', emoji: '😎' },
+  { name: '🟣 Tím', bg: '#9B59B6', emoji: '😋' },
+  { name: '🌸 Hồng', bg: '#FF69B4', emoji: '😍' },
+  { name: '⚫ Đen', bg: '#2C3E50', emoji: '🤐' },
+  { name: '⚪ Trắng', bg: '#ECF0F1', emoji: '😲' },
+  { name: '🟦 Lam', bg: '#3498DB', emoji: '😜' },
+];
+
+const getRandomAvatar = () => {
+  const style = AVATAR_STYLES[Math.floor(Math.random() * AVATAR_STYLES.length)];
+  const colors = [style.bg];
+  return {
+    url: `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${Date.now()}_${Math.random()}&backgroundColor=${style.bg.replace('#', '')}`,
+    color: style.bg,
+    emoji: style.emoji,
+    name: style.name
+  };
+};
+
 const GamePlayer = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -75,7 +99,7 @@ const GamePlayer = () => {
     }
 
     setPlayerId(finalPlayerId);
-    const avatarUrl = `https://robohash.org/${finalPlayerId}?set=set2&size=150x150`;
+    const avatar = getRandomAvatar();
 
     // Thêm người chơi vào phòng
     await set(ref(db, `rooms/${pin}/players/${finalPlayerId}`), {
@@ -83,7 +107,10 @@ const GamePlayer = () => {
       name: finalName,
       score: 0,
       currentAnswer: null,
-      avatar: avatarUrl
+      avatar: avatar.url,
+      avatarColor: avatar.color,
+      avatarEmoji: avatar.emoji,
+      avatarName: avatar.name
     });
 
     setLocalGameState('PLAYING');
