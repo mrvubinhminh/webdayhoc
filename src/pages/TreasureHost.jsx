@@ -302,7 +302,8 @@ const TreasureHost = () => {
     setRoomCode(code);
     try { localStorage.setItem(HOST_ROOM_KEY, code); } catch { /* không sao */ }
     setLocalGameState('LOBBY');
-    
+    setShowRules(true);
+
     playAudio('https://files.catbox.moe/eopz4f.mp3');
     
     const TEAM_NAMES = [
