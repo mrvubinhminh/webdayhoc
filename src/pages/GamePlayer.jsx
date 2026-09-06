@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
-import { ref, set, onValue, get } from 'firebase/database';
+import { ref, set, onValue, get, update } from 'firebase/database';
 import MathText from '../components/MathText';
 
 const GamePlayer = () => {
@@ -247,6 +247,29 @@ const GamePlayer = () => {
                             ))}
                           </div>
                         )}
+                      </div>
+                    </div>
+                  )}
+
+                  {roomData.settings?.enableHighStakes && roomData.currentQuestionIndex >= (roomData.questions?.length || 0) - 3 && !me?.usedHighStakes && (
+                    <div className="mb-6 flex justify-center">
+                      <button
+                        onClick={async () => {
+                          await update(ref(db, `rooms/${pin}/players/${playerId}`), { usedHighStakes: true });
+                        }}
+                        className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 text-slate-900 px-8 py-4 rounded-full font-black text-lg flex items-center gap-3 shadow-[0_8px_0_rgba(161,98,7,1)] active:translate-y-2 active:shadow-none transition-all animate-pulse"
+                      >
+                        <span className="text-3xl">⭐</span>
+                        Chọn Ngôi Sao Hy Vọng
+                      </button>
+                    </div>
+                  )}
+
+                  {me?.usedHighStakes && (
+                    <div className="mb-6 text-center">
+                      <div className="bg-yellow-900/50 border-2 border-yellow-500 rounded-2xl px-6 py-3 text-yellow-300 font-bold text-lg flex items-center justify-center gap-2">
+                        <span className="text-2xl">⭐</span>
+                        Bạn đã chọn ngôi sao (×3 điểm)
                       </div>
                     </div>
                   )}

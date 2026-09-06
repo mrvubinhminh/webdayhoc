@@ -243,7 +243,8 @@ const GameHost = () => {
         playMode: playMode,
         teamCount: teamCount,
         bgUrl: bgUrl,
-        showQuestionOnDevice: showQuestionOnDevice
+        showQuestionOnDevice: showQuestionOnDevice,
+        enableHighStakes: enableHighStakes
       }
     });
   };
@@ -259,29 +260,38 @@ const GameHost = () => {
     playAudio('https://files.catbox.moe/r1fiz6.mp3');
     const currentQ = roomData.questions[roomData.currentQuestionIndex];
     const players = roomData.players || {};
-    
+    const enableHS = roomData.settings?.enableHighStakes;
+    const totalQ = roomData.questions?.length || 0;
+    const isLastThree = totalQ > 0 && roomData.currentQuestionIndex >= totalQ - 3;
+
     let wrongCount = 0;
     const updates = {};
     updates['status'] = 'REVEAL';
-    
+
     Object.keys(players).forEach(playerId => {
       const p = players[playerId];
       if (p.currentAnswer) {
+         let isCorrect = false;
          if (currentQ.type === 'TLN') {
             const normalizedPlayerAns = p.currentAnswer.toString().trim().toLowerCase().replace(/,/g, '.');
             const normalizedCorrect = currentQ.correctOption.toString().trim().toLowerCase().replace(/,/g, '.');
-            if (normalizedPlayerAns === normalizedCorrect) {
-              updates[`players/${playerId}/score`] = (p.score || 0) + 100;
-            } else {
-              wrongCount++;
-            }
+            isCorrect = normalizedPlayerAns === normalizedCorrect;
          } else {
-            if (p.currentAnswer === currentQ.correctOption) {
-              updates[`players/${playerId}/score`] = (p.score || 0) + 100;
-            } else {
-              wrongCount++;
-            }
+            isCorrect = p.currentAnswer === currentQ.correctOption;
          }
+
+         let points = 100;
+         if (enableHS && isLastThree && p.usedHighStakes) {
+            points = isCorrect ? 300 : -300;
+         } else if (isCorrect) {
+            points = 100;
+         } else {
+            points = 0;
+            wrongCount++;
+         }
+
+         updates[`players/${playerId}/score`] = (p.score || 0) + points;
+         updates[`players/${playerId}/usedHighStakes`] = false;
       } else {
          wrongCount++;
       }
@@ -510,9 +520,9 @@ const GameHost = () => {
 
                 {playMode === 'INDIVIDUAL' && (
                   <label className="flex items-center gap-3 cursor-pointer mt-4 bg-slate-900 p-4 rounded-lg border border-transparent hover:border-emerald-500/50 transition-colors">
-                    <input 
-                      type="checkbox" 
-                      checked={showQuestionOnDevice} 
+                    <input
+                      type="checkbox"
+                      checked={showQuestionOnDevice}
                       onChange={(e) => setShowQuestionOnDevice(e.target.checked)}
                       className="w-5 h-5 accent-emerald-500 cursor-pointer"
                     />
@@ -521,6 +531,18 @@ const GameHost = () => {
                     </span>
                   </label>
                 )}
+
+                <label className="flex items-center gap-3 cursor-pointer mt-4 bg-slate-900 p-4 rounded-lg border border-transparent hover:border-yellow-500/50 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={enableHighStakes}
+                    onChange={(e) => setEnableHighStakes(e.target.checked)}
+                    className="w-5 h-5 accent-yellow-500 cursor-pointer"
+                  />
+                  <span className="text-gray-300 font-bold select-none text-sm">
+                    ⭐ Chế độ ngôi sao hy vọng (3 câu cuối: nhân 3x nếu đúng, trừ 3x nếu sai)
+                  </span>
+                </label>
 
                 {playMode === 'TEAM' && (
                   <button onClick={() => window.open('/print-qr', '_blank')} className="mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg w-full flex items-center justify-center gap-2 transition-colors">
