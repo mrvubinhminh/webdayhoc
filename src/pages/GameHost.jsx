@@ -734,12 +734,16 @@ const GameHost = () => {
           {roomData.status === 'END' && (() => {
              const top3 = sortedTop10.slice(0, 3);
              return (
-                <div className="w-full max-w-5xl mx-auto -mt-10 px-4 animate-fade-in relative z-20">
-                  <h1 className="text-4xl md:text-6xl font-black text-center text-yellow-400 mb-20 drop-shadow-[0_0_20px_rgba(250,204,21,0.5)]">
-                     🏆 TỔNG KẾT BẢNG XẾP HẠNG 🏆
-                  </h1>
+                <div className="w-full max-w-5xl mx-auto px-4 animate-fade-in relative z-20 h-screen flex flex-col pt-12">
+                  {/* Tiêu đề trên cao */}
+                  <div className="shrink-0">
+                    <h1 className="text-4xl md:text-6xl font-black text-center text-yellow-400 drop-shadow-[0_0_40px_rgba(250,204,21,1)] uppercase animate-pulse">
+                       🏆 TỔNG KẾT BẢNG XẾP HẠNG 🏆
+                    </h1>
+                  </div>
 
-                  <div className="flex justify-center items-end gap-4 md:gap-8 h-[350px] mb-16">
+                  {/* Bục xếp hạng trung tâm */}
+                  <div className="flex-1 flex justify-center items-center gap-4 md:gap-8 mt-12 mb-8">
                      {top3[1] && (
                         <div className="flex flex-col items-center animate-bounce-in" style={{ animationDelay: '0.2s' }}>
                            <div className="text-2xl font-bold text-gray-300 mb-2 w-[100px] md:w-[150px] overflow-hidden text-ellipsis whitespace-nowrap text-center">{top3[1].name}</div>
@@ -775,16 +779,14 @@ const GameHost = () => {
                      )}
                   </div>
 
-                  {/* Nút xem thống kê chi tiết */}
-                  <div className="flex justify-center mb-12 animate-fade-in" style={{ animationDelay: '0.8s' }}>
-                     <button onClick={() => setShowStatsModal(true)} className="bg-slate-800/80 hover:bg-slate-700 px-8 py-6 rounded-3xl border border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.15)] flex items-center justify-center gap-3 transition-colors">
-                        <XCircle className="w-10 h-10 text-red-400" />
-                        <span className="text-3xl font-bold text-red-400">Xem Thống Kê Câu Sai</span>
+                  {/* Các nút bấm sát mép dưới */}
+                  <div className="shrink-0 flex flex-col items-center gap-4 pb-8 animate-fade-in" style={{ animationDelay: '0.8s' }}>
+                     <button onClick={() => setShowStatsModal(true)} className="bg-slate-800/80 hover:bg-slate-700 px-8 py-4 rounded-3xl border border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.15)] flex items-center justify-center gap-3 transition-colors">
+                        <XCircle className="w-8 h-8 text-red-400" />
+                        <span className="text-2xl font-bold text-red-400">Xem Thống Kê Câu Sai</span>
                      </button>
-                  </div>
 
-                  <div className="flex justify-center pb-12 animate-fade-in" style={{ animationDelay: '1s' }}>
-                     <button onClick={closeRoom} className="bg-red-600 hover:bg-red-500 text-white px-10 py-5 rounded-2xl font-black text-2xl shadow-lg transition-transform hover:scale-105 flex items-center gap-3">
+                     <button onClick={closeRoom} className="bg-red-600 hover:bg-red-500 text-white px-10 py-4 rounded-2xl font-black text-xl shadow-lg transition-transform hover:scale-105 flex items-center gap-3">
                         Thoát & Xoá Phòng
                      </button>
                   </div>
