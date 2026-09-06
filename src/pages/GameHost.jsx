@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { ArrowLeft, Upload, Play, Users, Trophy, ChevronRight, CheckCircle2, XCircle, Crown, Download } from 'lucide-react';
@@ -114,6 +114,20 @@ const GameHost = () => {
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [selectedStatQ, setSelectedStatQ] = useState(null);
 
+  const currentAudio = useRef(null);
+
+  const playAudio = (url) => {
+    if (currentAudio.current) {
+      currentAudio.current.pause();
+      currentAudio.current.currentTime = 0;
+    }
+    if (url) {
+      const audio = new Audio(url);
+      currentAudio.current = audio;
+      audio.play().catch(e => console.log('Audio play failed:', e));
+    }
+  };
+
   useEffect(() => {
     if (roomCode) {
       const roomRef = ref(db, `rooms/${roomCode}`);
@@ -225,6 +239,8 @@ const GameHost = () => {
     setRoomCode(code);
     setLocalGameState('LOBBY');
     
+    playAudio('https://files.catbox.moe/eopz4f.mp3');
+    
     await set(ref(db, `rooms/${code}`), {
       status: 'LOBBY', 
       currentQuestionIndex: 0,
@@ -239,14 +255,14 @@ const GameHost = () => {
   };
 
   const startGame = async () => {
-    const audio = new Audio('https://www.myinstants.com/media/sounds/epic.mp3');
-    audio.play().catch(e => console.log('Audio play failed', e));
+    playAudio('https://files.catbox.moe/amew8w.mp3');
 
     await update(ref(db, `rooms/${roomCode}`), { status: 'QUESTION' });
     setLocalGameState('PLAYING');
   };
 
   const revealAnswer = async () => {
+    playAudio('https://files.catbox.moe/r1fiz6.mp3');
     const currentQ = roomData.questions[roomData.currentQuestionIndex];
     const players = roomData.players || {};
     
@@ -285,10 +301,12 @@ const GameHost = () => {
   const nextQuestion = async () => {
     const nextIdx = roomData.currentQuestionIndex + 1;
     if (nextIdx >= roomData.questions.length) {
-      await update(ref(db, `rooms/${roomCode}`), { status: 'END' });
+      endGame();
       return;
     }
     
+    playAudio('https://files.catbox.moe/amew8w.mp3');
+
     const players = roomData.players || {};
     const updates = {};
     updates['status'] = 'QUESTION';
@@ -303,6 +321,7 @@ const GameHost = () => {
 
   const endGame = async () => {
     if (window.confirm("Bạn có chắc muốn kết thúc và xem tổng kết xếp hạng?")) {
+      playAudio('https://files.catbox.moe/12vlpb.mp3');
       await update(ref(db, `rooms/${roomCode}`), { status: 'END' });
     }
   };
