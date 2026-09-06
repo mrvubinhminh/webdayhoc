@@ -238,8 +238,16 @@ const GamePlayer = () => {
             if (!currentQ) return null;
             const showQuestion = roomData.settings?.showQuestionOnDevice;
             
+            const OPTION_STYLES = [
+              { num: 1, color: 'bg-red-500', shape: 'border-red-700' },
+              { num: 2, color: 'bg-blue-500', shape: 'border-blue-700' },
+              { num: 3, color: 'bg-yellow-500', shape: 'border-yellow-700' },
+              { num: 4, color: 'bg-emerald-500', shape: 'border-emerald-700' }
+            ];
+            const canUseStar = roomData.settings?.enableHighStakes && roomData.currentQuestionIndex >= (roomData.questions?.length || 0) - 3 && !me?.usedHighStakes;
+
             return (
-            <div className="w-full max-w-2xl text-center flex flex-col h-[90vh] py-4">
+            <div className="w-full max-w-2xl text-center flex flex-col h-[92vh] py-2">
               {me?.currentAnswer ? (
                  <div className="bg-slate-800 p-8 rounded-3xl animate-fade-in border border-slate-700 my-auto">
                     <CheckCircle className="w-24 h-24 text-emerald-400 mx-auto mb-4" />
@@ -247,104 +255,127 @@ const GamePlayer = () => {
                     <p className="text-gray-400 text-xl">Chờ các bạn khác nhé...</p>
                  </div>
               ) : (
-                <div className="flex flex-col h-full">
-                  <div className="mb-4">
-                    <div className="bg-slate-800 px-6 py-2 rounded-full text-xl font-bold text-emerald-400 inline-block shadow-lg border border-slate-700">
-                      Câu hỏi {roomData.currentQuestionIndex + 1}
+                <div className="flex flex-col h-full min-h-0">
+                  {/* Thanh trạng thái gọn: số câu + ngôi sao */}
+                  <div className="shrink-0 mb-2 flex items-center justify-center gap-2 flex-wrap">
+                    <div className="bg-slate-800 px-4 py-1.5 rounded-full text-base font-bold text-emerald-400 shadow-lg border border-slate-700">
+                      Câu {roomData.currentQuestionIndex + 1}
                     </div>
-                  </div>
-                  
-                  {showQuestion && (
-                    <div className="flex-1 overflow-y-auto mb-4 custom-scrollbar text-left">
-                      <div className="bg-slate-800 p-5 rounded-2xl border border-slate-700 shadow-xl inline-block w-full">
-                        <div className="text-white text-lg font-medium mb-4 whitespace-pre-wrap">
-                          <MathText text={currentQ.question} />
-                        </div>
-                        {currentQ.image && (
-                          <div className="mb-4 flex justify-center">
-                            <img src={currentQ.image} alt="minh họa" className="max-h-48 rounded-lg object-contain bg-white/5 p-2" />
-                          </div>
-                        )}
-                        {currentQ.type !== 'TLN' && currentQ.options && (
-                          <div className="flex flex-col gap-3 border-t border-slate-700 pt-4">
-                            {['A', 'B', 'C', 'D'].map((lbl, idx) => (
-                              <div key={idx} className="flex gap-3 text-gray-300 items-start">
-                                <span className="font-bold text-emerald-400 shrink-0">{lbl}.</span>
-                                <span><MathText text={currentQ.options[idx] || ''} /></span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
 
-                  {roomData.settings?.enableHighStakes && roomData.currentQuestionIndex >= (roomData.questions?.length || 0) - 3 && !me?.usedHighStakes && (
-                    <div className="mb-6 flex justify-center">
+                    {canUseStar && (
                       <button
                         onClick={async () => {
                           await update(ref(db, `rooms/${pin}/players/${playerId}`), { usedHighStakes: true });
                         }}
-                        className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 text-slate-900 px-8 py-4 rounded-full font-black text-lg flex items-center gap-3 shadow-[0_8px_0_rgba(161,98,7,1)] active:translate-y-2 active:shadow-none transition-all animate-pulse"
+                        className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-300 text-slate-900 px-4 py-1.5 rounded-full font-black text-sm flex items-center gap-1.5 shadow-[0_4px_0_rgba(161,98,7,1)] active:translate-y-1 active:shadow-none transition-all animate-pulse"
                       >
-                        <span className="text-3xl">⭐</span>
-                        Chọn Ngôi Sao Hy Vọng
+                        <span className="text-xl">⭐</span>
+                        Ngôi Sao Hy Vọng
                       </button>
-                    </div>
-                  )}
+                    )}
 
-                  {me?.usedHighStakes && (
-                    <div className="mb-6 text-center">
-                      <div className="bg-yellow-900/50 border-2 border-yellow-500 rounded-2xl px-6 py-3 text-yellow-300 font-bold text-lg flex items-center justify-center gap-2">
-                        <span className="text-2xl">⭐</span>
-                        Bạn đã chọn ngôi sao (×3 điểm)
+                    {me?.usedHighStakes && (
+                      <div className="bg-yellow-900/50 border border-yellow-500 rounded-full px-4 py-1.5 text-yellow-300 font-bold text-sm flex items-center gap-1.5">
+                        <span className="text-xl">⭐</span> ×3 điểm
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
 
-                  <div className={`mt-auto ${showQuestion ? 'shrink-0' : 'flex-1 flex flex-col justify-center'}`}>
-                  {currentQ.type === 'TLN' ? (
-                    <div className="w-full flex flex-col gap-6 items-center">
-                       <input 
-                         type="text" 
-                         value={tlnAnswer} 
-                         onChange={(e) => setTlnAnswer(e.target.value)} 
-                         placeholder="Nhập câu trả lời..." 
-                         className="w-full text-center bg-slate-900 border-4 border-slate-700 text-white text-3xl md:text-5xl font-black py-8 rounded-3xl outline-none focus:border-emerald-500 shadow-xl"
-                       />
-                       <button 
-                         onClick={() => {
-                           if (tlnAnswer.trim()) {
-                             submitAnswer(tlnAnswer.trim());
-                             setTlnAnswer('');
-                           }
-                         }}
-                         className="bg-emerald-600 hover:bg-emerald-500 text-white w-full py-6 rounded-2xl text-2xl font-black shadow-[0_8px_0_rgba(4,120,87,1)] active:translate-y-2 active:shadow-none transition-all uppercase tracking-widest"
-                       >
-                         Gửi Đáp Án
-                       </button>
+                  {showQuestion ? (
+                    <div className="flex-1 min-h-0 flex flex-col gap-2">
+                      {/* Nội dung câu hỏi */}
+                      <div className="shrink-0 max-h-[38%] overflow-y-auto custom-scrollbar bg-slate-800 p-3 rounded-2xl border border-slate-700 shadow-xl text-left">
+                        <div className="text-white text-base md:text-lg font-medium whitespace-pre-wrap">
+                          <MathText text={currentQ.question} />
+                        </div>
+                        {currentQ.image && (
+                          <div className="mt-2 flex justify-center">
+                            <img src={currentQ.image} alt="minh họa" className="max-h-32 rounded-lg object-contain bg-white/5 p-1" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Phương án = nút trả lời luôn */}
+                      {currentQ.type === 'TLN' ? (
+                        <div className="flex-1 min-h-0 flex flex-col gap-3 justify-center">
+                          <input
+                            type="text"
+                            value={tlnAnswer}
+                            onChange={(e) => setTlnAnswer(e.target.value)}
+                            placeholder="Nhập câu trả lời..."
+                            className="w-full text-center bg-slate-900 border-4 border-slate-700 text-white text-3xl md:text-4xl font-black py-6 rounded-3xl outline-none focus:border-emerald-500 shadow-xl"
+                          />
+                          <button
+                            onClick={() => {
+                              if (tlnAnswer.trim()) {
+                                submitAnswer(tlnAnswer.trim());
+                                setTlnAnswer('');
+                              }
+                            }}
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white w-full py-5 rounded-2xl text-xl font-black shadow-[0_8px_0_rgba(4,120,87,1)] active:translate-y-2 active:shadow-none transition-all uppercase tracking-widest"
+                          >
+                            Gửi Đáp Án
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex-1 min-h-0 grid grid-rows-4 gap-2">
+                          {OPTION_STYLES.map((opt) => (
+                            <button
+                              key={opt.num}
+                              onClick={() => submitAnswer(opt.num)}
+                              className={`w-full min-h-0 rounded-2xl ${opt.color} border-b-[6px] ${opt.shape} shadow-xl active:translate-y-1 active:border-b-0 transition-transform flex items-center gap-3 px-3 py-2 text-left overflow-hidden`}
+                            >
+                              <span className="text-3xl font-black text-white/80 shrink-0 w-9 text-center">
+                                {['A', 'B', 'C', 'D'][opt.num - 1]}
+                              </span>
+                              <span className="flex-1 text-white font-bold text-base md:text-lg overflow-y-auto max-h-full custom-scrollbar">
+                                <MathText text={currentQ.options?.[opt.num - 1] || ''} />
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 gap-4 w-full h-[60vh]">
-                      {[
-                        { num: 1, color: 'bg-red-500', shape: 'border-red-700' },
-                        { num: 2, color: 'bg-blue-500', shape: 'border-blue-700' },
-                        { num: 3, color: 'bg-yellow-500', shape: 'border-yellow-700' },
-                        { num: 4, color: 'bg-emerald-500', shape: 'border-emerald-700' }
-                      ].map((opt) => (
-                        <button 
-                          key={opt.num}
-                          onClick={() => submitAnswer(opt.num)}
-                          className={`w-full h-full rounded-2xl ${opt.color} border-b-8 ${opt.shape} shadow-xl active:translate-y-2 active:border-b-0 transition-transform flex items-center justify-center group`}
-                        >
-                           <span className="text-6xl font-black text-white/50 group-hover:text-white transition-colors">
-                             {['A', 'B', 'C', 'D'][opt.num - 1]}
-                           </span>
-                        </button>
-                      ))}
+                    <div className="flex-1 min-h-0 flex flex-col justify-center">
+                      {currentQ.type === 'TLN' ? (
+                        <div className="w-full flex flex-col gap-6 items-center">
+                           <input
+                             type="text"
+                             value={tlnAnswer}
+                             onChange={(e) => setTlnAnswer(e.target.value)}
+                             placeholder="Nhập câu trả lời..."
+                             className="w-full text-center bg-slate-900 border-4 border-slate-700 text-white text-3xl md:text-5xl font-black py-8 rounded-3xl outline-none focus:border-emerald-500 shadow-xl"
+                           />
+                           <button
+                             onClick={() => {
+                               if (tlnAnswer.trim()) {
+                                 submitAnswer(tlnAnswer.trim());
+                                 setTlnAnswer('');
+                               }
+                             }}
+                             className="bg-emerald-600 hover:bg-emerald-500 text-white w-full py-6 rounded-2xl text-2xl font-black shadow-[0_8px_0_rgba(4,120,87,1)] active:translate-y-2 active:shadow-none transition-all uppercase tracking-widest"
+                           >
+                             Gửi Đáp Án
+                           </button>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-4 w-full h-[60vh]">
+                          {OPTION_STYLES.map((opt) => (
+                            <button
+                              key={opt.num}
+                              onClick={() => submitAnswer(opt.num)}
+                              className={`w-full h-full rounded-2xl ${opt.color} border-b-8 ${opt.shape} shadow-xl active:translate-y-2 active:border-b-0 transition-transform flex items-center justify-center group`}
+                            >
+                               <span className="text-6xl font-black text-white/50 group-hover:text-white transition-colors">
+                                 {['A', 'B', 'C', 'D'][opt.num - 1]}
+                               </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
-                  </div>
                 </div>
               )}
             </div>
