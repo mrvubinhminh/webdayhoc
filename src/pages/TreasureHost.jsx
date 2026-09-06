@@ -177,7 +177,7 @@ const TreasureHost = () => {
              } else if (roomData.status === 'STAR_PICK') {
                 showQuestionAfterStarPick();
              } else if (roomData.status === 'DICE_ROLL') {
-                nextQuestion();
+                openBoardSummary();
              }
              return 0;
           }
@@ -409,6 +409,19 @@ const TreasureHost = () => {
     }
   };
 
+  // Mở / đóng bản đồ toàn màn hình. Mở thì đồng hồ dừng, đóng thì chạy lại.
+  const toggleBoard = async (open) => {
+    if (!roomCode) return;
+    const next = open ?? !roomData?.boardOpen;
+    await update(ref(db, `treasureRooms/${roomCode}`), { boardOpen: next, paused: next });
+  };
+
+  // Hết 6 giây gieo xúc sắc → mở bản đồ tổng kết, chờ giáo viên bấm câu tiếp theo
+  const openBoardSummary = async () => {
+    playAudio('https://files.catbox.moe/r1fiz6.mp3');
+    await update(ref(db, `treasureRooms/${roomCode}`), { boardOpen: true, paused: true });
+  };
+
   const nextQuestion = async () => {
     const nextIdx = roomData.currentQuestionIndex + 1;
     if (nextIdx >= roomData.questions.length) {
@@ -422,6 +435,9 @@ const TreasureHost = () => {
     const updates = {};
     updates['status'] = isStarQuestion(nextIdx) ? 'STAR_PICK' : 'QUESTION';
     updates['currentQuestionIndex'] = nextIdx;
+    // Sang câu mới thì đóng bản đồ và cho đồng hồ chạy lại
+    updates['boardOpen'] = false;
+    updates['paused'] = false;
 
     Object.keys(players).forEach(playerId => {
       updates[`players/${playerId}/currentAnswer`] = null;
@@ -998,14 +1014,138 @@ const TreasureHost = () => {
               <div className="bg-slate-800 px-6 py-2 rounded-lg text-xl font-bold text-emerald-400">
                 Đã trả lời: {answerCount}/{playersList.length}
               </div>
+              {roomData.settings?.boardEnabled && (
+                <button
+                  onClick={() => toggleBoard(true)}
+                  className="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg font-black flex items-center gap-2 shadow-lg shadow-amber-900/40"
+                >
+                  🗺️ Bản đồ
+                </button>
+              )}
               <button onClick={() => window.open('/scanner', '_blank')} className="bg-indigo-900/60 hover:bg-indigo-600 text-indigo-100 px-4 py-2 rounded-lg font-bold">📷 Quét QR</button>
               <button onClick={endGame} className="bg-red-900/50 hover:bg-red-600 text-red-200 px-4 py-2 rounded-lg font-bold">Kết thúc</button>
             </div>
           </div>
 
+          {/* Bản đồ toàn màn hình: che hẳn câu hỏi, đồng hồ dừng, kèm tổng kết điểm */}
+          {roomData.settings?.boardEnabled && roomData.boardOpen && (() => {
+            const ranked = [...playersList].sort(
+              (a, b) => (b.position || 1) - (a.position || 1) || (b.score || 0) - (a.score || 0)
+            );
+            const lastMover = playersList.find(p => p.justLanded);
+            const isLastQuestion = roomData.currentQuestionIndex >= (roomData.questions?.length || 0) - 1;
+
+            return (
+              <div className="fixed inset-0 z-50 flex flex-col" style={theme.bgStyle}>
+                {roomData.settings?.boardBgUrl && (
+                  <div
+                    className="absolute inset-0 bg-cover bg-center opacity-25"
+                    style={{ backgroundImage: `url(${roomData.settings.boardBgUrl})` }}
+                  />
+                )}
+
+                <div className="relative z-10 flex flex-col h-full p-4 md:p-6">
+                  {/* Thanh trên */}
+                  <div className="shrink-0 flex items-center justify-between gap-4 mb-4">
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-2xl md:text-4xl font-black text-amber-400 drop-shadow-[0_0_25px_rgba(245,158,11,0.6)]">
+                        🗺️ BẢN ĐỒ KHO BÁU
+                      </h2>
+                      <span className="bg-amber-500/25 border border-amber-400 text-amber-200 px-3 py-1.5 rounded-full font-bold text-sm">
+                        ⏸ Đồng hồ đang dừng
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => toggleBoard(false)}
+                      className="bg-slate-800/90 hover:bg-slate-700 text-white px-5 py-3 rounded-xl font-bold border border-white/20 flex items-center gap-2 transition-colors"
+                    >
+                      ✕ Đóng, về câu hỏi
+                    </button>
+                  </div>
+
+                  {/* Bản đồ + tổng kết */}
+                  <div className="flex-1 min-h-0 grid lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)] gap-6">
+                    <div className="min-h-0 flex items-center justify-center">
+                      <div className="w-full" style={{ maxWidth: 'min(100%, 68vh)' }}>
+                        <TreasureBoard
+                          size={activeBoardSize}
+                          bgUrl={roomData.settings?.boardBgUrl}
+                          specialCells={roomData.settings?.specialCells || {}}
+                          teams={boardTeams}
+                          highlightCell={lastMover?.position || null}
+                          scale="stage"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Bảng tổng kết điểm */}
+                    <div className="min-h-0 flex flex-col bg-black/55 backdrop-blur-xl rounded-3xl border border-amber-500/40 overflow-hidden">
+                      <div className="shrink-0 px-5 py-4 border-b border-white/10">
+                        <h3 className="text-xl font-black text-white uppercase tracking-wide">🏆 Tổng kết</h3>
+                        <p className="text-gray-400 text-sm">
+                          Sau câu {roomData.currentQuestionIndex + 1}/{roomData.questions?.length || 0}
+                        </p>
+                      </div>
+
+                      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
+                        {ranked.map((p, i) => {
+                          const idx = roomData.teams?.[p.id]?.index || 1;
+                          return (
+                            <div
+                              key={p.id}
+                              className={`flex items-center gap-3 px-3 py-3 rounded-xl border ${
+                                i === 0 ? 'bg-yellow-500/20 border-yellow-500' : 'bg-slate-800/70 border-slate-700'
+                              }`}
+                            >
+                              <span className="font-black text-lg w-7 shrink-0 text-gray-300">#{i + 1}</span>
+                              <div
+                                className="w-9 h-9 rounded-full border-2 border-white flex items-center justify-center font-black text-white text-sm shrink-0"
+                                style={{ backgroundColor: getTeamColor(idx) }}
+                              >
+                                {idx}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-bold text-white truncate">{p.name}</div>
+                                <div className="text-xs text-gray-400">
+                                  Ô {p.position || 1}/{totalCells}
+                                  {p.hasRolled && <span className="text-amber-300 font-bold"> • 🎲 {p.diceValue}</span>}
+                                  {p.lastJump > 0 && <span className="text-emerald-400 font-bold"> • ⚡ +{p.lastJump}</span>}
+                                  {p.lastJump < 0 && <span className="text-red-400 font-bold"> • 💀 {p.lastJump}</span>}
+                                </div>
+                              </div>
+                              <div className="text-2xl font-black text-emerald-400 shrink-0">{p.score || 0}</div>
+                            </div>
+                          );
+                        })}
+                        {ranked.length === 0 && (
+                          <p className="text-gray-500 text-center py-8">Chưa có nhóm nào tham gia</p>
+                        )}
+                      </div>
+
+                      {/* Nút sang câu tiếp theo */}
+                      <div className="shrink-0 p-4 border-t border-white/10">
+                        <button
+                          onClick={isLastQuestion ? endGame : nextQuestion}
+                          className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white py-5 rounded-2xl font-black text-xl shadow-[0_8px_0_rgba(4,120,87,1)] active:translate-y-2 active:shadow-none transition-all flex items-center justify-center gap-3"
+                        >
+                          {isLastQuestion ? '🏆 Kết thúc & Xếp hạng' : '▶ CÂU TIẾP THEO'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Mini bản đồ luôn hiện khi đang hỏi / xem đáp án để lớp không mất mạch cục diện */}
-          {roomData.settings?.boardEnabled && (roomData.status === 'QUESTION' || roomData.status === 'REVEAL') && (
-            <div className="fixed bottom-4 right-4 w-40 md:w-52 z-30 opacity-90 hover:opacity-100 transition-opacity">
+          {roomData.settings?.boardEnabled && !roomData.boardOpen && (roomData.status === 'QUESTION' || roomData.status === 'REVEAL') && (
+            <button
+              onClick={() => toggleBoard(true)}
+              className="fixed bottom-4 right-4 w-40 md:w-52 z-30 opacity-90 hover:opacity-100 hover:scale-105 transition-all"
+              title="Mở bản đồ toàn màn hình (dừng đồng hồ)"
+            >
               <div className="bg-black/60 backdrop-blur-md rounded-2xl p-2 border border-amber-500/40">
                 <TreasureBoard
                   size={activeBoardSize}
@@ -1014,9 +1154,9 @@ const TreasureHost = () => {
                   teams={boardTeams}
                   compact
                 />
-                <p className="text-center text-amber-300 text-[10px] font-bold mt-1.5">🗺️ Cục diện bản đồ</p>
+                <p className="text-center text-amber-300 text-[10px] font-bold mt-1.5">🗺️ Bấm để mở bản đồ</p>
               </div>
-            </div>
+            </button>
           )}
 
           {roomData.status === 'STAR_PICK' && (() => {

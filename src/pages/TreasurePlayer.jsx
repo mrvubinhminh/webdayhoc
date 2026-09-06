@@ -298,7 +298,7 @@ const TreasurePlayer = () => {
             </div>
           )}
 
-          {roomData.status === 'STAR_PICK' && (() => {
+          {!roomData.boardOpen && roomData.status === 'STAR_PICK' && (() => {
             const alreadyUsed = me?.starUsed;
             const pickedNow = me?.starActive;
             return (
@@ -342,7 +342,7 @@ const TreasurePlayer = () => {
             );
           })()}
 
-          {roomData.status === 'QUESTION' && (() => {
+          {!roomData.boardOpen && roomData.status === 'QUESTION' && (() => {
             const currentQ = roomData.questions?.[roomData.currentQuestionIndex];
             if (!currentQ) return null;
             const showQuestion = roomData.settings?.showQuestionOnDevice;
@@ -483,7 +483,7 @@ const TreasurePlayer = () => {
             );
           })()}
 
-          {roomData.status === 'REVEAL' && (() => {
+          {!roomData.boardOpen && roomData.status === 'REVEAL' && (() => {
              const currentQ = roomData.questions?.[roomData.currentQuestionIndex];
              if (!currentQ) return null;
              const isCorrect = currentQ.type === 'TLN'
@@ -557,7 +557,68 @@ const TreasurePlayer = () => {
              );
           })()}
 
-          {roomData.status === 'DICE_ROLL' && (() => {
+          {/* Giáo viên mở bản đồ → học sinh cũng xem bản đồ và bảng điểm, câu hỏi tạm ẩn */}
+          {roomData.boardOpen && roomData.settings?.boardEnabled && (() => {
+            const settings = roomData.settings || {};
+            const size = settings.boardSize || 6;
+            const total = size * size;
+            const all = Object.values(roomData.players || {});
+            const boardTeams = all.map(p => ({
+              id: p.id, name: p.name, position: p.position || 1,
+              index: roomData.teams?.[p.id]?.index || 1
+            }));
+            const ranked = [...all].sort((a, b) => (b.position || 1) - (a.position || 1) || (b.score || 0) - (a.score || 0));
+            const myRank = ranked.findIndex(p => p.id === playerId) + 1;
+
+            return (
+              <div className="w-full max-w-md flex flex-col items-center gap-3 px-4 py-2">
+                <h2 className="text-2xl font-black text-amber-400">🗺️ Bản Đồ Kho Báu</h2>
+
+                <div className="w-full max-w-[330px]">
+                  <TreasureBoard
+                    size={size}
+                    bgUrl={settings.boardBgUrl}
+                    specialCells={settings.specialCells || {}}
+                    teams={boardTeams}
+                    highlightCell={me?.justLanded ? me?.position : null}
+                    compact
+                  />
+                </div>
+
+                <div className="w-full bg-amber-500/15 border-2 border-amber-500 rounded-2xl px-5 py-3 text-center">
+                  <p className="text-amber-200 text-xs uppercase tracking-widest font-bold">Nhóm của bạn</p>
+                  <p className="text-white font-black text-lg mt-0.5">
+                    Hạng {myRank} • Ô {me?.position || 1}/{total} • {me?.score || 0} điểm
+                  </p>
+                </div>
+
+                <div className="w-full flex flex-col gap-1.5 max-h-[28vh] overflow-y-auto">
+                  {ranked.map((p, i) => {
+                    const idx = roomData.teams?.[p.id]?.index || 1;
+                    const isMe = p.id === playerId;
+                    return (
+                      <div key={p.id} className={`flex items-center gap-2 px-3 py-2 rounded-xl ${isMe ? 'bg-emerald-500/20 border border-emerald-500' : 'bg-slate-800/70'}`}>
+                        <span className="font-black text-sm w-6 shrink-0 text-gray-400">#{i + 1}</span>
+                        <div
+                          className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center font-black text-white text-[10px] shrink-0"
+                          style={{ backgroundColor: getTeamColor(idx) }}
+                        >
+                          {idx}
+                        </div>
+                        <span className="flex-1 min-w-0 truncate font-bold text-white text-sm">{p.name}</span>
+                        <span className="text-amber-300 text-xs font-bold shrink-0">ô {p.position || 1}</span>
+                        <span className="text-emerald-400 font-black text-sm shrink-0 w-12 text-right">{p.score || 0}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <p className="text-gray-400 text-sm animate-pulse">Chờ thầy cô mở câu tiếp theo…</p>
+              </div>
+            );
+          })()}
+
+          {!roomData.boardOpen && roomData.status === 'DICE_ROLL' && (() => {
             const settings = roomData.settings || {};
             const size = settings.boardSize || 6;
             const total = size * size;
