@@ -339,16 +339,16 @@ const GameHost = () => {
   const currentBgUrl = roomData?.settings?.bgUrl || bgUrl;
 
   return (
-    <div className="min-h-screen text-white p-4 md:p-8 relative" style={localGameState !== 'SETUP' ? theme.bgStyle : { background: '#0f172a' }}>
+    <div className={`min-h-screen text-white relative ${roomData?.status !== 'END' ? 'p-4 md:p-8' : ''}`} style={localGameState !== 'SETUP' ? theme.bgStyle : { background: '#0f172a' }}>
       {localGameState !== 'SETUP' && currentBgUrl && (
-        <div 
+        <div
           className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: `url(${currentBgUrl})`, opacity: 0.6 }}
         />
       )}
-      
+
       {/* Cần set các div con có z-10 để đè lên background */}
-      <div className="relative z-10 w-full h-full min-h-screen flex flex-col">
+      <div className={`relative z-10 w-full flex flex-col ${roomData?.status !== 'END' ? 'min-h-screen' : 'h-screen'}`}>
       {localGameState === 'SETUP' && (
         <div className="max-w-3xl mx-auto">
           <button onClick={() => navigate('/games')} className="flex items-center gap-2 text-gray-400 hover:text-white mb-8">
