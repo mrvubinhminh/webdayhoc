@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
-import { ArrowLeft, Upload, Play, Users, Trophy, ChevronRight, CheckCircle2, XCircle, Crown } from 'lucide-react';
+import { ArrowLeft, Upload, Play, Users, Trophy, ChevronRight, CheckCircle2, XCircle, Crown, Download } from 'lucide-react';
 import { db } from '../firebase';
 import { ref, set, update, onValue, remove } from 'firebase/database';
 import katex from 'katex';
@@ -181,21 +181,46 @@ const GameHost = () => {
       
       const parsedQuestions = data.slice(1).map(row => {
         if (!row[0]) return null;
-        return {
-          question: row[0] || '',
-          optionA: row[1] || '',
-          optionB: row[2] || '',
-          optionC: row[3] || '',
-          optionD: row[4] || '',
-          correctOption: parseInt(row[5]) || 1,
-          explanation: row[6] || '',
-          image: row[7] || null,
-        };
+        
+        const typeIndicator = row[1]?.toString().trim().toUpperCase();
+        if (typeIndicator === 'TLN') {
+          return {
+            type: 'TLN',
+            question: row[0] || '',
+            correctOption: row[2]?.toString().trim() || '', // Đáp số ở cột C
+            explanation: row[3]?.toString() || '',          // Lời giải ở cột D
+            image: row[7] || null,                          // Vẫn giữ link ảnh ở cột H nếu có
+          };
+        } else {
+          return {
+            type: 'TRAC_NGHIEM',
+            question: row[0] || '',
+            optionA: row[1] || '',
+            optionB: row[2] || '',
+            optionC: row[3] || '',
+            optionD: row[4] || '',
+            correctOption: parseInt(row[5]) || 1,
+            explanation: row[6] || '',
+            image: row[7] || null,
+          };
+        }
       }).filter(Boolean);
 
       setQuestions(parsedQuestions);
     };
     reader.readAsBinaryString(file);
+  };
+
+  const downloadTemplate = () => {
+    const ws_data = [
+      ['Nội dung câu hỏi', 'Đ/A A hoặc TLN', 'Đ/A B hoặc Đáp số', 'Đ/A C hoặc Lời giải', 'Đ/A D', 'Đáp án đúng (1/2/3/4)', 'Lời giải', 'Link ảnh (tùy chọn)'],
+      ['Thủ đô của Việt Nam là gì?', 'Hồ Chí Minh', 'Đà Nẵng', 'Hà Nội', 'Huế', 3, 'Hà Nội là thủ đô của Việt Nam', 'https://example.com/hanoi.jpg'],
+      ['$2x + 3 = 7$ thì x bằng mấy?', 'TLN', '2', 'Chuyển vế $2x = 4 \\Rightarrow x = 2$', '', '', '', '']
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(ws_data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "CauHoi");
+    XLSX.writeFile(wb, "Mau_Cau_Hoi.xlsx");
   };
 
   const createRoom = async () => {
@@ -241,11 +266,21 @@ const GameHost = () => {
     Object.keys(players).forEach(playerId => {
       const p = players[playerId];
       if (p.currentAnswer) {
-         if (p.currentAnswer === currentQ.correctOption) {
-           // Cộng điểm
-           updates[`players/${playerId}/score`] = (p.score || 0) + 100; // Mỗi câu 100 điểm
+         if (currentQ.type === 'TLN') {
+            const normalizedPlayerAns = p.currentAnswer.toString().trim().toLowerCase().replace(/,/g, '.');
+            const normalizedCorrect = currentQ.correctOption.toString().trim().toLowerCase().replace(/,/g, '.');
+            if (normalizedPlayerAns === normalizedCorrect) {
+              updates[`players/${playerId}/score`] = (p.score || 0) + 100;
+            } else {
+              wrongCount++;
+            }
          } else {
-           wrongCount++;
+            if (p.currentAnswer === currentQ.correctOption) {
+              // Cộng điểm
+              updates[`players/${playerId}/score`] = (p.score || 0) + 100; // Mỗi câu 100 điểm
+            } else {
+              wrongCount++;
+            }
          }
       } else {
          wrongCount++; // Không trả lời cũng tính là sai
@@ -361,10 +396,15 @@ const GameHost = () => {
               <div className="flex-1 border-2 border-dashed border-emerald-500/30 p-8 rounded-xl hover:bg-emerald-500/10 transition-colors text-center flex flex-col justify-center">
                 <Upload className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
                 <p className="text-lg mb-4 text-gray-300">Tải lên file Excel chứa câu hỏi</p>
-                <label className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl font-bold cursor-pointer transition-colors inline-block">
-                  Chọn File Excel
-                  <input type="file" accept=".xlsx, .xls" onChange={handleFileUpload} className="hidden" />
-                </label>
+                <div className="flex flex-col md:flex-row justify-center gap-4">
+                  <label className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl font-bold cursor-pointer transition-colors inline-flex items-center justify-center gap-2">
+                    <Upload className="w-5 h-5" /> Chọn File Excel
+                    <input type="file" accept=".xlsx, .xls" onChange={handleFileUpload} className="hidden" />
+                  </label>
+                  <button onClick={downloadTemplate} className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-xl font-bold transition-colors inline-flex items-center justify-center gap-2">
+                    <Download className="w-5 h-5" /> Tải File Mẫu
+                  </button>
+                </div>
                 {fileName && (
                   <div className="mt-4 text-emerald-300 bg-emerald-900/30 p-3 rounded-lg border border-emerald-500/30">
                     ✅ <strong>{fileName}</strong> — {questions.length} câu hỏi
@@ -522,20 +562,22 @@ const GameHost = () => {
                   )}
                 </div>
 
-                {/* 4 ô đáp án */}
-                <div className="grid grid-cols-2 gap-4 md:gap-5">
-                  {[
-                    { text: q.optionA, style: 'bg-red-500 border-red-700' },
-                    { text: q.optionB, style: 'bg-blue-500 border-blue-700' },
-                    { text: q.optionC, style: 'bg-yellow-500 border-yellow-700' },
-                    { text: q.optionD, style: 'bg-emerald-500 border-emerald-700' }
-                  ].map((opt, i) => (
-                    <div key={i} className={`${opt.style.split(' ')[0]} text-white p-5 md:p-7 rounded-2xl text-xl md:text-3xl font-bold shadow-lg border-b-8 ${opt.style.split(' ')[1]} flex items-center justify-center text-center gap-3`}>
-                      <span className="text-white/60 font-black shrink-0">{['A','B','C','D'][i]}.</span>
-                      <MathText text={opt.text} />
-                    </div>
-                  ))}
-                </div>
+                {/* 4 ô đáp án (Chỉ hiện khi không phải TLN) */}
+                {q.type !== 'TLN' && (
+                  <div className="grid grid-cols-2 gap-4 md:gap-5">
+                    {[
+                      { text: q.optionA, style: 'bg-red-500 border-red-700' },
+                      { text: q.optionB, style: 'bg-blue-500 border-blue-700' },
+                      { text: q.optionC, style: 'bg-yellow-500 border-yellow-700' },
+                      { text: q.optionD, style: 'bg-emerald-500 border-emerald-700' }
+                    ].map((opt, i) => (
+                      <div key={i} className={`${opt.style.split(' ')[0]} text-white p-5 md:p-7 rounded-2xl text-xl md:text-3xl font-bold shadow-lg border-b-8 ${opt.style.split(' ')[1]} flex items-center justify-center text-center gap-3`}>
+                        <span className="text-white/60 font-black shrink-0">{['A','B','C','D'][i]}.</span>
+                        <MathText text={opt.text} />
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 <div className="mt-6 flex justify-end">
                   <button onClick={revealAnswer} className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-xl font-bold text-2xl shadow-lg flex items-center gap-2">
@@ -552,8 +594,11 @@ const GameHost = () => {
                <div className="flex-1 bg-slate-800 p-8 rounded-3xl border-4 border-slate-700 flex flex-col gap-6">
                   <div className="flex flex-col items-center justify-center text-center bg-slate-900/50 p-6 rounded-2xl border border-slate-700">
                     <h2 className="text-2xl text-gray-400 mb-2">Đáp án đúng là:</h2>
-                    <div className="text-7xl font-black text-emerald-400 drop-shadow-[0_0_20px_rgba(52,211,153,0.5)]">
-                      {['A', 'B', 'C', 'D'][roomData.questions[roomData.currentQuestionIndex].correctOption - 1]}
+                    <div className="text-5xl md:text-7xl font-black text-emerald-400 drop-shadow-[0_0_20px_rgba(52,211,153,0.5)]">
+                      {roomData.questions[roomData.currentQuestionIndex].type === 'TLN' 
+                        ? <MathText text={roomData.questions[roomData.currentQuestionIndex].correctOption} />
+                        : ['A', 'B', 'C', 'D'][roomData.questions[roomData.currentQuestionIndex].correctOption - 1]
+                      }
                     </div>
                   </div>
                   

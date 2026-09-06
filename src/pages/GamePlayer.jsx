@@ -10,6 +10,7 @@ const GamePlayer = () => {
   const [name, setName] = useState('');
   const [localGameState, setLocalGameState] = useState('JOIN'); // JOIN, PLAYING
   const [playerId, setPlayerId] = useState('');
+  const [tlnAnswer, setTlnAnswer] = useState('');
   
   // Realtime Data from Firebase
   const [roomData, setRoomData] = useState(null);
@@ -138,31 +139,57 @@ const GamePlayer = () => {
                   <div className="bg-slate-800 px-6 py-3 rounded-full text-xl font-bold text-emerald-400 mb-8 inline-block shadow-lg">
                     Câu hỏi {roomData.currentQuestionIndex + 1}
                   </div>
-                  <div className="grid grid-cols-2 gap-4 w-full h-[60vh]">
-                    {[
-                      { num: 1, color: 'bg-red-500', shape: 'border-red-700' },
-                      { num: 2, color: 'bg-blue-500', shape: 'border-blue-700' },
-                      { num: 3, color: 'bg-yellow-500', shape: 'border-yellow-700' },
-                      { num: 4, color: 'bg-emerald-500', shape: 'border-emerald-700' }
-                    ].map((opt) => (
-                      <button 
-                        key={opt.num}
-                        onClick={() => submitAnswer(opt.num)}
-                        className={`w-full h-full rounded-2xl ${opt.color} border-b-8 ${opt.shape} shadow-xl active:translate-y-2 active:border-b-0 transition-transform flex items-center justify-center group`}
-                      >
-                         <span className="text-6xl font-black text-white/50 group-hover:text-white transition-colors">
-                           {['A', 'B', 'C', 'D'][opt.num - 1]}
-                         </span>
-                      </button>
-                    ))}
-                  </div>
+                  {roomData.questions[roomData.currentQuestionIndex].type === 'TLN' ? (
+                    <div className="w-full flex flex-col gap-6 items-center">
+                       <input 
+                         type="text" 
+                         value={tlnAnswer} 
+                         onChange={(e) => setTlnAnswer(e.target.value)} 
+                         placeholder="Nhập câu trả lời..." 
+                         className="w-full text-center bg-slate-900 border-4 border-slate-700 text-white text-3xl md:text-5xl font-black py-8 rounded-3xl outline-none focus:border-emerald-500 shadow-xl"
+                       />
+                       <button 
+                         onClick={() => {
+                           if (tlnAnswer.trim()) {
+                             submitAnswer(tlnAnswer.trim());
+                             setTlnAnswer('');
+                           }
+                         }}
+                         className="bg-emerald-600 hover:bg-emerald-500 text-white w-full py-6 rounded-2xl text-2xl font-black shadow-[0_8px_0_rgba(4,120,87,1)] active:translate-y-2 active:shadow-none transition-all uppercase tracking-widest"
+                       >
+                         Gửi Đáp Án
+                       </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-4 w-full h-[60vh]">
+                      {[
+                        { num: 1, color: 'bg-red-500', shape: 'border-red-700' },
+                        { num: 2, color: 'bg-blue-500', shape: 'border-blue-700' },
+                        { num: 3, color: 'bg-yellow-500', shape: 'border-yellow-700' },
+                        { num: 4, color: 'bg-emerald-500', shape: 'border-emerald-700' }
+                      ].map((opt) => (
+                        <button 
+                          key={opt.num}
+                          onClick={() => submitAnswer(opt.num)}
+                          className={`w-full h-full rounded-2xl ${opt.color} border-b-8 ${opt.shape} shadow-xl active:translate-y-2 active:border-b-0 transition-transform flex items-center justify-center group`}
+                        >
+                           <span className="text-6xl font-black text-white/50 group-hover:text-white transition-colors">
+                             {['A', 'B', 'C', 'D'][opt.num - 1]}
+                           </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </>
               )}
             </div>
           )}
 
           {roomData.status === 'REVEAL' && (() => {
-             const isCorrect = me?.currentAnswer === roomData.questions[roomData.currentQuestionIndex].correctOption;
+             const currentQ = roomData.questions[roomData.currentQuestionIndex];
+             const isCorrect = currentQ.type === 'TLN'
+                ? me?.currentAnswer?.toString().trim().toLowerCase().replace(/,/g, '.') === currentQ.correctOption?.toString().trim().toLowerCase().replace(/,/g, '.')
+                : me?.currentAnswer === currentQ.correctOption;
              const playersList = roomData?.players ? Object.values(roomData.players) : [];
              const sortedTop5 = [...playersList].sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 5);
              const myRankIndex = playersList.sort((a, b) => (b.score || 0) - (a.score || 0)).findIndex(p => p.id === playerId);
