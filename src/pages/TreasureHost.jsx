@@ -129,7 +129,7 @@ const TreasureHost = () => {
 
   useEffect(() => {
     let timer;
-    if ((roomData?.status === 'QUESTION' || roomData?.status === 'REVEAL' || roomData?.status === 'STAR_PICK' || roomData?.status === 'DICE_ROLL') && timeLeft > 0) {
+    if (!roomData?.paused && (roomData?.status === 'QUESTION' || roomData?.status === 'REVEAL' || roomData?.status === 'STAR_PICK' || roomData?.status === 'DICE_ROLL') && timeLeft > 0) {
       timer = setInterval(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
@@ -150,7 +150,21 @@ const TreasureHost = () => {
       }, 1000);
     }
     return () => clearInterval(timer);
-  }, [roomData?.status, timeLeft]);
+  }, [roomData?.status, roomData?.paused, timeLeft]);
+
+  // Tạm dừng / chạy lại đồng hồ (dùng khi giáo viên đang quét thẻ QR đáp án)
+  const togglePause = async () => {
+    if (!roomCode) return;
+    await update(ref(db, `treasureRooms/${roomCode}`), { paused: !roomData?.paused });
+  };
+
+  // Máy quét bấm "Chốt & Hết giờ" → công bố đáp án ngay
+  useEffect(() => {
+    if (!roomCode || !roomData?.scanRequestReveal) return;
+    if (roomData.status !== 'QUESTION') return;
+    update(ref(db, `treasureRooms/${roomCode}`), { scanRequestReveal: false });
+    revealAnswer();
+  }, [roomData?.scanRequestReveal, roomData?.status, roomCode]);
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
@@ -626,11 +640,9 @@ const TreasureHost = () => {
                   </span>
                 </label>
 
-                {playMode === 'TEAM' && (
-                  <button onClick={() => window.open('/print-qr', '_blank')} className="mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg w-full flex items-center justify-center gap-2 transition-colors">
-                    🖨️ In thẻ QR Đáp Án
-                  </button>
-                )}
+                <button onClick={() => window.open('/print-qr', '_blank')} className="mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg w-full flex items-center justify-center gap-2 transition-colors">
+                  🖨️ In thẻ QR Đáp Án
+                </button>
 
                 <button onClick={() => window.open('https://chuyendoijson.vercel.app/', '_blank')} className="mt-2 bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 px-4 rounded-lg w-full flex items-center justify-center gap-2 transition-colors">
                   🔄 JSON → Excel
@@ -868,9 +880,20 @@ const TreasureHost = () => {
       {localGameState === 'PLAYING' && roomData && (
         <div className="w-full px-4 mt-4">
           <div className="flex justify-end items-center mb-6">
-            {(roomData.status === 'QUESTION' || roomData.status === 'REVEAL' || roomData.status === 'STAR_PICK') && (
-               <div className="text-3xl font-black bg-black/30 px-6 py-2 rounded-xl border border-white/10 flex items-center gap-3 backdrop-blur-md mr-auto">
-                 ⏳ <span className={timeLeft <= 10 ? 'text-red-400 animate-pulse' : theme.timerColor}>{timeLeft}s</span>
+            {(roomData.status === 'QUESTION' || roomData.status === 'REVEAL' || roomData.status === 'STAR_PICK' || roomData.status === 'DICE_ROLL') && (
+               <div className="flex items-center gap-3 mr-auto">
+                 <div className={`text-3xl font-black px-6 py-2 rounded-xl border flex items-center gap-3 backdrop-blur-md ${roomData.paused ? 'bg-amber-500/30 border-amber-400' : 'bg-black/30 border-white/10'}`}>
+                   {roomData.paused ? '⏸' : '⏳'} <span className={roomData.paused ? 'text-amber-300' : (timeLeft <= 10 ? 'text-red-400 animate-pulse' : theme.timerColor)}>{timeLeft}s</span>
+                 </div>
+                 <button
+                   onClick={togglePause}
+                   className={`px-5 py-3 rounded-xl font-black text-lg transition-colors ${roomData.paused ? 'bg-amber-500 hover:bg-amber-400 text-slate-900' : 'bg-slate-800 hover:bg-slate-700 text-white border border-white/10'}`}
+                 >
+                   {roomData.paused ? '▶ Tiếp tục' : '⏸ Tạm dừng'}
+                 </button>
+                 {roomData.paused && (
+                   <span className="text-amber-300 font-bold animate-pulse">Đang chờ quét đáp án…</span>
+                 )}
                </div>
             )}
 
@@ -878,6 +901,7 @@ const TreasureHost = () => {
               <div className="bg-slate-800 px-6 py-2 rounded-lg text-xl font-bold text-emerald-400">
                 Đã trả lời: {answerCount}/{playersList.length}
               </div>
+              <button onClick={() => window.open('/scanner', '_blank')} className="bg-indigo-900/60 hover:bg-indigo-600 text-indigo-100 px-4 py-2 rounded-lg font-bold">📷 Quét QR</button>
               <button onClick={endGame} className="bg-red-900/50 hover:bg-red-600 text-red-200 px-4 py-2 rounded-lg font-bold">Kết thúc</button>
             </div>
           </div>

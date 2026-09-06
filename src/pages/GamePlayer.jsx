@@ -317,6 +317,12 @@ const GamePlayer = () => {
                       Câu {roomData.currentQuestionIndex + 1}
                     </div>
 
+                    {roomData.paused && (
+                      <div className="bg-amber-500/25 border border-amber-500 rounded-full px-4 py-1.5 text-amber-300 font-bold text-sm animate-pulse">
+                        ⏸ Đang tạm dừng
+                      </div>
+                    )}
+
                     {me?.starActive && (
                       <div className="bg-yellow-500/25 border border-yellow-500 rounded-full px-4 py-1.5 text-yellow-300 font-bold text-sm flex items-center gap-1.5">
                         <span className="text-xl">⭐</span> Đang ×3 điểm
