@@ -651,6 +651,19 @@ const TreasureHost = () => {
             </div>
           </div>
 
+          {playMode === 'INDIVIDUAL' && (
+            <button
+              onClick={() => setPlayMode('TEAM')}
+              className="mt-8 w-full bg-amber-950/40 hover:bg-amber-900/50 border-2 border-dashed border-amber-600/50 p-5 rounded-2xl text-left transition-colors"
+            >
+              <h2 className="text-xl font-black text-amber-400 flex items-center gap-2">🗺️ Bản Đồ Kho Báu — đang tắt</h2>
+              <p className="text-gray-400 text-sm mt-1">
+                Bản đồ, xúc sắc và ô đặc biệt chỉ chạy ở <b className="text-amber-300">chế độ Theo nhóm</b>.
+                Bấm vào đây để chuyển sang chơi nhóm và mở phần cài đặt bản đồ.
+              </p>
+            </button>
+          )}
+
           {playMode === 'TEAM' && (
             <div className="mt-8 bg-gradient-to-br from-amber-950/60 to-slate-900 p-6 rounded-2xl border-2 border-amber-600/40">
               <h2 className="text-2xl font-black text-amber-400 mb-1 flex items-center gap-2">🗺️ Bản Đồ Kho Báu</h2>
