@@ -21,6 +21,7 @@ import GameHost from './pages/GameHost';
 import GamePlayer from './pages/GamePlayer';
 import PrintQR from './pages/PrintQR';
 import Scanner from './pages/Scanner';
+import QuestionTester from './pages/QuestionTester';
 
 const EXPECTED_HASH = "ebe106819f36f460184a887c06e18115a19f5d15ce570f9a2318c6f44b78476a";
 
@@ -84,6 +85,7 @@ const AppContent = () => {
           <Route path="/play" element={<GamePlayer />} />
           <Route path="/print-qr" element={<PrintQR />} />
           <Route path="/scanner" element={<Scanner />} />
+          <Route path="/question-tester" element={<QuestionTester />} />
           <Route path="/game/trieu-phu" element={<MillionaireGame />} />
           <Route path="/game/tho-san" element={<ProbabilityHunter />} />
           <Route path="/game/keo-co" element={<TugOfWarGame />} />
