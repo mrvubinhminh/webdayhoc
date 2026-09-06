@@ -51,6 +51,8 @@ const THEMES = [
   },
 ];
 
+const STAR_PICK_SECONDS = 5;
+
 const GameHost = () => {
   const navigate = useNavigate();
   const [questions, setQuestions] = useState([]);
@@ -98,11 +100,14 @@ const GameHost = () => {
                setTimeLeft(data.settings.timeLimit || 60);
              } else if (data.status === 'REVEAL') {
                setTimeLeft(data.settings.revealTimeLimit || 60);
+             } else if (data.status === 'STAR_PICK') {
+               setTimeLeft(STAR_PICK_SECONDS);
              }
           }
           if (!roomData && data) {
              if (data.status === 'QUESTION') setTimeLeft(data.settings.timeLimit || 60);
              else if (data.status === 'REVEAL') setTimeLeft(data.settings.revealTimeLimit || 60);
+             else if (data.status === 'STAR_PICK') setTimeLeft(STAR_PICK_SECONDS);
           }
           setRoomData(data);
         }
@@ -113,7 +118,7 @@ const GameHost = () => {
 
   useEffect(() => {
     let timer;
-    if ((roomData?.status === 'QUESTION' || roomData?.status === 'REVEAL') && timeLeft > 0) {
+    if ((roomData?.status === 'QUESTION' || roomData?.status === 'REVEAL' || roomData?.status === 'STAR_PICK') && timeLeft > 0) {
       timer = setInterval(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
@@ -121,7 +126,9 @@ const GameHost = () => {
              if (roomData.status === 'QUESTION') {
                 revealAnswer();
              } else if (roomData.status === 'REVEAL') {
-                nextQuestion(); 
+                nextQuestion();
+             } else if (roomData.status === 'STAR_PICK') {
+                showQuestionAfterStarPick();
              }
              return 0;
           }
@@ -249,11 +256,24 @@ const GameHost = () => {
     });
   };
 
+  // 3 câu cuối là các câu được phép dùng Ngôi Sao Hy Vọng
+  const isStarQuestion = (idx) => {
+    if (!roomData?.settings?.enableHighStakes) return false;
+    const totalQ = roomData?.questions?.length || 0;
+    return totalQ > 0 && idx >= totalQ - 3;
+  };
+
   const startGame = async () => {
     playAudio('https://files.catbox.moe/amew8w.mp3');
 
-    await update(ref(db, `rooms/${roomCode}`), { status: 'QUESTION' });
+    await update(ref(db, `rooms/${roomCode}`), { status: isStarQuestion(0) ? 'STAR_PICK' : 'QUESTION' });
     setLocalGameState('PLAYING');
+  };
+
+  // Hết 5 giây cân nhắc ngôi sao → mở câu hỏi
+  const showQuestionAfterStarPick = async () => {
+    playAudio('https://files.catbox.moe/amew8w.mp3');
+    await update(ref(db, `rooms/${roomCode}`), { status: 'QUESTION' });
   };
 
   const revealAnswer = async () => {
@@ -280,20 +300,22 @@ const GameHost = () => {
             isCorrect = p.currentAnswer === currentQ.correctOption;
          }
 
-         let points = 100;
-         if (enableHS && isLastThree && p.usedHighStakes) {
+         let points;
+         if (enableHS && isLastThree && p.starActive) {
             points = isCorrect ? 300 : -300;
          } else if (isCorrect) {
             points = 100;
          } else {
             points = 0;
-            wrongCount++;
          }
+         if (!isCorrect) wrongCount++;
 
          updates[`players/${playerId}/score`] = (p.score || 0) + points;
-         updates[`players/${playerId}/usedHighStakes`] = false;
+         // Ngôi sao chỉ ăn điểm cho đúng câu đã chọn; starUsed giữ nguyên (1 lần/ván)
+         updates[`players/${playerId}/starActive`] = false;
       } else {
          wrongCount++;
+         updates[`players/${playerId}/starActive`] = false;
       }
     });
 
@@ -313,9 +335,9 @@ const GameHost = () => {
 
     const players = roomData.players || {};
     const updates = {};
-    updates['status'] = 'QUESTION';
+    updates['status'] = isStarQuestion(nextIdx) ? 'STAR_PICK' : 'QUESTION';
     updates['currentQuestionIndex'] = nextIdx;
-    
+
     Object.keys(players).forEach(playerId => {
       updates[`players/${playerId}/currentAnswer`] = null;
     });
@@ -541,7 +563,7 @@ const GameHost = () => {
                     className="w-5 h-5 accent-yellow-500 cursor-pointer"
                   />
                   <span className="text-gray-300 font-bold select-none text-sm">
-                    ⭐ Chế độ ngôi sao hy vọng (3 câu cuối: nhân 3x nếu đúng, trừ 3x nếu sai)
+                    ⭐ Ngôi sao hy vọng — 3 câu cuối có 5 giây chốt trước khi hiện câu hỏi. Đúng ×3, sai −300. Cả ván chỉ dùng 1 lần.
                   </span>
                 </label>
 
@@ -669,7 +691,7 @@ const GameHost = () => {
       {localGameState === 'PLAYING' && roomData && (
         <div className="w-full px-4 mt-4">
           <div className="flex justify-end items-center mb-6">
-            {(roomData.status === 'QUESTION' || roomData.status === 'REVEAL') && (
+            {(roomData.status === 'QUESTION' || roomData.status === 'REVEAL' || roomData.status === 'STAR_PICK') && (
                <div className="text-3xl font-black bg-black/30 px-6 py-2 rounded-xl border border-white/10 flex items-center gap-3 backdrop-blur-md mr-auto">
                  ⏳ <span className={timeLeft <= 10 ? 'text-red-400 animate-pulse' : theme.timerColor}>{timeLeft}s</span>
                </div>
@@ -682,6 +704,46 @@ const GameHost = () => {
               <button onClick={endGame} className="bg-red-900/50 hover:bg-red-600 text-red-200 px-4 py-2 rounded-lg font-bold">Kết thúc</button>
             </div>
           </div>
+
+          {roomData.status === 'STAR_PICK' && (() => {
+            const starPickers = playersList.filter(p => p.starActive);
+            const remainQ = (roomData.questions?.length || 0) - roomData.currentQuestionIndex;
+            return (
+              <div className="animate-fade-in flex flex-col items-center justify-center text-center py-10">
+                <div className="text-[8rem] leading-none animate-pulse drop-shadow-[0_0_50px_rgba(250,204,21,0.9)]">⭐</div>
+                <h2 className="text-4xl md:text-6xl font-black text-yellow-400 uppercase mt-4 drop-shadow-[0_0_30px_rgba(250,204,21,0.6)]">
+                  Ngôi Sao Hy Vọng
+                </h2>
+                <p className="text-xl md:text-2xl text-yellow-100/90 mt-4 font-semibold">
+                  Còn {remainQ} câu cuối — quyết định <b>trước khi thấy câu hỏi</b>!
+                </p>
+                <p className="text-lg text-gray-300 mt-2">Đúng ×3 điểm &nbsp;•&nbsp; Sai −300 điểm &nbsp;•&nbsp; Cả ván chỉ dùng 1 lần</p>
+
+                <div className="mt-8 text-8xl font-black text-white drop-shadow-[0_0_40px_rgba(255,255,255,0.8)]">
+                  {timeLeft}
+                </div>
+
+                <div className="mt-8 bg-black/40 backdrop-blur-xl px-8 py-4 rounded-2xl border border-yellow-500/40">
+                  <p className="text-yellow-400 font-black text-2xl">
+                    {starPickers.length} / {playersList.length} đã chốt ngôi sao
+                  </p>
+                  {starPickers.length > 0 && (
+                    <div className="flex flex-wrap justify-center gap-2 mt-3 max-w-3xl">
+                      {starPickers.map(p => (
+                        <span key={p.id} className="bg-yellow-500/20 border border-yellow-500/50 text-yellow-200 px-3 py-1 rounded-full text-sm font-bold">
+                          ⭐ {p.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <button onClick={showQuestionAfterStarPick} className="mt-8 bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-3 rounded-xl font-bold text-lg transition-colors">
+                  Bỏ qua chờ → Hiện câu hỏi
+                </button>
+              </div>
+            );
+          })()}
 
           {roomData.status === 'QUESTION' && (() => {
             const q = roomData.questions[roomData.currentQuestionIndex];

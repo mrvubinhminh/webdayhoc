@@ -40,6 +40,7 @@ const GamePlayer = () => {
   const [step, setStep] = useState(() => searchParams.get('pin') ? 2 : 1);
   const [selectedTeamId, setSelectedTeamId] = useState('');
   const [roomSettings, setRoomSettings] = useState(null);
+  const [starCountdown, setStarCountdown] = useState(5);
 
   // Realtime Data from Firebase
   const [roomData, setRoomData] = useState(null);
@@ -61,6 +62,16 @@ const GamePlayer = () => {
       return () => unsubscribe();
     }
   }, [localGameState, step, pin, navigate]);
+
+  // Đếm ngược 5 giây cân nhắc Ngôi Sao Hy Vọng
+  useEffect(() => {
+    if (roomData?.status !== 'STAR_PICK') return;
+    setStarCountdown(5);
+    const timer = setInterval(() => {
+      setStarCountdown(prev => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [roomData?.status, roomData?.currentQuestionIndex]);
 
   const checkPin = async (e) => {
     e.preventDefault();
@@ -110,7 +121,9 @@ const GamePlayer = () => {
       avatar: avatar.url,
       avatarColor: avatar.color,
       avatarEmoji: avatar.emoji,
-      avatarName: avatar.name
+      avatarName: avatar.name,
+      starUsed: false,
+      starActive: false
     });
 
     setLocalGameState('PLAYING');
@@ -233,6 +246,50 @@ const GamePlayer = () => {
             </div>
           )}
 
+          {roomData.status === 'STAR_PICK' && (() => {
+            const alreadyUsed = me?.starUsed;
+            const pickedNow = me?.starActive;
+            return (
+              <div className="w-full max-w-lg text-center flex flex-col items-center justify-center gap-6 px-4">
+                <div className="text-8xl animate-pulse drop-shadow-[0_0_40px_rgba(250,204,21,0.9)]">⭐</div>
+
+                <div>
+                  <h2 className="text-3xl font-black text-yellow-400 uppercase">Ngôi Sao Hy Vọng</h2>
+                  <p className="text-gray-300 mt-2 text-lg">Quyết định <b>trước khi thấy câu hỏi</b></p>
+                  <p className="text-gray-400 mt-1 text-sm">Đúng ×3 điểm • Sai −300 điểm • Cả ván chỉ 1 lần</p>
+                </div>
+
+                <div className={`text-7xl font-black ${starCountdown <= 2 ? 'text-red-400 animate-pulse' : 'text-white'}`}>
+                  {starCountdown}
+                </div>
+
+                {pickedNow ? (
+                  <div className="bg-yellow-500/20 border-2 border-yellow-500 rounded-2xl px-8 py-5 text-yellow-300 font-black text-2xl flex items-center gap-3">
+                    <span className="text-4xl">⭐</span> Đã chốt! ×3 điểm
+                  </div>
+                ) : alreadyUsed ? (
+                  <div className="bg-slate-800 border-2 border-slate-600 rounded-2xl px-8 py-5 text-gray-400 font-bold text-xl">
+                    Bạn đã dùng ngôi sao rồi
+                  </div>
+                ) : (
+                  <button
+                    onClick={async () => {
+                      await update(ref(db, `rooms/${pin}/players/${playerId}`), { starActive: true, starUsed: true });
+                    }}
+                    className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 text-slate-900 px-8 py-8 rounded-3xl font-black text-2xl flex items-center justify-center gap-3 shadow-[0_10px_0_rgba(161,98,7,1)] active:translate-y-2 active:shadow-none transition-all"
+                  >
+                    <span className="text-5xl">⭐</span>
+                    DÙNG NGÔI SAO
+                  </button>
+                )}
+
+                {!pickedNow && !alreadyUsed && (
+                  <p className="text-gray-500 text-sm">Không bấm = giữ ngôi sao cho câu sau</p>
+                )}
+              </div>
+            );
+          })()}
+
           {roomData.status === 'QUESTION' && (() => {
             const currentQ = roomData.questions?.[roomData.currentQuestionIndex];
             if (!currentQ) return null;
@@ -244,8 +301,6 @@ const GamePlayer = () => {
               { num: 3, color: 'bg-yellow-500', shape: 'border-yellow-700' },
               { num: 4, color: 'bg-emerald-500', shape: 'border-emerald-700' }
             ];
-            const canUseStar = roomData.settings?.enableHighStakes && roomData.currentQuestionIndex >= (roomData.questions?.length || 0) - 3 && !me?.usedHighStakes;
-
             return (
             <div className="w-full max-w-2xl text-center flex flex-col h-[92vh] py-2">
               {me?.currentAnswer ? (
@@ -262,21 +317,9 @@ const GamePlayer = () => {
                       Câu {roomData.currentQuestionIndex + 1}
                     </div>
 
-                    {canUseStar && (
-                      <button
-                        onClick={async () => {
-                          await update(ref(db, `rooms/${pin}/players/${playerId}`), { usedHighStakes: true });
-                        }}
-                        className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-300 text-slate-900 px-4 py-1.5 rounded-full font-black text-sm flex items-center gap-1.5 shadow-[0_4px_0_rgba(161,98,7,1)] active:translate-y-1 active:shadow-none transition-all animate-pulse"
-                      >
-                        <span className="text-xl">⭐</span>
-                        Ngôi Sao Hy Vọng
-                      </button>
-                    )}
-
-                    {me?.usedHighStakes && (
-                      <div className="bg-yellow-900/50 border border-yellow-500 rounded-full px-4 py-1.5 text-yellow-300 font-bold text-sm flex items-center gap-1.5">
-                        <span className="text-xl">⭐</span> ×3 điểm
+                    {me?.starActive && (
+                      <div className="bg-yellow-500/25 border border-yellow-500 rounded-full px-4 py-1.5 text-yellow-300 font-bold text-sm flex items-center gap-1.5">
+                        <span className="text-xl">⭐</span> Đang ×3 điểm
                       </div>
                     )}
                   </div>
