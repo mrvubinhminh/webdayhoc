@@ -684,8 +684,8 @@ const GameHost = () => {
           {roomData.status === 'END' && (() => {
              const top3 = sortedTop10.slice(0, 3);
              return (
-                <div className="w-full max-w-5xl mx-auto mt-4 px-4 animate-fade-in">
-                  <h1 className="text-4xl md:text-6xl font-black text-center text-yellow-400 mb-16 mt-8 drop-shadow-[0_0_20px_rgba(250,204,21,0.5)]">
+                <div className="w-full max-w-5xl mx-auto -mt-10 px-4 animate-fade-in relative z-20">
+                  <h1 className="text-4xl md:text-6xl font-black text-center text-yellow-400 mb-20 drop-shadow-[0_0_20px_rgba(250,204,21,0.5)]">
                      🏆 TỔNG KẾT BẢNG XẾP HẠNG 🏆
                   </h1>
 
