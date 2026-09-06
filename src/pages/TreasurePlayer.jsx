@@ -30,6 +30,21 @@ const getRandomAvatar = () => {
   };
 };
 
+// Ghi nhớ phiên chơi để nối lại được khi rớt mạng hoặc lỡ tắt trình duyệt
+const SESSION_KEY = 'treasurePlayerSession';
+
+const saveSession = (pin, playerId) => {
+  try { localStorage.setItem(SESSION_KEY, JSON.stringify({ pin, playerId })); } catch { /* bộ nhớ đầy hoặc bị chặn */ }
+};
+
+const readSession = () => {
+  try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch { return null; }
+};
+
+const clearSession = () => {
+  try { localStorage.removeItem(SESSION_KEY); } catch { /* không sao */ }
+};
+
 const TreasurePlayer = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -58,6 +73,7 @@ const TreasurePlayer = () => {
           setRoomSettings(data.settings);
         } else {
           // Room deleted / ended
+          clearSession();
           alert("Phòng chơi đã kết thúc!");
           navigate('/');
         }
@@ -65,6 +81,23 @@ const TreasurePlayer = () => {
       return () => unsubscribe();
     }
   }, [localGameState, step, pin, navigate]);
+
+  // Rớt mạng hay lỡ tắt trình duyệt: tự vào lại đúng chỗ cũ, giữ nguyên điểm
+  useEffect(() => {
+    const saved = readSession();
+    if (!saved?.pin || !saved?.playerId) return;
+
+    const urlPin = searchParams.get('pin');
+    if (urlPin && urlPin !== saved.pin) { clearSession(); return; } // quét QR phòng khác
+
+    get(ref(db, `treasureRooms/${saved.pin}/players/${saved.playerId}`)).then(snap => {
+      if (!snap.exists()) { clearSession(); return; }
+      setPin(saved.pin);
+      setPlayerId(saved.playerId);
+      setName(snap.val().name || '');
+      setLocalGameState('PLAYING');
+    }).catch(() => { /* mạng chưa lên, cứ để học sinh nhập tay */ });
+  }, []);
 
   // Đếm ngược 5 giây cân nhắc Ngôi Sao May Mắn
   useEffect(() => {
@@ -111,9 +144,20 @@ const TreasurePlayer = () => {
       }
       finalName = roomData.teams[selectedTeamId].name;
       finalPlayerId = selectedTeamId;
-      
+
       if (roomData.players && roomData.players[finalPlayerId]) {
-        alert("Nhóm này đã có người chọn!");
+        const saved = readSession();
+        const isMine = saved?.pin === pin && saved?.playerId === finalPlayerId;
+        // Chính chủ rớt mạng thì vào thẳng; máy khác thì phải xác nhận
+        if (!isMine) {
+          const ok = window.confirm(
+            "Nhóm này đã có người chọn.\n\nNếu nhóm bạn vừa bị mất kết nối, bấm OK để vào lại — điểm và vị trí trên bản đồ giữ nguyên."
+          );
+          if (!ok) return;
+        }
+        setPlayerId(finalPlayerId);
+        saveSession(pin, finalPlayerId);
+        setLocalGameState('PLAYING');
         return;
       }
     } else {
@@ -144,6 +188,7 @@ const TreasurePlayer = () => {
       diceValue: null
     });
 
+    saveSession(pin, finalPlayerId);
     setLocalGameState('PLAYING');
   };
 

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { ArrowLeft, Upload, Play, Users, Trophy, ChevronRight, CheckCircle2, XCircle, Crown, Download } from 'lucide-react';
 import { db } from '../firebase';
-import { ref, set, update, onValue, remove } from 'firebase/database';
+import { ref, set, update, onValue, remove, get } from 'firebase/database';
 import MathText from '../components/MathText';
 import QuestionGuidePanel from '../components/QuestionGuidePanel';
 import TreasureBoard, { getTeamColor } from '../components/TreasureBoard';
@@ -55,6 +55,9 @@ const THEMES = [
 
 const STAR_PICK_SECONDS = 5;
 const DICE_ROLL_SECONDS = 6;
+
+// Nhớ mã phòng để giáo viên nối lại được nếu lỡ tải lại trang hoặc rớt mạng
+const HOST_ROOM_KEY = 'treasureHostRoom';
 
 const TreasureHost = () => {
   const navigate = useNavigate();
@@ -202,6 +205,25 @@ const TreasureHost = () => {
     revealAnswer();
   }, [roomData?.scanRequestReveal, roomData?.status, roomCode]);
 
+  // Phòng cũ còn sống thì mời giáo viên nối lại thay vì mất trắng buổi chơi
+  const [resumeRoom, setResumeRoom] = useState(null);
+  useEffect(() => {
+    let code = null;
+    try { code = localStorage.getItem(HOST_ROOM_KEY); } catch { /* không sao */ }
+    if (!code) return;
+    get(ref(db, `treasureRooms/${code}`)).then(snap => {
+      if (snap.exists()) setResumeRoom(code);
+      else { try { localStorage.removeItem(HOST_ROOM_KEY); } catch { /* không sao */ } }
+    }).catch(() => {});
+  }, []);
+
+  const resumeHosting = () => {
+    if (!resumeRoom) return;
+    setRoomCode(resumeRoom);
+    setLocalGameState('PLAYING');
+    setResumeRoom(null);
+  };
+
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -273,6 +295,7 @@ const TreasureHost = () => {
     }
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setRoomCode(code);
+    try { localStorage.setItem(HOST_ROOM_KEY, code); } catch { /* không sao */ }
     setLocalGameState('LOBBY');
     
     playAudio('https://files.catbox.moe/eopz4f.mp3');
@@ -460,6 +483,7 @@ const TreasureHost = () => {
   const closeRoom = async () => {
     if (window.confirm("Kết thúc hoàn toàn và xoá phòng chơi này?")) {
       await remove(ref(db, `treasureRooms/${roomCode}`));
+      try { localStorage.removeItem(HOST_ROOM_KEY); } catch { /* không sao */ }
       if (document.fullscreenElement) {
         document.exitFullscreen().catch(() => {});
       }
@@ -516,6 +540,32 @@ const TreasureHost = () => {
 
             <h1 className="text-4xl font-black mb-2 text-emerald-400 text-center">🏴‍☠️ Truy Tìm Kho Báu</h1>
             <p className="text-gray-400 text-center mb-10">Tải file, chọn giao diện và bắt đầu!</p>
+
+          {resumeRoom && (
+            <div className="mb-8 bg-emerald-950/60 border-2 border-emerald-500 rounded-2xl p-5 flex flex-col md:flex-row md:items-center gap-4">
+              <div className="flex-1">
+                <h3 className="text-lg font-black text-emerald-300">🔌 Phòng {resumeRoom} vẫn đang chạy</h3>
+                <p className="text-gray-300 text-sm mt-1">
+                  Học sinh, điểm số và tiến trình vẫn còn nguyên trên máy chủ. Nối lại để tiếp tục đúng chỗ đang dở.
+                </p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <button
+                  onClick={resumeHosting}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl font-black transition-colors"
+                >
+                  Nối lại phòng
+                </button>
+                <button
+                  onClick={() => { try { localStorage.removeItem(HOST_ROOM_KEY); } catch { /* không sao */ } setResumeRoom(null); }}
+                  className="bg-slate-800 hover:bg-slate-700 text-gray-300 px-4 py-3 rounded-xl font-bold transition-colors"
+                >
+                  Bỏ qua
+                </button>
+              </div>
+            </div>
+          )}
+
 
           <div className="mb-8">
             <h2 className="text-xl font-bold text-white mb-4 text-center">Chọn Giao Diện Trình Chiếu</h2>
