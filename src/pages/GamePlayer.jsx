@@ -3,6 +3,7 @@ import { ArrowLeft, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { ref, set, onValue, get } from 'firebase/database';
+import MathText from '../components/MathText';
 
 const GamePlayer = () => {
   const navigate = useNavigate();
@@ -204,20 +205,53 @@ const GamePlayer = () => {
             </div>
           )}
 
-          {roomData.status === 'QUESTION' && (
-            <div className="w-full max-w-2xl text-center">
+          {roomData.status === 'QUESTION' && (() => {
+            const currentQ = roomData.questions[roomData.currentQuestionIndex];
+            const showQuestion = roomData.settings?.showQuestionOnDevice;
+            
+            return (
+            <div className="w-full max-w-2xl text-center flex flex-col h-[90vh] py-4">
               {me?.currentAnswer ? (
-                 <div className="bg-slate-800 p-8 rounded-3xl animate-fade-in border border-slate-700">
+                 <div className="bg-slate-800 p-8 rounded-3xl animate-fade-in border border-slate-700 my-auto">
                     <CheckCircle className="w-24 h-24 text-emerald-400 mx-auto mb-4" />
                     <h2 className="text-3xl font-bold text-white mb-2">Đã ghi nhận đáp án!</h2>
                     <p className="text-gray-400 text-xl">Chờ các bạn khác nhé...</p>
                  </div>
               ) : (
-                <>
-                  <div className="bg-slate-800 px-6 py-3 rounded-full text-xl font-bold text-emerald-400 mb-8 inline-block shadow-lg">
-                    Câu hỏi {roomData.currentQuestionIndex + 1}
+                <div className="flex flex-col h-full">
+                  <div className="mb-4">
+                    <div className="bg-slate-800 px-6 py-2 rounded-full text-xl font-bold text-emerald-400 inline-block shadow-lg border border-slate-700">
+                      Câu hỏi {roomData.currentQuestionIndex + 1}
+                    </div>
                   </div>
-                  {roomData.questions[roomData.currentQuestionIndex].type === 'TLN' ? (
+                  
+                  {showQuestion && (
+                    <div className="flex-1 overflow-y-auto mb-4 custom-scrollbar text-left">
+                      <div className="bg-slate-800 p-5 rounded-2xl border border-slate-700 shadow-xl inline-block w-full">
+                        <div className="text-white text-lg font-medium mb-4 whitespace-pre-wrap">
+                          <MathText text={currentQ.question} />
+                        </div>
+                        {currentQ.image && (
+                          <div className="mb-4 flex justify-center">
+                            <img src={currentQ.image} alt="minh họa" className="max-h-48 rounded-lg object-contain bg-white/5 p-2" />
+                          </div>
+                        )}
+                        {currentQ.type !== 'TLN' && currentQ.options && (
+                          <div className="flex flex-col gap-3 border-t border-slate-700 pt-4">
+                            {['A', 'B', 'C', 'D'].map((lbl, idx) => (
+                              <div key={idx} className="flex gap-3 text-gray-300 items-start">
+                                <span className="font-bold text-emerald-400 shrink-0">{lbl}.</span>
+                                <span><MathText text={currentQ.options[idx] || ''} /></span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className={`mt-auto ${showQuestion ? 'shrink-0' : 'flex-1 flex flex-col justify-center'}`}>
+                  {currentQ.type === 'TLN' ? (
                     <div className="w-full flex flex-col gap-6 items-center">
                        <input 
                          type="text" 
@@ -258,10 +292,12 @@ const GamePlayer = () => {
                       ))}
                     </div>
                   )}
-                </>
+                  </div>
+                </div>
               )}
             </div>
-          )}
+            );
+          })}
 
           {roomData.status === 'REVEAL' && (() => {
              const currentQ = roomData.questions[roomData.currentQuestionIndex];
