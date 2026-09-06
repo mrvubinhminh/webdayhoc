@@ -8,6 +8,7 @@ import MathText from '../components/MathText';
 import QuestionGuidePanel from '../components/QuestionGuidePanel';
 import TreasureBoard, { getTeamColor } from '../components/TreasureBoard';
 import { BOARD_SCENARIOS, randomScenario } from '../data/boardScenarios';
+import GameRulesOverlay from '../components/GameRulesOverlay';
 
 // Định nghĩa 5 theme giao diện
 const THEMES = [
@@ -208,6 +209,7 @@ const TreasureHost = () => {
 
   // Phòng cũ còn sống thì mời giáo viên nối lại thay vì mất trắng buổi chơi
   const [resumeRoom, setResumeRoom] = useState(null);
+  const [showRules, setShowRules] = useState(false);
   useEffect(() => {
     let code = null;
     try { code = localStorage.getItem(HOST_ROOM_KEY); } catch { /* không sao */ }
@@ -973,8 +975,37 @@ const TreasureHost = () => {
       {localGameState === 'LOBBY' && roomData && (() => {
         const playUrl = `https://webdayhoc.vercel.app/treasure/play?pin=${roomCode}`;
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(playUrl)}&bgcolor=ffffff&color=000000&margin=10`;
+        const specials = Object.entries(roomData.settings?.specialCells || {});
+        const ups = specials.filter(([, v]) => v > 0).length;
+        const downs = specials.filter(([, v]) => v < 0).length;
+        const bSize = roomData.settings?.boardSize || 6;
+
         return (
           <div className="w-full min-h-screen relative flex flex-col z-10">
+            <GameRulesOverlay
+              open={showRules}
+              onClose={() => setShowRules(false)}
+              bgStyle={theme.bgStyle}
+              accent="amber"
+              emoji="🏴‍☠️"
+              title="Truy Tìm Kho Báu"
+              subtitle="Trả lời đúng để được gieo xúc sắc và tiến quân trên bản đồ"
+              steps={[
+                { icon: '1️⃣', text: 'Mỗi nhóm chọn một tên cướp biển rồi trả lời câu hỏi trên điện thoại' },
+                { icon: '2️⃣', text: 'Nhóm nào trả lời ĐÚNG mới được gieo xúc sắc', note: 'Trả lời sai thì lượt này đứng yên tại chỗ' },
+                { icon: '3️⃣', text: 'Số trên xúc sắc là số bước tiến trên bản đồ', note: `Bản đồ ${bSize}×${bSize}, tất cả xuất phát từ ô số 1 ⚓` },
+                { icon: '4️⃣', text: 'Chỉ có 6 giây để bấm gieo — nhanh tay lên!' },
+                { icon: '5️⃣', text: `Coi chừng ô đặc biệt: ${ups} ô ▲ đẩy tiến, ${downs} ô ▼ kéo lùi`, note: 'Ô xanh là may, ô đỏ là bẫy' },
+                { icon: '🏁', text: 'Nhóm chạm ô cờ đầu tiên chiếm được kho báu!' },
+              ]}
+              highlights={roomData.settings?.enableHighStakes ? [
+                { emoji: '⭐', tone: 'star', title: 'Ngôi Sao May Mắn', text: '3 câu cuối, mỗi nhóm được dùng 1 lần duy nhất' },
+                { emoji: '⏱️', tone: 'info', title: 'Chốt trong 5 giây', text: 'Quyết định TRƯỚC khi nhìn thấy câu hỏi' },
+                { emoji: '⚖️', tone: 'warn', title: 'Đúng ×3 — Sai −300', text: 'Liều ăn nhiều, nhưng cũng mất nhiều' },
+              ] : []}
+              footer="Chúc các thuyền trưởng may mắn! 🍀"
+            />
+
             {/* Tiêu đề */}
             <div className="text-center pt-16 pb-4 animate-fade-in shrink-0">
               <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] tracking-wide uppercase" style={{ WebkitTextStroke: '1.5px rgba(255,255,255,0.3)' }}>
@@ -1013,6 +1044,12 @@ const TreasureHost = () => {
                     <div className="bg-blue-600 p-2.5 rounded-xl shadow-[0_0_20px_rgba(37,99,235,0.6)]"><Users className="w-7 h-7 text-white" /></div>
                     <span>{playersList.length} Học sinh</span>
                   </div>
+                  <button
+                    onClick={() => setShowRules(true)}
+                    className="px-5 py-4 rounded-2xl font-black text-lg bg-slate-800/80 hover:bg-slate-700 text-white border border-white/20 mr-2"
+                  >
+                    📖 Luật chơi
+                  </button>
                   <button
                     onClick={startGame}
                     disabled={playersList.length === 0}

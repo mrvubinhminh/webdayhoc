@@ -8,6 +8,7 @@ import MathText from '../components/MathText';
 import QuestionGuidePanel from '../components/QuestionGuidePanel';
 import Lighthouse from '../components/Lighthouse';
 import { DIFFICULTIES, MAX_FUEL, isStormQuestion, fuelDelta, clampFuel, classRating } from '../data/lighthouseRules';
+import GameRulesOverlay from '../components/GameRulesOverlay';
 
 const THEMES = [
   {
@@ -64,6 +65,7 @@ const LighthouseHost = () => {
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [selectedStatQ, setSelectedStatQ] = useState(null);
   const [resumeRoom, setResumeRoom] = useState(null);
+  const [showRules, setShowRules] = useState(false);
 
   const currentAudio = useRef(null);
   const playAudio = (url) => {
@@ -186,6 +188,7 @@ const LighthouseHost = () => {
     setRoomCode(code);
     try { localStorage.setItem(HOST_ROOM_KEY, code); } catch { /* không sao */ }
     setLocalGameState('LOBBY');
+    setShowRules(true);
     playAudio('https://files.catbox.moe/eopz4f.mp3');
 
     await set(ref(db, `lighthouseRooms/${code}`), {
@@ -447,6 +450,30 @@ const LighthouseHost = () => {
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(playUrl)}&bgcolor=ffffff&color=000000&margin=10`;
         return (
           <div className="w-full min-h-screen flex flex-col">
+            <GameRulesOverlay
+              open={showRules}
+              onClose={() => setShowRules(false)}
+              bgStyle={theme.bgStyle}
+              accent="sky"
+              emoji="🏮"
+              title="Ngọn Hải Đăng"
+              subtitle="CẢ LỚP LÀ MỘT ĐỘI — không ai thắng ai, chỉ có cùng giữ lửa hoặc cùng chìm trong đêm"
+              steps={[
+                { icon: '1️⃣', text: 'Cả lớp chung MỘT ngọn hải đăng, bắt đầu với 100% dầu' },
+                { icon: '2️⃣', text: `Mỗi câu, gió biển thổi hao ${diff.wind}% dầu`, note: `Mức sóng hôm nay: ${diff.name}` },
+                { icon: '3️⃣', text: 'Tỉ lệ CẢ LỚP trả lời đúng sẽ tiếp dầu lại', note: `Cần khoảng ${Math.round(diff.wind / diff.gain * 100)}% lớp đúng thì lửa mới không tụt` },
+                { icon: '4️⃣', text: `Cứ 5 câu có một CƠN BÃO LỚN cần ${Math.round(diff.storm * 100)}% lớp đúng`, note: 'Vượt được thì thưởng dầu, không thì mất thêm' },
+                { icon: '5️⃣', text: 'Hết dầu thì đèn tắt, nhưng cả lớp vẫn thắp lại được ở câu sau' },
+                { icon: '🌟', text: 'Giữ lửa tới hết đêm và vượt mọi cơn bão để thành Huyền Thoại Biển Khơi' },
+              ]}
+              highlights={[
+                { emoji: '🤝', tone: 'good', title: 'Cùng thắng cùng thua', text: 'Bạn giỏi giúp bạn yếu là cách duy nhất để cả lớp qua bão' },
+                { emoji: '🙈', tone: 'info', title: 'Không nêu tên ai sai', text: 'Máy chiếu chỉ hiện tỉ lệ chung của cả lớp' },
+                { emoji: '🏅', tone: 'star', title: 'Không xếp hạng cá nhân', text: 'Không có ai nhất ai bét — chỉ có kết quả của cả lớp' },
+              ]}
+              footer="Mỗi câu trả lời đúng là một giọt dầu bạn góp cho cả lớp 🕯️"
+            />
+
             <div className="text-center pt-10 pb-3 shrink-0">
               <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-sky-200 to-sky-500 uppercase drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)]">
                 {roomData.settings.gameTitle || 'NGỌN HẢI ĐĂNG'}
@@ -476,6 +503,10 @@ const LighthouseHost = () => {
                     <div className="bg-sky-600 p-2 rounded-xl"><Users className="w-6 h-6" /></div>
                     <span>{playersList.length} thuỷ thủ</span>
                   </div>
+                  <button onClick={() => setShowRules(true)}
+                    className="px-5 py-3 rounded-2xl font-black text-lg bg-slate-800/80 hover:bg-slate-700 text-white border border-white/20 mr-2">
+                    📖 Luật chơi
+                  </button>
                   <button onClick={startGame} disabled={playersList.length === 0}
                     className={`px-6 py-3 rounded-2xl font-black text-lg flex items-center gap-2 ${playersList.length > 0 ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:scale-105 text-white' : 'bg-slate-800 text-gray-500 cursor-not-allowed'}`}>
                     <Play className="w-6 h-6" /> RA KHƠI

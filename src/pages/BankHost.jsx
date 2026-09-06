@@ -8,6 +8,7 @@ import MathText from '../components/MathText';
 import QuestionGuidePanel from '../components/QuestionGuidePanel';
 import CapitalChart, { TEAM_COLORS } from '../components/CapitalChart';
 import { BET_LEVELS, DEFAULT_BET_TIME, DEFAULT_CAPITAL, BAILOUT, betAmountOf } from '../data/bankRules';
+import GameRulesOverlay from '../components/GameRulesOverlay';
 
 const THEMES = [
   {
@@ -154,6 +155,7 @@ const BankHost = () => {
 
   // Phòng cũ còn sống thì mời giáo viên nối lại
   const [resumeRoom, setResumeRoom] = useState(null);
+  const [showRules, setShowRules] = useState(false);
   useEffect(() => {
     let code = null;
     try { code = localStorage.getItem(HOST_ROOM_KEY); } catch { /* không sao */ }
@@ -239,6 +241,7 @@ const BankHost = () => {
     setRoomCode(code);
     try { localStorage.setItem(HOST_ROOM_KEY, code); } catch { /* không sao */ }
     setLocalGameState('LOBBY');
+    setShowRules(true);
     playAudio('https://files.catbox.moe/eopz4f.mp3');
 
     const TEAM_NAMES = [
@@ -598,6 +601,30 @@ const BankHost = () => {
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(playUrl)}&bgcolor=ffffff&color=000000&margin=10`;
         return (
           <div className="w-full min-h-screen flex flex-col">
+            <GameRulesOverlay
+              open={showRules}
+              onClose={() => setShowRules(false)}
+              bgStyle={theme.bgStyle}
+              accent="amber"
+              emoji="🏦"
+              title="Ngân Hàng Tri Thức"
+              subtitle="Không phải ai đúng nhiều nhất thắng — mà ai hiểu rõ sức mình nhất thắng"
+              steps={[
+                { icon: '1️⃣', text: `Mỗi nhóm khởi nghiệp với ${startCap} điểm vốn` },
+                { icon: '2️⃣', text: 'TRƯỚC khi thấy câu hỏi, nhóm chọn mức cược', note: `Có ${roomData.settings?.betTime || 12} giây để quyết định` },
+                { icon: '3️⃣', text: 'Bốn mức: 10% an toàn · 25% tự tin · 50% chắc chắn · 100% TẤT TAY' },
+                { icon: '4️⃣', text: 'Trả lời ĐÚNG được cộng đúng số đã cược', note: 'Trả lời SAI thì mất đúng số đó' },
+                { icon: '5️⃣', text: 'Không kịp chọn sẽ tự đặt mức an toàn 10%' },
+                { icon: '🏆', text: 'Nhóm nhiều vốn nhất khi kết thúc là quán quân' },
+              ]}
+              highlights={[
+                { emoji: '🤔', tone: 'info', title: 'Tự lượng sức', text: 'Chủ đề này mình chắc tới đâu? Hãy cược đúng mức đó' },
+                { emoji: '🆘', tone: 'good', title: 'Không ai bị loại', text: `Vốn tụt dưới ${BAILOUT} sẽ được cấp lại — luôn còn cửa lật kèo` },
+                { emoji: '🤫', tone: 'warn', title: 'Cược được giữ kín', text: 'Không nhóm nào nhìn được mức cược của nhóm khác' },
+              ]}
+              footer="Liều lĩnh chưa chắc thắng — biết mình biết ta mới thắng 💡"
+            />
+
             <div className="text-center pt-12 pb-4 shrink-0">
               <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-amber-600 drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] uppercase">
                 {roomData.settings.gameTitle || 'NGÂN HÀNG TRI THỨC'}
@@ -629,6 +656,12 @@ const BankHost = () => {
                     <div className="bg-amber-600 p-2.5 rounded-xl"><Users className="w-7 h-7 text-white" /></div>
                     <span>{playersList.length} {roomData.settings.playMode === 'TEAM' ? 'nhóm' : 'học sinh'}</span>
                   </div>
+                  <button
+                    onClick={() => setShowRules(true)}
+                    className="px-5 py-4 rounded-2xl font-black text-lg bg-slate-800/80 hover:bg-slate-700 text-white border border-white/20 mr-2"
+                  >
+                    📖 Luật chơi
+                  </button>
                   <button
                     onClick={startGame} disabled={playersList.length === 0}
                     className={`px-8 py-4 rounded-2xl font-black text-xl flex items-center gap-3 transition-all ${
