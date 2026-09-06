@@ -6,6 +6,7 @@ import { db } from '../firebase';
 import { ref, set, update, onValue, remove } from 'firebase/database';
 import MathText from '../components/MathText';
 import QuestionGuidePanel from '../components/QuestionGuidePanel';
+import TreasureBoard, { getTeamColor } from '../components/TreasureBoard';
 
 // Định nghĩa 5 theme giao diện
 const THEMES = [
@@ -52,6 +53,7 @@ const THEMES = [
 ];
 
 const STAR_PICK_SECONDS = 5;
+const DICE_ROLL_SECONDS = 6;
 
 const TreasureHost = () => {
   const navigate = useNavigate();
@@ -74,6 +76,12 @@ const TreasureHost = () => {
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [selectedStatQ, setSelectedStatQ] = useState(null);
   const [enableHighStakes, setEnableHighStakes] = useState(false);
+  // Bản đồ kho báu (chỉ dùng cho chế độ nhóm)
+  const [boardSize, setBoardSize] = useState(6);
+  const [boardBgUrl, setBoardBgUrl] = useState(() => localStorage.getItem('treasureBoardBg') || '');
+  const [specialCells, setSpecialCells] = useState({});
+  const [newCellNo, setNewCellNo] = useState('');
+  const [newCellStep, setNewCellStep] = useState('');
 
   const currentAudio = useRef(null);
 
@@ -102,12 +110,15 @@ const TreasureHost = () => {
                setTimeLeft(data.settings.revealTimeLimit || 60);
              } else if (data.status === 'STAR_PICK') {
                setTimeLeft(STAR_PICK_SECONDS);
+             } else if (data.status === 'DICE_ROLL') {
+               setTimeLeft(DICE_ROLL_SECONDS);
              }
           }
           if (!roomData && data) {
              if (data.status === 'QUESTION') setTimeLeft(data.settings.timeLimit || 60);
              else if (data.status === 'REVEAL') setTimeLeft(data.settings.revealTimeLimit || 60);
              else if (data.status === 'STAR_PICK') setTimeLeft(STAR_PICK_SECONDS);
+             else if (data.status === 'DICE_ROLL') setTimeLeft(DICE_ROLL_SECONDS);
           }
           setRoomData(data);
         }
@@ -118,7 +129,7 @@ const TreasureHost = () => {
 
   useEffect(() => {
     let timer;
-    if ((roomData?.status === 'QUESTION' || roomData?.status === 'REVEAL' || roomData?.status === 'STAR_PICK') && timeLeft > 0) {
+    if ((roomData?.status === 'QUESTION' || roomData?.status === 'REVEAL' || roomData?.status === 'STAR_PICK' || roomData?.status === 'DICE_ROLL') && timeLeft > 0) {
       timer = setInterval(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
@@ -126,9 +137,11 @@ const TreasureHost = () => {
              if (roomData.status === 'QUESTION') {
                 revealAnswer();
              } else if (roomData.status === 'REVEAL') {
-                nextQuestion();
+                afterReveal();
              } else if (roomData.status === 'STAR_PICK') {
                 showQuestionAfterStarPick();
+             } else if (roomData.status === 'DICE_ROLL') {
+                nextQuestion();
              }
              return 0;
           }
@@ -251,7 +264,12 @@ const TreasureHost = () => {
         teamCount: teamCount,
         bgUrl: bgUrl,
         showQuestionOnDevice: showQuestionOnDevice,
-        enableHighStakes: enableHighStakes
+        enableHighStakes: enableHighStakes,
+        // Bản đồ kho báu chỉ chạy ở chế độ nhóm
+        boardEnabled: playMode === 'TEAM',
+        boardSize: boardSize,
+        boardBgUrl: boardBgUrl,
+        specialCells: specialCells
       }
     });
   };
@@ -313,15 +331,32 @@ const TreasureHost = () => {
          updates[`players/${playerId}/score`] = (p.score || 0) + points;
          // Ngôi sao chỉ ăn điểm cho đúng câu đã chọn; starUsed giữ nguyên (1 lần/ván)
          updates[`players/${playerId}/starActive`] = false;
+         // Đúng thì được quyền gieo xúc sắc ở lượt bản đồ
+         updates[`players/${playerId}/canRoll`] = isCorrect;
+         updates[`players/${playerId}/hasRolled`] = false;
+         updates[`players/${playerId}/diceValue`] = null;
       } else {
          wrongCount++;
          updates[`players/${playerId}/starActive`] = false;
+         updates[`players/${playerId}/canRoll`] = false;
+         updates[`players/${playerId}/hasRolled`] = false;
+         updates[`players/${playerId}/diceValue`] = null;
       }
     });
 
     updates[`questions/${roomData.currentQuestionIndex}/wrongCount`] = wrongCount;
 
     await update(ref(db, `treasureRooms/${roomCode}`), updates);
+  };
+
+  // Hết giờ xem đáp án: có bản đồ thì mở lượt gieo xúc sắc, không thì sang câu kế
+  const afterReveal = async () => {
+    if (roomData?.settings?.boardEnabled) {
+      playAudio('https://files.catbox.moe/amew8w.mp3');
+      await update(ref(db, `treasureRooms/${roomCode}`), { status: 'DICE_ROLL' });
+    } else {
+      nextQuestion();
+    }
   };
 
   const nextQuestion = async () => {
@@ -340,6 +375,10 @@ const TreasureHost = () => {
 
     Object.keys(players).forEach(playerId => {
       updates[`players/${playerId}/currentAnswer`] = null;
+      updates[`players/${playerId}/canRoll`] = false;
+      updates[`players/${playerId}/hasRolled`] = false;
+      updates[`players/${playerId}/diceValue`] = null;
+      updates[`players/${playerId}/justLanded`] = false;
     });
 
     await update(ref(db, `treasureRooms/${roomCode}`), updates);
@@ -371,8 +410,28 @@ const TreasureHost = () => {
   const theme = roomData?.settings?.theme || selectedTheme;
   const currentBgUrl = roomData?.settings?.bgUrl || bgUrl;
 
+  // Dữ liệu bản đồ kho báu
+  const activeBoardSize = roomData?.settings?.boardSize || boardSize;
+  const totalCells = activeBoardSize * activeBoardSize;
+  const boardTeams = playersList.map(p => ({
+    id: p.id,
+    name: p.name,
+    position: p.position || 1,
+    index: roomData?.teams?.[p.id]?.index || 1
+  }));
+  const winner = playersList.find(p => (p.position || 0) >= totalCells);
+
+  // Có nhóm chạm ô cờ → mở màn nhận kho báu
+  useEffect(() => {
+    if (!roomCode || !roomData?.settings?.boardEnabled) return;
+    if (roomData.status === 'TREASURE_END' || roomData.status === 'END') return;
+    if (!winner) return;
+    playAudio('https://files.catbox.moe/12vlpb.mp3');
+    update(ref(db, `treasureRooms/${roomCode}`), { status: 'TREASURE_END', winnerId: winner.id });
+  }, [winner?.id, roomData?.status, roomCode]);
+
   return (
-    <div className={`min-h-screen text-white relative ${roomData?.status !== 'END' ? 'p-4 md:p-8' : ''}`} style={localGameState !== 'SETUP' ? theme.bgStyle : { background: '#0f172a' }}>
+    <div className={`min-h-screen text-white relative ${roomData?.status !== 'END' && roomData?.status !== 'TREASURE_END' ? 'p-4 md:p-8' : ''}`} style={localGameState !== 'SETUP' ? theme.bgStyle : { background: '#0f172a' }}>
       {localGameState !== 'SETUP' && currentBgUrl && (
         <div
           className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
@@ -381,7 +440,7 @@ const TreasureHost = () => {
       )}
 
       {/* Cần set các div con có z-10 để đè lên background */}
-      <div className={`relative z-10 w-full flex flex-col ${roomData?.status !== 'END' ? 'min-h-screen' : 'h-screen'}`}>
+      <div className={`relative z-10 w-full flex flex-col ${roomData?.status !== 'END' && roomData?.status !== 'TREASURE_END' ? 'min-h-screen' : 'h-screen'}`}>
       {localGameState === 'SETUP' && (
         <div className="relative w-full min-h-screen">
           <div className="max-w-3xl mx-auto">
@@ -579,6 +638,124 @@ const TreasureHost = () => {
               </div>
             </div>
           </div>
+
+          {playMode === 'TEAM' && (
+            <div className="mt-8 bg-gradient-to-br from-amber-950/60 to-slate-900 p-6 rounded-2xl border-2 border-amber-600/40">
+              <h2 className="text-2xl font-black text-amber-400 mb-1 flex items-center gap-2">🗺️ Bản Đồ Kho Báu</h2>
+              <p className="text-gray-400 text-sm mb-5">Nhóm trả lời đúng được gieo xúc sắc để tiến trên bản đồ. Về ô cờ 🏁 là thắng!</p>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-5">
+                  {/* Kích thước lưới */}
+                  <div>
+                    <label className="block text-gray-400 mb-2 font-bold text-sm">Kích thước lưới</label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[5, 6, 7, 8].map(s => (
+                        <button
+                          key={s}
+                          onClick={() => setBoardSize(s)}
+                          className={`py-3 rounded-lg font-black text-lg transition-all ${
+                            boardSize === s
+                              ? 'bg-amber-500 text-slate-900 scale-105 shadow-lg'
+                              : 'bg-slate-800 text-gray-400 hover:bg-slate-700'
+                          }`}
+                        >
+                          {s}×{s}
+                          <span className="block text-[10px] font-bold opacity-70">{s * s} ô</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Ảnh nền bản đồ */}
+                  <div>
+                    <label className="block text-gray-400 mb-2 font-bold text-sm">🖼️ Link ảnh nền bản đồ (tuỳ chọn)</label>
+                    <input
+                      type="text"
+                      value={boardBgUrl}
+                      onChange={(e) => {
+                        setBoardBgUrl(e.target.value);
+                        localStorage.setItem('treasureBoardBg', e.target.value);
+                      }}
+                      className="w-full bg-slate-900 text-white px-4 py-3 rounded-lg outline-none border border-transparent focus:border-amber-500"
+                      placeholder="https://... (ảnh đảo, biển, rừng...)"
+                    />
+                  </div>
+
+                  {/* Ô đặc biệt */}
+                  <div>
+                    <label className="block text-gray-400 mb-2 font-bold text-sm">⚡ Ô đặc biệt (tiến / lùi)</label>
+                    <div className="flex gap-2 mb-3">
+                      <input
+                        type="number" min="1" max={boardSize * boardSize}
+                        value={newCellNo}
+                        onChange={(e) => setNewCellNo(e.target.value)}
+                        placeholder="Ô số"
+                        className="flex-1 bg-slate-900 text-white px-3 py-2 rounded-lg outline-none border border-transparent focus:border-amber-500"
+                      />
+                      <input
+                        type="number"
+                        value={newCellStep}
+                        onChange={(e) => setNewCellStep(e.target.value)}
+                        placeholder="+3 hoặc -2"
+                        className="flex-1 bg-slate-900 text-white px-3 py-2 rounded-lg outline-none border border-transparent focus:border-amber-500"
+                      />
+                      <button
+                        onClick={() => {
+                          const no = parseInt(newCellNo);
+                          const step = parseInt(newCellStep);
+                          if (!no || !step) return;
+                          if (no < 1 || no >= boardSize * boardSize) return;
+                          setSpecialCells({ ...specialCells, [no]: step });
+                          setNewCellNo('');
+                          setNewCellStep('');
+                        }}
+                        className="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg font-bold whitespace-nowrap"
+                      >
+                        Thêm
+                      </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(specialCells).sort((a, b) => a[0] - b[0]).map(([cell, step]) => (
+                        <div key={cell} className={`flex items-center rounded-lg overflow-hidden border ${step > 0 ? 'bg-emerald-900/40 border-emerald-600' : 'bg-red-900/40 border-red-600'}`}>
+                          <span className="px-3 py-1.5 text-sm font-bold text-white">
+                            Ô {cell} {step > 0 ? `▲ tiến ${step}` : `▼ lùi ${Math.abs(step)}`}
+                          </span>
+                          <button
+                            onClick={() => {
+                              const next = { ...specialCells };
+                              delete next[cell];
+                              setSpecialCells(next);
+                            }}
+                            className="px-2 py-1.5 text-red-300 hover:bg-red-500/30 border-l border-white/20"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                      {Object.keys(specialCells).length === 0 && (
+                        <p className="text-gray-500 text-sm italic">Chưa có ô đặc biệt nào</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Xem trước bản đồ */}
+                <div>
+                  <label className="block text-gray-400 mb-2 font-bold text-sm">👁️ Xem trước</label>
+                  <TreasureBoard
+                    size={boardSize}
+                    bgUrl={boardBgUrl}
+                    specialCells={specialCells}
+                    teams={Array.from({ length: Math.min(teamCount, 4) }, (_, i) => ({
+                      id: `preview_${i}`, name: `Nhóm ${i + 1}`, position: 1, index: i + 1
+                    }))}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="mt-10 mb-8 space-y-4">
             <QuestionGuidePanel />
@@ -853,6 +1030,172 @@ const TreasureHost = () => {
                </div>
             </div>
           )}
+
+          {roomData.status === 'DICE_ROLL' && (() => {
+            const eligible = playersList.filter(p => p.canRoll);
+            const rolled = eligible.filter(p => p.hasRolled);
+            const lastMover = playersList.find(p => p.hasRolled && p.justLanded);
+            return (
+              <div className="animate-fade-in grid lg:grid-cols-[1.2fr_1fr] gap-6 items-start">
+                {/* Bản đồ */}
+                <div>
+                  <TreasureBoard
+                    size={activeBoardSize}
+                    bgUrl={roomData.settings?.boardBgUrl}
+                    specialCells={roomData.settings?.specialCells || {}}
+                    teams={boardTeams}
+                    highlightCell={lastMover?.position || null}
+                  />
+                </div>
+
+                {/* Bảng điều khiển lượt gieo */}
+                <div className="bg-black/50 backdrop-blur-xl rounded-3xl border border-amber-500/40 p-6 flex flex-col gap-4">
+                  <div className="text-center">
+                    <div className="text-6xl animate-bounce">🎲</div>
+                    <h2 className="text-3xl font-black text-amber-400 uppercase mt-2">Gieo Xúc Sắc</h2>
+                    <p className="text-gray-300 mt-1">Nhóm trả lời đúng được tiến bước</p>
+                    <div className={`text-7xl font-black mt-3 ${timeLeft <= 2 ? 'text-red-400 animate-pulse' : 'text-white'}`}>
+                      {timeLeft}
+                    </div>
+                    <p className="text-gray-400 text-sm mt-1">{rolled.length}/{eligible.length} nhóm đã gieo</p>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto flex flex-col gap-2 max-h-[45vh]">
+                    {playersList.length === 0 && <p className="text-gray-500 text-center">Chưa có nhóm nào</p>}
+                    {playersList.map(p => {
+                      const idx = roomData.teams?.[p.id]?.index || 1;
+                      return (
+                        <div
+                          key={p.id}
+                          className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${
+                            p.hasRolled ? 'bg-amber-500/20 border-amber-500' :
+                            p.canRoll ? 'bg-emerald-900/30 border-emerald-600 animate-pulse' :
+                            'bg-slate-800/60 border-slate-700 opacity-60'
+                          }`}
+                        >
+                          <div
+                            className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center font-black text-white text-xs shrink-0"
+                            style={{ backgroundColor: getTeamColor(idx) }}
+                          >
+                            {idx}
+                          </div>
+                          <span className="flex-1 min-w-0 truncate font-bold text-white">{p.name}</span>
+                          {p.hasRolled ? (
+                            <span className="text-2xl font-black text-amber-300 shrink-0">🎲 {p.diceValue}</span>
+                          ) : p.canRoll ? (
+                            <span className="text-emerald-400 text-sm font-bold shrink-0">Đang chờ gieo…</span>
+                          ) : (
+                            <span className="text-gray-500 text-sm shrink-0">Sai — không gieo</span>
+                          )}
+                          <span className="text-white/70 text-sm font-bold shrink-0">Ô {p.position || 1}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <button onClick={nextQuestion} className="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-lg transition-colors">
+                    Bỏ qua chờ → Câu tiếp theo
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+
+          {roomData.status === 'TREASURE_END' && (() => {
+            const champion = playersList.find(p => p.id === roomData.winnerId) || winner;
+            const ranked = [...playersList].sort((a, b) => (b.position || 1) - (a.position || 1) || (b.score || 0) - (a.score || 0));
+            return (
+              <div className="w-full h-screen flex flex-col items-center justify-center px-4 animate-fade-in relative z-20 overflow-y-auto py-8">
+                <div className="text-[7rem] leading-none animate-bounce drop-shadow-[0_0_60px_rgba(250,204,21,0.9)]">💎</div>
+                <h1 className="text-4xl md:text-6xl font-black text-center text-yellow-400 drop-shadow-[0_0_40px_rgba(250,204,21,1)] uppercase mt-2">
+                  Kho Báu Đã Mở!
+                </h1>
+
+                {champion && (
+                  <div className="mt-6 bg-gradient-to-br from-yellow-500/30 to-amber-900/40 backdrop-blur-xl px-10 py-6 rounded-3xl border-2 border-yellow-400 shadow-[0_0_50px_rgba(250,204,21,0.4)] text-center">
+                    <Crown className="w-16 h-16 text-yellow-400 mx-auto mb-2 animate-pulse" />
+                    <p className="text-yellow-200 uppercase tracking-widest font-bold text-sm">Nhóm chiếm được kho báu</p>
+                    <p className="text-4xl md:text-5xl font-black text-white mt-2 drop-shadow-lg">{champion.name}</p>
+                    <p className="text-yellow-300 font-bold text-xl mt-2">🏁 Về đích • {champion.score || 0} điểm</p>
+                  </div>
+                )}
+
+                {/* Bảng xếp hạng theo vị trí trên bản đồ */}
+                <div className="mt-8 w-full max-w-2xl bg-black/50 backdrop-blur-xl rounded-3xl border border-white/20 p-5">
+                  <h3 className="text-xl font-black text-white mb-3 text-center uppercase tracking-widest">Hành trình các nhóm</h3>
+                  <div className="flex flex-col gap-2 max-h-[30vh] overflow-y-auto">
+                    {ranked.map((p, i) => {
+                      const idx = roomData.teams?.[p.id]?.index || 1;
+                      return (
+                        <div key={p.id} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl ${i === 0 ? 'bg-yellow-500/20 border border-yellow-500' : 'bg-slate-800/70'}`}>
+                          <span className="font-black text-lg w-8 shrink-0 text-gray-300">#{i + 1}</span>
+                          <div
+                            className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center font-black text-white text-xs shrink-0"
+                            style={{ backgroundColor: getTeamColor(idx) }}
+                          >
+                            {idx}
+                          </div>
+                          <span className="flex-1 min-w-0 truncate font-bold text-white">{p.name}</span>
+                          <span className="text-amber-300 font-bold shrink-0">Ô {p.position || 1}/{totalCells}</span>
+                          <span className="text-emerald-400 font-black shrink-0 w-16 text-right">{p.score || 0}đ</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-8 shrink-0">
+                  <button onClick={() => setShowStatsModal(true)} className="bg-slate-800/80 hover:bg-slate-700 px-6 py-3 rounded-2xl border border-red-500/50 flex items-center gap-2 transition-colors">
+                    <XCircle className="w-6 h-6 text-red-400" />
+                    <span className="text-lg font-bold text-red-400">Thống Kê Câu Sai</span>
+                  </button>
+                  <button onClick={closeRoom} className="bg-red-600 hover:bg-red-500 text-white px-8 py-3 rounded-2xl font-black text-lg shadow-lg transition-transform hover:scale-105">
+                    Thoát & Xoá Phòng
+                  </button>
+                </div>
+
+                {showStatsModal && (
+                  <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-slate-900 border-2 border-slate-700 rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden relative">
+                      <button onClick={() => setShowStatsModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white bg-slate-800 rounded-full p-2 z-10">✕</button>
+                      <div className="p-6 border-b border-slate-700 bg-slate-800/50">
+                        <h2 className="text-3xl font-black text-white flex items-center gap-3"><XCircle className="text-red-500" /> Thống Kê Các Câu Sai</h2>
+                      </div>
+                      <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
+                        {(() => {
+                          const wrongQs = [...roomData.questions]
+                            .map((q, idx) => ({ ...q, index: idx }))
+                            .filter(q => q.wrongCount > 0)
+                            .sort((a, b) => b.wrongCount - a.wrongCount);
+                          if (wrongQs.length === 0) return <div className="text-center text-emerald-400 text-2xl py-10 font-bold">Tuyệt vời! Không có câu nào sai! 🎉</div>;
+                          return wrongQs.map((q, i) => (
+                            <div key={i} className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700">
+                              <div className="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-700/50" onClick={() => setSelectedStatQ(selectedStatQ === q.index ? null : q.index)}>
+                                <div className="font-bold text-xl text-gray-300">Câu hỏi số {q.index + 1}</div>
+                                <div className="flex items-center gap-4">
+                                  <div className="text-red-400 font-bold bg-red-900/30 px-3 py-1 rounded-lg">{q.wrongCount} nhóm sai</div>
+                                  <ChevronRight className={`w-6 h-6 transition-transform ${selectedStatQ === q.index ? 'rotate-90 text-emerald-400' : 'text-gray-500'}`} />
+                                </div>
+                              </div>
+                              {selectedStatQ === q.index && (
+                                <div className="p-6 bg-slate-900/80 border-t border-slate-700">
+                                  <div className="text-xl mb-4 text-white"><MathText text={q.question} /></div>
+                                  {q.image && <img src={q.image} className="max-h-40 rounded-lg mb-4" alt="minh hoạ" />}
+                                  <div className="text-emerald-400 font-bold mt-4">
+                                    Đáp án đúng: {q.type === 'TLN' ? <MathText text={q.correctOption} /> : ['A', 'B', 'C', 'D'][q.correctOption - 1]}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ));
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {roomData.status === 'END' && (() => {
              const top3 = sortedTop10.slice(0, 3);

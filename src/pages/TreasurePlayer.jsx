@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { db } from '../firebase';
 import { ref, set, onValue, get, update } from 'firebase/database';
 import MathText from '../components/MathText';
+import TreasureBoard, { applySpecialCell, getTeamColor } from '../components/TreasureBoard';
 
 const AVATAR_STYLES = [
   { name: '🔴 Đỏ', bg: '#FF6B6B', emoji: '😊' },
@@ -41,6 +42,8 @@ const TreasurePlayer = () => {
   const [selectedTeamId, setSelectedTeamId] = useState('');
   const [roomSettings, setRoomSettings] = useState(null);
   const [starCountdown, setStarCountdown] = useState(5);
+  const [diceCountdown, setDiceCountdown] = useState(6);
+  const [rollingFace, setRollingFace] = useState(null); // số đang quay khi lắc xúc sắc
 
   // Realtime Data from Firebase
   const [roomData, setRoomData] = useState(null);
@@ -69,6 +72,17 @@ const TreasurePlayer = () => {
     setStarCountdown(5);
     const timer = setInterval(() => {
       setStarCountdown(prev => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [roomData?.status, roomData?.currentQuestionIndex]);
+
+  // Đếm ngược 6 giây gieo xúc sắc
+  useEffect(() => {
+    if (roomData?.status !== 'DICE_ROLL') return;
+    setDiceCountdown(6);
+    setRollingFace(null);
+    const timer = setInterval(() => {
+      setDiceCountdown(prev => (prev <= 1 ? 0 : prev - 1));
     }, 1000);
     return () => clearInterval(timer);
   }, [roomData?.status, roomData?.currentQuestionIndex]);
@@ -123,7 +137,11 @@ const TreasurePlayer = () => {
       avatarEmoji: avatar.emoji,
       avatarName: avatar.name,
       starUsed: false,
-      starActive: false
+      starActive: false,
+      position: 1,
+      canRoll: false,
+      hasRolled: false,
+      diceValue: null
     });
 
     setLocalGameState('PLAYING');
@@ -135,6 +153,40 @@ const TreasurePlayer = () => {
     if (me?.currentAnswer) return;
 
     await set(ref(db, `treasureRooms/${pin}/players/${playerId}/currentAnswer`), option);
+  };
+
+  // Gieo xúc sắc 6 mặt rồi tiến quân trên bản đồ kho báu
+  const rollDice = async () => {
+    const my = roomData?.players?.[playerId];
+    if (!my?.canRoll || my?.hasRolled) return;
+
+    const settings = roomData.settings || {};
+    const size = settings.boardSize || 6;
+    const total = size * size;
+    const specials = settings.specialCells || {};
+    const dice = Math.floor(Math.random() * 6) + 1;
+
+    // Hiệu ứng lắc ~900ms trước khi chốt
+    let ticks = 0;
+    const shake = setInterval(() => {
+      setRollingFace(Math.floor(Math.random() * 6) + 1);
+      ticks++;
+      if (ticks >= 9) clearInterval(shake);
+    }, 100);
+
+    setTimeout(async () => {
+      clearInterval(shake);
+      setRollingFace(null);
+      const stepped = Math.min((my.position || 1) + dice, total);
+      const { finalPosition, jumped } = applySpecialCell(stepped, specials, total);
+      await update(ref(db, `treasureRooms/${pin}/players/${playerId}`), {
+        diceValue: dice,
+        hasRolled: true,
+        position: finalPosition,
+        lastJump: jumped,
+        justLanded: true
+      });
+    }, 950);
   };
 
   const getMyData = () => roomData?.players?.[playerId];
@@ -497,6 +549,104 @@ const TreasurePlayer = () => {
                   </div>
                 </div>
              );
+          })()}
+
+          {roomData.status === 'DICE_ROLL' && (() => {
+            const settings = roomData.settings || {};
+            const size = settings.boardSize || 6;
+            const total = size * size;
+            const boardTeams = Object.values(roomData.players || {}).map(p => ({
+              id: p.id, name: p.name, position: p.position || 1,
+              index: roomData.teams?.[p.id]?.index || 1
+            }));
+            const myIndex = roomData.teams?.[playerId]?.index || 1;
+
+            return (
+              <div className="w-full max-w-md flex flex-col items-center gap-4 px-4">
+                <div className="w-full max-w-[300px]">
+                  <TreasureBoard
+                    size={size}
+                    bgUrl={settings.boardBgUrl}
+                    specialCells={settings.specialCells || {}}
+                    teams={boardTeams}
+                    highlightCell={me?.justLanded ? me?.position : null}
+                    compact
+                  />
+                </div>
+
+                <div className="flex items-center gap-3 text-white">
+                  <div
+                    className="w-9 h-9 rounded-full border-2 border-white flex items-center justify-center font-black text-sm"
+                    style={{ backgroundColor: getTeamColor(myIndex) }}
+                  >
+                    {myIndex}
+                  </div>
+                  <span className="font-bold">Ô {me?.position || 1} / {total}</span>
+                </div>
+
+                {me?.hasRolled ? (
+                  <div className="bg-amber-500/20 border-2 border-amber-500 rounded-3xl px-8 py-6 text-center w-full">
+                    <div className="text-7xl">🎲</div>
+                    <p className="text-5xl font-black text-amber-300 mt-1">{me.diceValue}</p>
+                    <p className="text-white font-bold mt-2">Tiến {me.diceValue} bước</p>
+                    {me.lastJump > 0 && (
+                      <p className="text-emerald-400 font-black mt-1 animate-pulse">⚡ Ô thần kỳ! Tiến thêm {me.lastJump} bước</p>
+                    )}
+                    {me.lastJump < 0 && (
+                      <p className="text-red-400 font-black mt-1 animate-pulse">💀 Bẫy! Lùi {Math.abs(me.lastJump)} bước</p>
+                    )}
+                  </div>
+                ) : me?.canRoll ? (
+                  <>
+                    <div className={`text-5xl font-black ${diceCountdown <= 2 ? 'text-red-400 animate-pulse' : 'text-white'}`}>
+                      {diceCountdown}s
+                    </div>
+                    <button
+                      onClick={rollDice}
+                      disabled={rollingFace !== null}
+                      className="w-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-slate-900 py-8 rounded-3xl font-black text-2xl flex flex-col items-center gap-2 shadow-[0_10px_0_rgba(146,64,14,1)] active:translate-y-2 active:shadow-none transition-all disabled:opacity-80"
+                    >
+                      <span className={`text-6xl ${rollingFace !== null ? 'animate-spin' : 'animate-bounce'}`}>
+                        {rollingFace !== null ? ['⚀','⚁','⚂','⚃','⚄','⚅'][rollingFace - 1] : '🎲'}
+                      </span>
+                      {rollingFace !== null ? 'ĐANG LẮC...' : 'GIEO XÚC SẮC'}
+                    </button>
+                    <p className="text-emerald-400 font-bold">✅ Trả lời đúng — được tiến quân!</p>
+                  </>
+                ) : (
+                  <div className="bg-slate-800 border-2 border-slate-600 rounded-3xl px-8 py-6 text-center w-full">
+                    <div className="text-5xl mb-2">😔</div>
+                    <p className="text-gray-300 font-bold text-lg">Chưa đúng nên lượt này đứng yên</p>
+                    <p className="text-gray-500 text-sm mt-1">Cố lên ở câu sau nhé!</p>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {roomData.status === 'TREASURE_END' && (() => {
+            const champion = roomData.players?.[roomData.winnerId];
+            const isMe = roomData.winnerId === playerId;
+            return (
+              <div className="w-full max-w-md flex flex-col items-center gap-5 px-4 text-center">
+                <div className="text-8xl animate-bounce drop-shadow-[0_0_50px_rgba(250,204,21,0.9)]">
+                  {isMe ? '💎' : '🏴‍☠️'}
+                </div>
+                <h1 className="text-4xl font-black text-yellow-400 uppercase drop-shadow-lg">
+                  {isMe ? 'Bạn đã lấy được kho báu!' : 'Kho báu đã có chủ'}
+                </h1>
+                {champion && (
+                  <div className="bg-yellow-500/20 border-2 border-yellow-500 rounded-3xl px-8 py-5 w-full">
+                    <p className="text-yellow-200 uppercase tracking-widest text-xs font-bold">Nhóm chiến thắng</p>
+                    <p className="text-3xl font-black text-white mt-1">{champion.name}</p>
+                  </div>
+                )}
+                <div className="bg-slate-800/80 rounded-2xl px-8 py-4 w-full">
+                  <p className="text-gray-400 text-sm">Nhóm của bạn</p>
+                  <p className="text-2xl font-black text-emerald-400 mt-1">Ô {me?.position || 1} • {me?.score || 0} điểm</p>
+                </div>
+              </div>
+            );
           })()}
 
           {roomData.status === 'END' && (() => {
