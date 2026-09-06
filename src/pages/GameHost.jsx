@@ -541,7 +541,7 @@ const GameHost = () => {
         return (
           <div className="w-full min-h-screen relative flex flex-col z-10">
             {/* Tiêu đề */}
-            <div className="text-center py-6 animate-fade-in shrink-0">
+            <div className="text-center pt-16 pb-4 animate-fade-in shrink-0">
               <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] tracking-wide uppercase" style={{ WebkitTextStroke: '1.5px rgba(255,255,255,0.3)' }}>
                 {roomData.settings.gameTitle || 'TRÒ CHƠI DẠY HỌC'}
               </h1>
