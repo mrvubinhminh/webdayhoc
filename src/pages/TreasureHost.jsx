@@ -1159,7 +1159,7 @@ const TreasureHost = () => {
             </button>
           )}
 
-          {roomData.status === 'STAR_PICK' && (() => {
+          {!roomData.boardOpen && roomData.status === 'STAR_PICK' && (() => {
             const starPickers = playersList.filter(p => p.starActive);
             const remainQ = (roomData.questions?.length || 0) - roomData.currentQuestionIndex;
             return (
@@ -1199,7 +1199,7 @@ const TreasureHost = () => {
             );
           })()}
 
-          {roomData.status === 'QUESTION' && (() => {
+          {!roomData.boardOpen && roomData.status === 'QUESTION' && (() => {
             const q = roomData.questions[roomData.currentQuestionIndex];
             const hasImage = q.image && q.image.trim();
             return (
@@ -1246,7 +1246,7 @@ const TreasureHost = () => {
             );
           })()}
 
-          {roomData.status === 'REVEAL' && (
+          {!roomData.boardOpen && roomData.status === 'REVEAL' && (
             <div className="animate-fade-in flex flex-col md:flex-row gap-6 min-h-[70vh]">
                <div className="flex-1 bg-slate-800 p-8 rounded-3xl border-4 border-slate-700 flex flex-col gap-6">
                   <div className="flex flex-col items-center justify-center text-center bg-slate-900/50 p-6 rounded-2xl border border-slate-700">
@@ -1308,7 +1308,7 @@ const TreasureHost = () => {
             </div>
           )}
 
-          {roomData.status === 'DICE_ROLL' && (() => {
+          {!roomData.boardOpen && roomData.status === 'DICE_ROLL' && (() => {
             const eligible = playersList.filter(p => p.canRoll);
             const rolled = eligible.filter(p => p.hasRolled);
             const lastMover = playersList.find(p => p.hasRolled && p.justLanded);
