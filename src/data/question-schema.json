@@ -1,0 +1,51 @@
+{
+  "schema": {
+    "version": "1.0",
+    "types": [
+      {
+        "id": "multiple_choice",
+        "name": "Trắc nghiệm đa lựa chọn",
+        "description": "Câu hỏi có 4 đáp án A, B, C, D",
+        "template": {
+          "type": "multiple_choice",
+          "content": "Nội dung câu hỏi (hỗ trợ $công thức LaTeX$)",
+          "options": {
+            "A": "Đáp án A (hỗ trợ $công thức LaTeX$)",
+            "B": "Đáp án B (hỗ trợ $công thức LaTeX$)",
+            "C": "Đáp án C (hỗ trợ $công thức LaTeX$)",
+            "D": "Đáp án D (hỗ trợ $công thức LaTeX$)"
+          },
+          "correctAnswer": "A",
+          "explanation": "Lời giải chi tiết\\newlineXuống dòng thứ 2\\newlineXuống dòng thứ 3 (hỗ trợ $công thức LaTeX$)",
+          "imageUrl": "https://example.com/image.png (tùy chọn)",
+          "difficulty": "easy|medium|hard"
+        }
+      },
+      {
+        "id": "true_false_group",
+        "name": "Trắc nghiệm nhóm Đúng/Sai",
+        "description": "Một nhóm câu hỏi cùng đặt vấn đề, mỗi câu trả lời Đúng (Đ) hoặc Sai (S)",
+        "template": {
+          "type": "true_false_group",
+          "groupTitle": "Tiêu đề nhóm câu hỏi (hỗ trợ $công thức LaTeX$)",
+          "groupContext": "Thông tin chung cho cả nhóm (hỗ trợ $công thức LaTeX$)\\newlineXuống dòng nếu cần",
+          "questions": [
+            {
+              "id": 1,
+              "content": "Câu hỏi 1 (hỗ trợ $công thức LaTeX$)",
+              "correctAnswer": "Đ",
+              "explanation": "Lời giải câu 1\\newlineXuống dòng nếu cần (hỗ trợ $công thức LaTeX$)"
+            },
+            {
+              "id": 2,
+              "content": "Câu hỏi 2 (hỗ trợ $công thức LaTeX$)",
+              "correctAnswer": "S",
+              "explanation": "Lời giải câu 2\\newlineXuống dòng nếu cần"
+            }
+          ],
+          "imageUrl": "https://example.com/image.png (tùy chọn)"
+        }
+      }
+    ]
+  }
+}

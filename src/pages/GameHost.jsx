@@ -5,6 +5,7 @@ import { ArrowLeft, Upload, Play, Users, Trophy, ChevronRight, CheckCircle2, XCi
 import { db } from '../firebase';
 import { ref, set, update, onValue, remove } from 'firebase/database';
 import MathText from '../components/MathText';
+import QuestionGuidePanel from '../components/QuestionGuidePanel';
 
 // Định nghĩa 5 theme giao diện
 const THEMES = [
@@ -529,7 +530,11 @@ const GameHost = () => {
             </div>
           </div>
 
-          <button 
+          <div className="mt-10 mb-8">
+            <QuestionGuidePanel />
+          </div>
+
+          <button
             onClick={createRoom} disabled={questions.length === 0 || !gameTitle.trim()}
             className={`w-full mt-8 py-5 rounded-2xl font-black text-2xl transition-all ${questions.length > 0 && gameTitle.trim() ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/30 hover:scale-[1.02]' : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}
           >

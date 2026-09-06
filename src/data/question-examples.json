@@ -1,0 +1,104 @@
+{
+  "examples": [
+    {
+      "id": "mc_001",
+      "type": "multiple_choice",
+      "subject": "Toán 10",
+      "chapter": "Phương trình bậc 2",
+      "content": "Phương trình $x^2 - 5x + 6 = 0$ có tập nghiệm là:",
+      "options": {
+        "A": "$\\{2; 3\\}$",
+        "B": "$\\{1; 6\\}$",
+        "C": "$\\{-2; -3\\}$",
+        "D": "$\\{\\frac{1}{2}; 3\\}$"
+      },
+      "correctAnswer": "A",
+      "explanation": "Phương trình $x^2 - 5x + 6 = 0$\\newline$\\Delta = b^2 - 4ac = 25 - 24 = 1 > 0$\\newline$x_1 = \\frac{5 - 1}{2} = 2, \\quad x_2 = \\frac{5 + 1}{2} = 3$\\newlineVậy tập nghiệm là $\\{2; 3\\}$",
+      "difficulty": "easy",
+      "imageUrl": ""
+    },
+    {
+      "id": "mc_002",
+      "type": "multiple_choice",
+      "subject": "Toán 10",
+      "chapter": "Bất phương trình",
+      "content": "Tập hợp nghiệm của bất phương trình $\\frac{x-3}{x+1} \\leq 0$ là:",
+      "options": {
+        "A": "$(-1; 3]$",
+        "B": "$[-1; 3]$",
+        "C": "$(-\\infty; -1) \\cup [3; +\\infty)$",
+        "D": "$(-\\infty; -1] \\cup [3; +\\infty)$"
+      },
+      "correctAnswer": "A",
+      "explanation": "Xét dấu biểu thức $\\frac{x-3}{x+1}$:\\newline- Tử số $x - 3 = 0$ khi $x = 3$\\newline- Mẫu số $x + 1 = 0$ khi $x = -1$ (loại vì làm mẫu = 0)\\newn- Lập bảng xét dấu: \\newline  Khi $x < -1$: $\\frac{(-)}{(-)} > 0$\\newline  Khi $-1 < x < 3$: $\\frac{(-)}{(+)} < 0$ ✓\\newline  Khi $x > 3$: $\\frac{(+)}{(+)} > 0$\\newline- Tại $x = 3$: biểu thức = 0 ✓\\newnVậy tập nghiệm là $(-1; 3]$",
+      "difficulty": "medium",
+      "imageUrl": ""
+    },
+    {
+      "id": "tf_001",
+      "type": "true_false_group",
+      "subject": "Toán 10",
+      "chapter": "Vectơ",
+      "groupTitle": "Cho tam giác $ABC$ với $\\vec{AB} = \\vec{a}$, $\\vec{AC} = \\vec{b}$",
+      "groupContext": "Gọi $M$ là điểm trên cạnh $AB$ sao cho $AM = \\frac{1}{3}AB$, $N$ là điểm trên cạnh $AC$ sao cho $AN = \\frac{2}{3}AC$",
+      "questions": [
+        {
+          "id": 1,
+          "content": "$\\vec{AM} = \\frac{1}{3}\\vec{a}$",
+          "correctAnswer": "Đ",
+          "explanation": "Vì $M$ nằm trên $AB$ với $AM = \\frac{1}{3}AB$, nên $\\vec{AM} = \\frac{1}{3}\\vec{AB} = \\frac{1}{3}\\vec{a}$"
+        },
+        {
+          "id": 2,
+          "content": "$\\vec{AN} = \\frac{2}{3}\\vec{b}$",
+          "correctAnswer": "Đ",
+          "explanation": "Vì $N$ nằm trên $AC$ với $AN = \\frac{2}{3}AC$, nên $\\vec{AN} = \\frac{2}{3}\\vec{AC} = \\frac{2}{3}\\vec{b}$"
+        },
+        {
+          "id": 3,
+          "content": "$\\vec{MN} = \\frac{1}{3}\\vec{a} + \\frac{2}{3}\\vec{b}$",
+          "correctAnswer": "S",
+          "explanation": "$\\vec{MN} = \\vec{AN} - \\vec{AM} = \\frac{2}{3}\\vec{b} - \\frac{1}{3}\\vec{a} = -\\frac{1}{3}\\vec{a} + \\frac{2}{3}\\vec{b}$"
+        },
+        {
+          "id": 4,
+          "content": "Nếu tam giác $ABC$ đều với cạnh $a$ thì $|\\vec{MN}| = \\frac{a\\sqrt{3}}{3}$",
+          "correctAnswer": "Đ",
+          "explanation": "$\\vec{MN} = -\\frac{1}{3}\\vec{a} + \\frac{2}{3}\\vec{b}$\\newline$|\\vec{MN}|^2 = \\frac{1}{9}|\\vec{a}|^2 + \\frac{4}{9}|\\vec{b}|^2 - \\frac{4}{9}\\vec{a}\\cdot\\vec{b}$\\newlineVì $|\\vec{a}| = |\\vec{b}| = a$ và $\\vec{a}\\cdot\\vec{b} = a^2\\cos 60° = \\frac{a^2}{2}$:\\newline$|\\vec{MN}|^2 = \\frac{a^2}{9} + \\frac{4a^2}{9} - \\frac{4}{9} \\cdot \\frac{a^2}{2} = \\frac{a^2 + 4a^2 - 2a^2}{9} = \\frac{a^2}{3}$\\newnVậy $|\\vec{MN}| = \\frac{a}{\\sqrt{3}} = \\frac{a\\sqrt{3}}{3}$"
+        }
+      ],
+      "difficulty": "hard",
+      "imageUrl": ""
+    },
+    {
+      "id": "tf_002",
+      "type": "true_false_group",
+      "subject": "Toán 10",
+      "chapter": "Hàm số bậc 2",
+      "groupTitle": "Xét hàm số $f(x) = -x^2 + 4x + 5$",
+      "groupContext": "Hàm số này có đồ thị là một parabol",
+      "questions": [
+        {
+          "id": 1,
+          "content": "Hàm số có trục đối xứng là đường thẳng $x = 2$",
+          "correctAnswer": "Đ",
+          "explanation": "Với $f(x) = -x^2 + 4x + 5$, ta có $a = -1$, $b = 4$\\newnTrục đối xứng: $x = -\\frac{b}{2a} = -\\frac{4}{2(-1)} = 2$"
+        },
+        {
+          "id": 2,
+          "content": "Đỉnh parabol là $(2; 9)$",
+          "correctAnswer": "Đ",
+          "explanation": "Hoành độ đỉnh: $x = 2$\\newnTung độ đỉnh: $f(2) = -4 + 8 + 5 = 9$\\newnVậy đỉnh là $(2; 9)$"
+        },
+        {
+          "id": 3,
+          "content": "Hàm số đạt giá trị lớn nhất bằng 5",
+          "correctAnswer": "S",
+          "explanation": "Vì $a = -1 < 0$, parabol quay bề lõm xuống, nên hàm số đạt giá trị lớn nhất tại đỉnh\\newnGiá trị lớn nhất = $f(2) = 9$ (không phải 5)"
+        }
+      ],
+      "difficulty": "medium",
+      "imageUrl": ""
+    }
+  ]
+}
