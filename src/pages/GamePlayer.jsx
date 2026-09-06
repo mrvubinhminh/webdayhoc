@@ -1,21 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { db } from '../firebase';
 import { ref, set, onValue, get, update } from 'firebase/database';
 import MathText from '../components/MathText';
 
 const GamePlayer = () => {
   const navigate = useNavigate();
-  const [pin, setPin] = useState('');
+  const [searchParams] = useSearchParams();
+  const [pin, setPin] = useState(() => searchParams.get('pin') || '');
   const [name, setName] = useState('');
   const [localGameState, setLocalGameState] = useState('JOIN'); // JOIN, PLAYING
   const [playerId, setPlayerId] = useState('');
   const [tlnAnswer, setTlnAnswer] = useState('');
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(() => searchParams.get('pin') ? 2 : 1);
   const [selectedTeamId, setSelectedTeamId] = useState('');
   const [roomSettings, setRoomSettings] = useState(null);
-  
+
   // Realtime Data from Firebase
   const [roomData, setRoomData] = useState(null);
 

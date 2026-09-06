@@ -589,7 +589,7 @@ const GameHost = () => {
       )}
 
       {localGameState === 'LOBBY' && roomData && (() => {
-        const playUrl = 'https://webdayhoc.vercel.app/play';
+        const playUrl = `https://webdayhoc.vercel.app/play?pin=${roomCode}`;
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(playUrl)}&bgcolor=ffffff&color=000000&margin=10`;
         return (
           <div className="w-full min-h-screen relative flex flex-col z-10">
