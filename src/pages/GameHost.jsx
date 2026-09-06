@@ -114,6 +114,8 @@ const GameHost = () => {
   const [playMode, setPlayMode] = useState('INDIVIDUAL');
   const [teamCount, setTeamCount] = useState(4);
   const [bgUrl, setBgUrl] = useState(() => localStorage.getItem('gameBgUrl') || '');
+  const [bgPresets, setBgPresets] = useState(() => JSON.parse(localStorage.getItem('gameBgPresets') || '[]'));
+  const [presetName, setPresetName] = useState('');
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [selectedStatQ, setSelectedStatQ] = useState(null);
 
@@ -237,6 +239,13 @@ const GameHost = () => {
     if (questions.length === 0) {
       alert("Vui lòng tải lên file câu hỏi trước!");
       return;
+    }
+    try {
+      if (document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch (err) {
+      console.log('Fullscreen error:', err);
     }
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setRoomCode(code);
@@ -454,16 +463,66 @@ const GameHost = () => {
 
               <div className="bg-slate-800 p-5 rounded-xl border border-slate-700">
                 <label className="block text-gray-400 mb-2 font-bold text-sm">🖼️ Link ảnh nền (tuỳ chọn)</label>
-                <input 
-                  type="text" 
-                  value={bgUrl} 
-                  onChange={(e) => {
-                    setBgUrl(e.target.value);
-                    localStorage.setItem('gameBgUrl', e.target.value);
-                  }}
-                  className="w-full bg-slate-900 text-white text-lg font-bold px-4 py-3 rounded-lg outline-none border border-transparent focus:border-emerald-500" 
-                  placeholder="https://..."
-                />
+                <div className="flex gap-2 mb-3">
+                  <input 
+                    type="text" 
+                    value={bgUrl} 
+                    onChange={(e) => {
+                      setBgUrl(e.target.value);
+                      localStorage.setItem('gameBgUrl', e.target.value);
+                    }}
+                    className="flex-1 w-full bg-slate-900 text-white text-lg font-bold px-4 py-3 rounded-lg outline-none border border-transparent focus:border-emerald-500" 
+                    placeholder="https://..."
+                  />
+                </div>
+                <div className="flex gap-2 mb-3 border-t border-slate-700 pt-4 mt-2">
+                   <input
+                     type="text"
+                     value={presetName}
+                     onChange={e => setPresetName(e.target.value)}
+                     placeholder="Đặt tên mẫu..."
+                     className="flex-1 bg-slate-900 text-white px-3 py-2 rounded-lg outline-none border border-transparent focus:border-emerald-500"
+                   />
+                   <button 
+                     onClick={() => {
+                        if (!bgUrl || !presetName) return;
+                        const newPresets = [...bgPresets, { name: presetName, url: bgUrl }];
+                        setBgPresets(newPresets);
+                        localStorage.setItem('gameBgPresets', JSON.stringify(newPresets));
+                        setPresetName('');
+                     }}
+                     className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-bold transition-colors whitespace-nowrap"
+                   >
+                     Lưu Mẫu
+                   </button>
+                </div>
+                {bgPresets.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {bgPresets.map((p, i) => (
+                      <div key={i} className="flex items-center bg-slate-700 rounded-lg overflow-hidden border border-slate-600">
+                        <button 
+                          onClick={() => {
+                             setBgUrl(p.url);
+                             localStorage.setItem('gameBgUrl', p.url);
+                          }}
+                          className="px-3 py-1.5 text-sm font-semibold hover:bg-slate-600 transition-colors"
+                        >
+                          {p.name}
+                        </button>
+                        <button
+                          onClick={() => {
+                             const newPresets = bgPresets.filter((_, idx) => idx !== i);
+                             setBgPresets(newPresets);
+                             localStorage.setItem('gameBgPresets', JSON.stringify(newPresets));
+                          }}
+                          className="px-2 py-1.5 text-red-400 hover:bg-red-500/20 transition-colors border-l border-slate-600"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
