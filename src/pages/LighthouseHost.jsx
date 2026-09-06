@@ -75,8 +75,10 @@ const LighthouseHost = () => {
     }
   };
 
-  const secondsFor = (status, settings) =>
-    status === 'QUESTION' ? (settings?.timeLimit || 60)
+  // Câu nào có thời gian riêng ở cột 9 của Excel thì ưu tiên dùng
+  const secondsFor = (status, settings, data) =>
+    status === 'QUESTION'
+      ? (data?.questions?.[data.currentQuestionIndex]?.timeLimit || settings?.timeLimit || 60)
       : status === 'REVEAL' ? (settings?.revealTimeLimit || 25) : 0;
 
   useEffect(() => {
@@ -85,7 +87,7 @@ const LighthouseHost = () => {
     const unsub = onValue(r, (snap) => {
       const data = snap.val();
       if (!data) return;
-      if (!roomData || roomData.status !== data.status) setTimeLeft(secondsFor(data.status, data.settings));
+      if (!roomData || roomData.status !== data.status) setTimeLeft(secondsFor(data.status, data.settings, data));
       setRoomData(data);
     });
     return () => unsub();
@@ -150,12 +152,13 @@ const LighthouseHost = () => {
       const parsed = rows.slice(1).map(row => {
         if (!row[0]) return null;
         if (row[1]?.toString().trim().toUpperCase() === 'TLN') {
-          return { type: 'TLN', question: row[0] || '', correctOption: row[2]?.toString().trim() || '', explanation: row[3]?.toString() || '', image: row[7] || null };
+          return { type: 'TLN', question: row[0] || '', correctOption: row[2]?.toString().trim() || '', explanation: row[3]?.toString() || '', image: row[7] || null, timeLimit: parseInt(row[8]) > 0 ? parseInt(row[8]) : null };
         }
         return {
           type: 'TRAC_NGHIEM', question: row[0] || '',
           optionA: row[1] || '', optionB: row[2] || '', optionC: row[3] || '', optionD: row[4] || '',
-          correctOption: parseInt(row[5]) || 1, explanation: row[6] || '', image: row[7] || null
+          correctOption: parseInt(row[5]) || 1, explanation: row[6] || '', image: row[7] || null,
+          timeLimit: parseInt(row[8]) > 0 ? parseInt(row[8]) : null
         };
       }).filter(Boolean);
       setQuestions(parsed);
@@ -165,9 +168,9 @@ const LighthouseHost = () => {
 
   const downloadTemplate = () => {
     const ws_data = [
-      ['Nội dung câu hỏi', 'Đ/A A hoặc TLN', 'Đ/A B hoặc Đáp số', 'Đ/A C hoặc Lời giải', 'Đ/A D', 'Đáp án đúng (1/2/3/4)', 'Lời giải', 'Link ảnh (tùy chọn)'],
-      ['Thủ đô của Việt Nam là gì?', 'Hồ Chí Minh', 'Đà Nẵng', 'Hà Nội', 'Huế', 3, 'Hà Nội là thủ đô của Việt Nam', ''],
-      ['$2x + 3 = 7$ thì x bằng mấy?', 'TLN', '2', 'Chuyển vế $2x = 4 \\Rightarrow x = 2$', '', '', '', '']
+      ['Nội dung câu hỏi', 'Đ/A A hoặc TLN', 'Đ/A B hoặc Đáp số', 'Đ/A C hoặc Lời giải', 'Đ/A D', 'Đáp án đúng (1/2/3/4)', 'Lời giải', 'Link ảnh (tùy chọn)', 'Thời gian riêng (giây, tùy chọn)'],
+      ['Thủ đô của Việt Nam là gì?', 'Hồ Chí Minh', 'Đà Nẵng', 'Hà Nội', 'Huế', 3, 'Hà Nội là thủ đô của Việt Nam', '', 30],
+      ['$2x + 3 = 7$ thì x bằng mấy?', 'TLN', '2', 'Chuyển vế $2x = 4 \\Rightarrow x = 2$', '', '', '', '', 90]
     ];
     const ws = XLSX.utils.aoa_to_sheet(ws_data);
     const wb = XLSX.utils.book_new();
@@ -359,6 +362,11 @@ const LighthouseHost = () => {
                   {fileName && (
                     <div className="mt-4 text-sky-300 bg-sky-900/30 p-3 rounded-lg border border-sky-500/30">
                       ✅ <strong>{fileName}</strong> — {questions.length} câu hỏi
+                      {questions.filter(q => q.timeLimit).length > 0 && (
+                        <div className="text-xs opacity-80 mt-1">
+                          ⏱ {questions.filter(q => q.timeLimit).length} câu có thời gian riêng
+                        </div>
+                      )}
                       <div className="text-xs text-sky-200/80 mt-1">
                         Sẽ có {Array.from({ length: questions.length }, (_, i) => i).filter(i => isStormQuestion(i, questions.length)).length} cơn bão lớn
                       </div>

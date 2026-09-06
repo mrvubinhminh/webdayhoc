@@ -89,8 +89,12 @@ const BankHost = () => {
     }
   };
 
-  const secondsFor = (status, settings) => {
-    if (status === 'QUESTION') return settings?.timeLimit || 60;
+  // Câu nào có thời gian riêng ở cột 9 của Excel thì ưu tiên dùng
+  const secondsFor = (status, settings, data) => {
+    if (status === 'QUESTION') {
+      const q = data?.questions?.[data.currentQuestionIndex];
+      return q?.timeLimit || settings?.timeLimit || 60;
+    }
     if (status === 'REVEAL') return settings?.revealTimeLimit || 25;
     if (status === 'BET') return settings?.betTime || DEFAULT_BET_TIME;
     return 0;
@@ -103,7 +107,7 @@ const BankHost = () => {
       const data = snapshot.val();
       if (!data) return;
       const changed = !roomData || roomData.status !== data.status;
-      if (changed) setTimeLeft(secondsFor(data.status, data.settings));
+      if (changed) setTimeLeft(secondsFor(data.status, data.settings, data));
       setRoomData(data);
     });
     return () => unsubscribe();
@@ -188,6 +192,7 @@ const BankHost = () => {
             correctOption: row[2]?.toString().trim() || '',
             explanation: row[3]?.toString() || '',
             image: row[7] || null,
+          timeLimit: parseInt(row[8]) > 0 ? parseInt(row[8]) : null,
           };
         }
         return {
@@ -200,6 +205,7 @@ const BankHost = () => {
           correctOption: parseInt(row[5]) || 1,
           explanation: row[6] || '',
           image: row[7] || null,
+          timeLimit: parseInt(row[8]) > 0 ? parseInt(row[8]) : null,
         };
       }).filter(Boolean);
 
@@ -210,9 +216,9 @@ const BankHost = () => {
 
   const downloadTemplate = () => {
     const ws_data = [
-      ['Nội dung câu hỏi', 'Đ/A A hoặc TLN', 'Đ/A B hoặc Đáp số', 'Đ/A C hoặc Lời giải', 'Đ/A D', 'Đáp án đúng (1/2/3/4)', 'Lời giải', 'Link ảnh (tùy chọn)'],
-      ['Thủ đô của Việt Nam là gì?', 'Hồ Chí Minh', 'Đà Nẵng', 'Hà Nội', 'Huế', 3, 'Hà Nội là thủ đô của Việt Nam', ''],
-      ['$2x + 3 = 7$ thì x bằng mấy?', 'TLN', '2', 'Chuyển vế $2x = 4 \\Rightarrow x = 2$', '', '', '', '']
+      ['Nội dung câu hỏi', 'Đ/A A hoặc TLN', 'Đ/A B hoặc Đáp số', 'Đ/A C hoặc Lời giải', 'Đ/A D', 'Đáp án đúng (1/2/3/4)', 'Lời giải', 'Link ảnh (tùy chọn)', 'Thời gian riêng (giây, tùy chọn)'],
+      ['Thủ đô của Việt Nam là gì?', 'Hồ Chí Minh', 'Đà Nẵng', 'Hà Nội', 'Huế', 3, 'Hà Nội là thủ đô của Việt Nam', '', 30],
+      ['$2x + 3 = 7$ thì x bằng mấy?', 'TLN', '2', 'Chuyển vế $2x = 4 \\Rightarrow x = 2$', '', '', '', '', 90]
     ];
     const ws = XLSX.utils.aoa_to_sheet(ws_data);
     const wb = XLSX.utils.book_new();
@@ -469,6 +475,11 @@ const BankHost = () => {
                   {fileName && (
                     <div className="mt-4 text-amber-300 bg-amber-900/30 p-3 rounded-lg border border-amber-500/30">
                       ✅ <strong>{fileName}</strong> — {questions.length} câu hỏi
+                      {questions.filter(q => q.timeLimit).length > 0 && (
+                        <div className="text-xs opacity-80 mt-1">
+                          ⏱ {questions.filter(q => q.timeLimit).length} câu có thời gian riêng
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

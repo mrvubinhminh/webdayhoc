@@ -100,7 +100,8 @@ const GameHost = () => {
         if (data) {
           if (roomData && roomData.status !== data.status) {
              if (data.status === 'QUESTION') {
-               setTimeLeft(data.settings.timeLimit || 60);
+               // Cột 9 của Excel cho phép đặt thời gian riêng từng câu
+               setTimeLeft(data.questions?.[data.currentQuestionIndex]?.timeLimit || data.settings.timeLimit || 60);
              } else if (data.status === 'REVEAL') {
                setTimeLeft(data.settings.revealTimeLimit || 60);
              } else if (data.status === 'STAR_PICK') {
@@ -108,7 +109,7 @@ const GameHost = () => {
              }
           }
           if (!roomData && data) {
-             if (data.status === 'QUESTION') setTimeLeft(data.settings.timeLimit || 60);
+             if (data.status === 'QUESTION') setTimeLeft(data.questions?.[data.currentQuestionIndex]?.timeLimit || data.settings.timeLimit || 60);
              else if (data.status === 'REVEAL') setTimeLeft(data.settings.revealTimeLimit || 60);
              else if (data.status === 'STAR_PICK') setTimeLeft(STAR_PICK_SECONDS);
           }
@@ -199,6 +200,7 @@ const GameHost = () => {
             correctOption: row[2]?.toString().trim() || '',
             explanation: row[3]?.toString() || '',
             image: row[7] || null,
+          timeLimit: parseInt(row[8]) > 0 ? parseInt(row[8]) : null,
           };
         } else {
           return {
@@ -211,6 +213,7 @@ const GameHost = () => {
             correctOption: parseInt(row[5]) || 1,
             explanation: row[6] || '',
             image: row[7] || null,
+          timeLimit: parseInt(row[8]) > 0 ? parseInt(row[8]) : null,
           };
         }
       }).filter(Boolean);
@@ -222,9 +225,9 @@ const GameHost = () => {
 
   const downloadTemplate = () => {
     const ws_data = [
-      ['Nội dung câu hỏi', 'Đ/A A hoặc TLN', 'Đ/A B hoặc Đáp số', 'Đ/A C hoặc Lời giải', 'Đ/A D', 'Đáp án đúng (1/2/3/4)', 'Lời giải', 'Link ảnh (tùy chọn)'],
-      ['Thủ đô của Việt Nam là gì?', 'Hồ Chí Minh', 'Đà Nẵng', 'Hà Nội', 'Huế', 3, 'Hà Nội là thủ đô của Việt Nam', 'https://example.com/hanoi.jpg'],
-      ['$2x + 3 = 7$ thì x bằng mấy?', 'TLN', '2', 'Chuyển vế $2x = 4 \\Rightarrow x = 2$', '', '', '', '']
+      ['Nội dung câu hỏi', 'Đ/A A hoặc TLN', 'Đ/A B hoặc Đáp số', 'Đ/A C hoặc Lời giải', 'Đ/A D', 'Đáp án đúng (1/2/3/4)', 'Lời giải', 'Link ảnh (tùy chọn)', 'Thời gian riêng (giây, tùy chọn)'],
+      ['Thủ đô của Việt Nam là gì?', 'Hồ Chí Minh', 'Đà Nẵng', 'Hà Nội', 'Huế', 3, 'Hà Nội là thủ đô của Việt Nam', 'https://example.com/hanoi.jpg', 30],
+      ['$2x + 3 = 7$ thì x bằng mấy?', 'TLN', '2', 'Chuyển vế $2x = 4 \\Rightarrow x = 2$', '', '', '', '', 90]
     ];
     const ws = XLSX.utils.aoa_to_sheet(ws_data);
     const wb = XLSX.utils.book_new();
@@ -512,6 +515,11 @@ const GameHost = () => {
                 {fileName && (
                   <div className="mt-4 text-emerald-300 bg-emerald-900/30 p-3 rounded-lg border border-emerald-500/30">
                     ✅ <strong>{fileName}</strong> — {questions.length} câu hỏi
+                      {questions.filter(q => q.timeLimit).length > 0 && (
+                        <div className="text-xs opacity-80 mt-1">
+                          ⏱ {questions.filter(q => q.timeLimit).length} câu có thời gian riêng
+                        </div>
+                      )}
                   </div>
                 )}
               </div>

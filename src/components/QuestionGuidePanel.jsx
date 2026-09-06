@@ -136,6 +136,35 @@ const QuestionGuidePanel = () => {
             </div>
           </div>
 
+          {/* Cột thời gian riêng */}
+          <div className="bg-teal-50 p-4 rounded-lg border border-teal-200">
+            <h4 className="font-bold text-teal-900 mb-2">⏱️ Cột 9 — Thời gian riêng cho từng câu</h4>
+            <p className="text-sm text-gray-700 mb-2">
+              Điền số giây vào <b>cột thứ 9</b> của file Excel để câu đó chạy theo thời gian riêng,
+              thay vì dùng thời gian chung đã đặt khi tạo phòng. Bỏ trống thì dùng thời gian chung.
+            </p>
+            <div className="bg-white p-3 rounded text-xs overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="text-gray-500">
+                    <th className="text-left px-2">…</th>
+                    <th className="text-left px-2">Cột 7<br/>Lời giải</th>
+                    <th className="text-left px-2">Cột 8<br/>Link ảnh</th>
+                    <th className="text-left px-2 text-teal-700">Cột 9<br/>Số giây</th>
+                  </tr>
+                </thead>
+                <tbody className="text-gray-700">
+                  <tr><td className="px-2">…</td><td className="px-2">Vì …</td><td className="px-2">(trống)</td><td className="px-2 font-bold text-teal-700">30</td></tr>
+                  <tr><td className="px-2">…</td><td className="px-2">Vì …</td><td className="px-2">(trống)</td><td className="px-2 font-bold text-teal-700">120</td></tr>
+                  <tr><td className="px-2">…</td><td className="px-2">Vì …</td><td className="px-2">(trống)</td><td className="px-2 text-gray-400">(trống → dùng chung)</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-gray-600 mt-2">
+              Dùng cho câu nhận biết nhanh (20–30 giây) xen với câu vận dụng cao (90–180 giây).
+            </p>
+          </div>
+
           {/* Xuống dòng */}
           <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
             <h4 className="font-bold text-orange-900 mb-2">↩️ Xuống dòng trong lời giải</h4>
