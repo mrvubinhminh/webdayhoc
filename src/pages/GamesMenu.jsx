@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trophy, Target, ArrowLeft, Users, Mountain, Globe, Flag, HeartPulse, Castle, Hexagon, Snowflake, Sailboat, Car, Lock, Hammer, FlaskConical, Aperture, Rocket, Radar, Dices, Beaker, Gem } from 'lucide-react';
+import { Trophy, Target, ArrowLeft, Users, Mountain, Globe, Flag, HeartPulse, Castle, Hexagon, Snowflake, Sailboat, Car, Lock, Hammer, FlaskConical, Aperture, Rocket, Radar, Dices, Gem } from 'lucide-react';
 
 const GamesMenu = () => {
   const navigate = useNavigate();
@@ -19,13 +19,6 @@ const GamesMenu = () => {
       icon: <Gem className="w-8 h-8" />,
       color: 'from-amber-500 to-yellow-700',
       path: '/treasure/host'
-    },
-    {
-      id: 'question-tester',
-      title: 'Test Câu Hỏi',
-      icon: <Beaker className="w-8 h-8" />,
-      color: 'from-violet-500 to-purple-700',
-      path: '/question-tester'
     },
     {
       id: 'millionaire',
