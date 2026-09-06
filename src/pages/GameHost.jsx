@@ -321,6 +321,9 @@ const GameHost = () => {
   const closeRoom = async () => {
     if (window.confirm("Kết thúc hoàn toàn và xoá phòng chơi này?")) {
       await remove(ref(db, `rooms/${roomCode}`));
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
       setLocalGameState('SETUP');
       setRoomCode('');
       setRoomData(null);
