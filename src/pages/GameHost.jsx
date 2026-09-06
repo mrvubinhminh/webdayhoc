@@ -71,6 +71,7 @@ const GameHost = () => {
   const [showQuestionOnDevice, setShowQuestionOnDevice] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [selectedStatQ, setSelectedStatQ] = useState(null);
+  const [enableHighStakes, setEnableHighStakes] = useState(false);
 
   const currentAudio = useRef(null);
 
