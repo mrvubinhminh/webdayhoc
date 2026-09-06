@@ -109,12 +109,10 @@ const GameHost = () => {
   const [revealTimeLimit, setRevealTimeLimit] = useState(30);
   const [selectedTheme, setSelectedTheme] = useState(THEMES[0]);
   const [gameTitle, setGameTitle] = useState('ĐƯỜNG LÊN ĐỈNH OLYMPIA');
-  
-  // Realtime Data from Firebase
   const [roomData, setRoomData] = useState(null);
-
-  // Timer cho màn hình Host
   const [timeLeft, setTimeLeft] = useState(0);
+  const [showStatsModal, setShowStatsModal] = useState(false);
+  const [selectedStatQ, setSelectedStatQ] = useState(null);
 
   useEffect(() => {
     if (roomCode) {
@@ -122,7 +120,6 @@ const GameHost = () => {
       const unsubscribe = onValue(roomRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
-          // Xử lý chuyển trạng thái để reset timer
           if (roomData && roomData.status !== data.status) {
              if (data.status === 'QUESTION') {
                setTimeLeft(data.settings.timeLimit || 60);
@@ -130,7 +127,6 @@ const GameHost = () => {
                setTimeLeft(data.settings.revealTimeLimit || 60);
              }
           }
-          // Lần đầu nhận dữ liệu (khôi phục timer nếu đang ở QUESTION/REVEAL)
           if (!roomData && data) {
              if (data.status === 'QUESTION') setTimeLeft(data.settings.timeLimit || 60);
              else if (data.status === 'REVEAL') setTimeLeft(data.settings.revealTimeLimit || 60);
@@ -142,7 +138,6 @@ const GameHost = () => {
     }
   }, [roomCode, roomData]);
 
-  // Bộ đếm thời gian
   useEffect(() => {
     let timer;
     if ((roomData?.status === 'QUESTION' || roomData?.status === 'REVEAL') && timeLeft > 0) {
@@ -150,11 +145,9 @@ const GameHost = () => {
         setTimeLeft(prev => {
           if (prev <= 1) {
              clearInterval(timer);
-             // Tự động chuyển trạng thái khi hết giờ
              if (roomData.status === 'QUESTION') {
                 revealAnswer();
              } else if (roomData.status === 'REVEAL') {
-                // Hết giờ xem đáp án -> Tự sang câu tiếp theo
                 nextQuestion(); 
              }
              return 0;
@@ -187,9 +180,9 @@ const GameHost = () => {
           return {
             type: 'TLN',
             question: row[0] || '',
-            correctOption: row[2]?.toString().trim() || '', // Đáp số ở cột C
-            explanation: row[3]?.toString() || '',          // Lời giải ở cột D
-            image: row[7] || null,                          // Vẫn giữ link ảnh ở cột H nếu có
+            correctOption: row[2]?.toString().trim() || '',
+            explanation: row[3]?.toString() || '',
+            image: row[7] || null,
           };
         } else {
           return {
@@ -246,8 +239,7 @@ const GameHost = () => {
   };
 
   const startGame = async () => {
-    // Phát âm thanh bắt đầu
-    const audio = new Audio('https://www.myinstants.com/media/sounds/epic.mp3'); // URL âm thanh hoành tráng (thầy có thể đổi link gốc)
+    const audio = new Audio('https://www.myinstants.com/media/sounds/epic.mp3');
     audio.play().catch(e => console.log('Audio play failed', e));
 
     await update(ref(db, `rooms/${roomCode}`), { status: 'QUESTION' });
@@ -255,7 +247,6 @@ const GameHost = () => {
   };
 
   const revealAnswer = async () => {
-    // Tự động cộng điểm cho những người trả lời đúng và đếm số câu sai
     const currentQ = roomData.questions[roomData.currentQuestionIndex];
     const players = roomData.players || {};
     
@@ -276,24 +267,19 @@ const GameHost = () => {
             }
          } else {
             if (p.currentAnswer === currentQ.correctOption) {
-              // Cộng điểm
-              updates[`players/${playerId}/score`] = (p.score || 0) + 100; // Mỗi câu 100 điểm
+              updates[`players/${playerId}/score`] = (p.score || 0) + 100;
             } else {
               wrongCount++;
             }
          }
       } else {
-         wrongCount++; // Không trả lời cũng tính là sai
+         wrongCount++;
       }
     });
 
     updates[`questions/${roomData.currentQuestionIndex}/wrongCount`] = wrongCount;
 
     await update(ref(db, `rooms/${roomCode}`), updates);
-  };
-
-  const showLeaderboard = async () => {
-    await update(ref(db, `rooms/${roomCode}`), { status: 'LEADERBOARD' });
   };
 
   const nextQuestion = async () => {
@@ -303,7 +289,6 @@ const GameHost = () => {
       return;
     }
     
-    // Reset câu trả lời của tất cả người chơi
     const players = roomData.players || {};
     const updates = {};
     updates['status'] = 'QUESTION';
@@ -331,10 +316,8 @@ const GameHost = () => {
     }
   };
 
-  // Các hàm phụ trợ tính toán
   const playersList = roomData?.players ? Object.values(roomData.players) : [];
   const answerCount = playersList.filter(p => p.currentAnswer).length;
-  // Sắp xếp người chơi để hiển thị Bảng xếp hạng Top 10
   const sortedTop10 = [...playersList].sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 10);
 
   const theme = selectedTheme;
@@ -350,7 +333,6 @@ const GameHost = () => {
           <h1 className="text-4xl font-black mb-2 text-emerald-400 text-center">🎮 Tạo Phòng Trò Chơi</h1>
           <p className="text-gray-400 text-center mb-10">Tải file, chọn giao diện và bắt đầu!</p>
 
-          {/* Chọn giao diện */}
           <div className="mb-8">
             <h2 className="text-xl font-bold text-white mb-4 text-center">Chọn Giao Diện Trình Chiếu</h2>
             <div className="grid grid-cols-5 gap-3">
@@ -380,7 +362,6 @@ const GameHost = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-6">
-            {/* Cột trái: Tên bài & File */}
             <div className="flex flex-col gap-6">
               <div className="bg-slate-800 p-5 rounded-xl border border-slate-700">
                 <label className="block text-gray-400 mb-2 font-bold text-sm">📝 Tên bài trình chiếu</label>
@@ -413,7 +394,6 @@ const GameHost = () => {
               </div>
             </div>
 
-            {/* Cột phải: Cài đặt thời gian */}
             <div className="flex flex-col gap-6">
               <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 h-full flex flex-col justify-center">
                 <label className="block text-gray-400 mb-2 font-bold text-sm text-center">⏱ Thời gian mỗi câu (giây)</label>
@@ -439,11 +419,9 @@ const GameHost = () => {
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(playUrl)}&bgcolor=ffffff&color=000000&margin=10`;
         return (
           <div className="w-full min-h-screen relative overflow-hidden flex flex-col items-center pt-8">
-            {/* Olympia Light Rays Effect */}
             <div className="absolute inset-0 z-0 olympia-rays animate-spin-slow pointer-events-none opacity-60"></div>
             
             <div className="max-w-5xl w-full mx-auto relative z-10">
-              {/* Tên Bài Trình Chiếu */}
               <div className="text-center mb-10 animate-fade-in">
                 <h1 className="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] tracking-wide uppercase" style={{ WebkitTextStroke: '1.5px rgba(255,255,255,0.3)' }}>
                   {roomData.settings.gameTitle || 'TRÒ CHƠI DẠY HỌC'}
@@ -454,20 +432,14 @@ const GameHost = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                {/* Mã QR */}
                 <div className="bg-black/40 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-[0_0_40px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center gap-4 transform transition-transform hover:scale-105">
                   <p className="text-yellow-400 text-xl font-black uppercase tracking-widest text-center w-full border-b border-white/10 pb-4 mb-2">Quét Mã QR</p>
                   <div className="bg-white p-4 rounded-3xl shadow-2xl">
-                    <img
-                      src={qrUrl}
-                      alt="QR Code"
-                      className="w-56 h-56 rounded-2xl"
-                    />
+                    <img src={qrUrl} alt="QR Code" className="w-56 h-56 rounded-2xl" />
                   </div>
                   <p className="text-sm text-gray-300 font-mono mt-2 bg-black/50 px-4 py-2 rounded-full">{playUrl}</p>
                 </div>
 
-                {/* PIN */}
                 <div className="bg-black/40 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-[0_0_40px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center gap-4 transform transition-transform hover:scale-105">
                   <p className="text-yellow-400 text-xl font-black uppercase tracking-widest text-center w-full border-b border-white/10 pb-4 mb-2">Mã Phòng (PIN)</p>
                   <div className="text-8xl md:text-9xl font-black tracking-[0.15em] text-white drop-shadow-[0_0_40px_rgba(255,255,255,0.8)] select-all mt-4">
@@ -476,7 +448,6 @@ const GameHost = () => {
                 </div>
               </div>
 
-              {/* Học sinh đã vào */}
               <div className="bg-black/60 backdrop-blur-xl rounded-3xl p-6 border border-white/20 mb-6 shadow-2xl">
                 <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
                   <div className="flex items-center gap-4 text-3xl font-black text-white">
@@ -515,11 +486,9 @@ const GameHost = () => {
         );
       })()}
 
-
       {localGameState === 'PLAYING' && roomData && (
         <div className="w-full px-4 mt-4">
           <div className="flex justify-end items-center mb-6">
-            
             {(roomData.status === 'QUESTION' || roomData.status === 'REVEAL') && (
                <div className="text-3xl font-black bg-black/30 px-6 py-2 rounded-xl border border-white/10 flex items-center gap-3 backdrop-blur-md mr-auto">
                  ⏳ <span className={timeLeft <= 10 ? 'text-red-400 animate-pulse' : theme.timerColor}>{timeLeft}s</span>
@@ -539,7 +508,6 @@ const GameHost = () => {
             const hasImage = q.image && q.image.trim();
             return (
               <div className="animate-fade-in">
-                {/* Khung câu hỏi */}
                 <div className={`${theme.questionBg} rounded-3xl mb-6 shadow-xl border-b-8 border-black/20 backdrop-blur-md overflow-hidden ${
                   hasImage ? 'flex flex-row min-h-[260px]' : 'p-8 md:p-10 text-2xl md:text-4xl font-bold text-center flex items-center justify-center min-h-[200px]'
                 }`}>
@@ -549,12 +517,7 @@ const GameHost = () => {
                         <MathText text={q.question} />
                       </div>
                       <div className="flex-1 flex items-center justify-center p-4 bg-black/20">
-                        <img
-                          src={q.image.trim()}
-                          alt="Hình minh họa"
-                          className="max-h-64 object-contain rounded-2xl shadow-lg"
-                          onError={(e) => e.target.style.display='none'}
-                        />
+                        <img src={q.image.trim()} alt="Hình minh họa" className="max-h-64 object-contain rounded-2xl shadow-lg" onError={(e) => e.target.style.display='none'} />
                       </div>
                     </>
                   ) : (
@@ -562,7 +525,6 @@ const GameHost = () => {
                   )}
                 </div>
 
-                {/* 4 ô đáp án (Chỉ hiện khi không phải TLN) */}
                 {q.type !== 'TLN' && (
                   <div className="grid grid-cols-2 gap-4 md:gap-5">
                     {[
@@ -590,7 +552,6 @@ const GameHost = () => {
 
           {roomData.status === 'REVEAL' && (
             <div className="animate-fade-in flex flex-col md:flex-row gap-6 min-h-[70vh]">
-               {/* Phần hiển thị đáp án và lời giải (Bên trái) */}
                <div className="flex-1 bg-slate-800 p-8 rounded-3xl border-4 border-slate-700 flex flex-col gap-6">
                   <div className="flex flex-col items-center justify-center text-center bg-slate-900/50 p-6 rounded-2xl border border-slate-700">
                     <h2 className="text-2xl text-gray-400 mb-2">Đáp án đúng là:</h2>
@@ -620,7 +581,6 @@ const GameHost = () => {
                   </div>
                </div>
 
-               {/* Bảng xếp hạng Top 10 (Bên phải) */}
                <div className="md:w-1/3 bg-slate-800/80 p-6 rounded-3xl border border-slate-700 shadow-xl overflow-y-auto max-h-[70vh]">
                  <h3 className="text-2xl font-black text-yellow-400 mb-6 text-center flex items-center justify-center gap-2">
                    <Trophy className="w-8 h-8" /> BẢNG XẾP HẠNG TOP 10
@@ -634,16 +594,16 @@ const GameHost = () => {
 
                      return (
                        <div key={i} className={`flex justify-between items-center p-3 rounded-xl font-bold transition-all ${bgClass}`}>
-                         <div className="flex items-center gap-3">
+                         <div className="flex items-center gap-3 w-full">
                            <div className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-black ${i < 3 ? 'bg-black/20' : 'bg-slate-800'}`}>
                              #{i+1}
                            </div>
-                           <div className={`w-10 h-10 rounded-full overflow-hidden p-0.5 ${i < 3 ? 'bg-white/30' : 'bg-white/10'}`}>
+                           <div className={`w-10 h-10 rounded-full overflow-hidden p-0.5 shrink-0 ${i < 3 ? 'bg-white/30' : 'bg-white/10'}`}>
                              <img src={p.avatar} alt="avt" className="w-full h-full object-contain" />
                            </div>
-                           <span className="truncate max-w-[120px]">{p.name}</span>
+                           <span className="truncate flex-1 min-w-0 pr-2">{p.name}</span>
+                           <div className="text-lg font-black shrink-0">{p.score || 0}</div>
                          </div>
-                         <div className="text-lg font-black">{p.score || 0}</div>
                        </div>
                      );
                    })}
@@ -654,22 +614,16 @@ const GameHost = () => {
 
           {roomData.status === 'END' && (() => {
              const top3 = sortedTop10.slice(0, 3);
-             const worstQuestion = [...roomData.questions]
-                .map((q, idx) => ({ ...q, index: idx }))
-                .filter(q => q.wrongCount > 0)
-                .sort((a, b) => b.wrongCount - a.wrongCount)[0];
-
              return (
                 <div className="w-full max-w-5xl mx-auto mt-4 px-4 animate-fade-in">
                   <h1 className="text-4xl md:text-6xl font-black text-center text-yellow-400 mb-16 mt-8 drop-shadow-[0_0_20px_rgba(250,204,21,0.5)]">
                      🏆 TỔNG KẾT BẢNG XẾP HẠNG 🏆
                   </h1>
 
-                  {/* Podium */}
                   <div className="flex justify-center items-end gap-4 md:gap-8 h-[350px] mb-16">
                      {top3[1] && (
                         <div className="flex flex-col items-center animate-bounce-in" style={{ animationDelay: '0.2s' }}>
-                           <div className="text-2xl font-bold text-gray-300 mb-2 truncate max-w-[150px]">{top3[1].name}</div>
+                           <div className="text-2xl font-bold text-gray-300 mb-2 w-[100px] md:w-[150px] overflow-hidden text-ellipsis whitespace-nowrap text-center">{top3[1].name}</div>
                            <div className="w-20 h-20 bg-gray-300 rounded-full p-1 mb-2 shadow-[0_0_15px_rgba(209,213,219,0.5)] relative">
                               <img src={top3[1].avatar} className="w-full h-full object-contain rounded-full bg-slate-800" alt="avt" />
                            </div>
@@ -681,7 +635,7 @@ const GameHost = () => {
                      {top3[0] && (
                         <div className="flex flex-col items-center animate-bounce-in z-10 mx-2">
                            <Crown className="w-20 h-20 text-yellow-400 mb-[-10px] drop-shadow-[0_0_20px_rgba(250,204,21,0.8)] animate-pulse" />
-                           <div className="text-3xl font-black text-yellow-400 mb-2 truncate max-w-[180px]">{top3[0].name}</div>
+                           <div className="text-3xl font-black text-yellow-400 mb-2 w-[120px] md:w-[180px] overflow-hidden text-ellipsis whitespace-nowrap text-center">{top3[0].name}</div>
                            <div className="w-28 h-28 bg-yellow-400 rounded-full p-1.5 mb-2 shadow-[0_0_30px_rgba(250,204,21,0.8)] relative">
                               <img src={top3[0].avatar} className="w-full h-full object-contain rounded-full bg-slate-800" alt="avt" />
                            </div>
@@ -692,7 +646,7 @@ const GameHost = () => {
 
                      {top3[2] && (
                         <div className="flex flex-col items-center animate-bounce-in" style={{ animationDelay: '0.4s' }}>
-                           <div className="text-2xl font-bold text-amber-600 mb-2 truncate max-w-[150px]">{top3[2].name}</div>
+                           <div className="text-2xl font-bold text-amber-600 mb-2 w-[100px] md:w-[150px] overflow-hidden text-ellipsis whitespace-nowrap text-center">{top3[2].name}</div>
                            <div className="w-20 h-20 bg-amber-600 rounded-full p-1 mb-2 shadow-[0_0_15px_rgba(217,119,6,0.5)] relative">
                               <img src={top3[2].avatar} className="w-full h-full object-contain rounded-full bg-slate-800" alt="avt" />
                            </div>
@@ -702,26 +656,69 @@ const GameHost = () => {
                      )}
                   </div>
 
-                  {/* Thống kê câu sai nhiều nhất */}
-                  {worstQuestion && (
-                     <div className="bg-slate-800/80 p-8 rounded-3xl border border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.15)] mb-12 animate-fade-in" style={{ animationDelay: '0.8s' }}>
-                        <h2 className="text-2xl font-bold text-red-400 mb-6 flex items-center justify-center gap-3">
-                           <XCircle className="w-8 h-8" />
-                           THỐNG KÊ: Câu bị làm sai nhiều nhất ({worstQuestion.wrongCount} em làm sai)
-                        </h2>
-                        
-                        <div className="bg-slate-900 p-6 rounded-2xl text-xl text-center border border-slate-700 flex flex-col items-center">
-                           <div className="text-emerald-400 font-bold mb-4">Câu hỏi số {worstQuestion.index + 1}:</div>
-                           <MathText text={worstQuestion.question} />
-                        </div>
-                     </div>
-                  )}
+                  {/* Nút xem thống kê chi tiết */}
+                  <div className="flex justify-center mb-12 animate-fade-in" style={{ animationDelay: '0.8s' }}>
+                     <button onClick={() => setShowStatsModal(true)} className="bg-slate-800/80 hover:bg-slate-700 px-8 py-6 rounded-3xl border border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.15)] flex items-center justify-center gap-3 transition-colors">
+                        <XCircle className="w-10 h-10 text-red-400" />
+                        <span className="text-3xl font-bold text-red-400">Xem Thống Kê Câu Sai</span>
+                     </button>
+                  </div>
 
                   <div className="flex justify-center pb-12 animate-fade-in" style={{ animationDelay: '1s' }}>
                      <button onClick={closeRoom} className="bg-red-600 hover:bg-red-500 text-white px-10 py-5 rounded-2xl font-black text-2xl shadow-lg transition-transform hover:scale-105 flex items-center gap-3">
                         Thoát & Xoá Phòng
                      </button>
                   </div>
+
+                  {/* Modal Thống kê */}
+                  {showStatsModal && (
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                      <div className="bg-slate-900 border-2 border-slate-700 rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden relative animate-bounce-in">
+                        <button onClick={() => setShowStatsModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white bg-slate-800 rounded-full p-2 z-10 transition-colors">
+                           ✕
+                        </button>
+                        <div className="p-6 border-b border-slate-700 bg-slate-800/50">
+                           <h2 className="text-3xl font-black text-white flex items-center gap-3">
+                              <XCircle className="text-red-500" /> Thống Kê Các Câu Sai
+                           </h2>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
+                           {(() => {
+                             const wrongQs = [...roomData.questions]
+                               .map((q, idx) => ({ ...q, index: idx }))
+                               .filter(q => q.wrongCount > 0)
+                               .sort((a, b) => b.wrongCount - a.wrongCount);
+                             
+                             if (wrongQs.length === 0) return <div className="text-center text-emerald-400 text-2xl py-10 font-bold">Tuyệt vời! Không có câu nào sai! 🎉</div>;
+                             
+                             return wrongQs.map((q, i) => (
+                               <div key={i} className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700">
+                                 <div 
+                                   className="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-700/50 transition-colors"
+                                   onClick={() => setSelectedStatQ(selectedStatQ === q.index ? null : q.index)}
+                                 >
+                                    <div className="font-bold text-xl text-gray-300">Câu hỏi số {q.index + 1}</div>
+                                    <div className="flex items-center gap-4">
+                                       <div className="text-red-400 font-bold bg-red-900/30 px-3 py-1 rounded-lg">{q.wrongCount} học sinh sai</div>
+                                       <ChevronRight className={`w-6 h-6 transition-transform ${selectedStatQ === q.index ? 'rotate-90 text-emerald-400' : 'text-gray-500'}`} />
+                                    </div>
+                                 </div>
+                                 {selectedStatQ === q.index && (
+                                   <div className="p-6 bg-slate-900/80 border-t border-slate-700">
+                                      <div className="text-xl mb-4 text-white"><MathText text={q.question} /></div>
+                                      {q.image && <img src={q.image} className="max-h-40 rounded-lg mb-4" alt="minh hoạ" />}
+                                      <div className="text-emerald-400 font-bold mt-4">
+                                        Đáp án đúng: {q.type === 'TLN' ? <MathText text={q.correctOption} /> : ['A', 'B', 'C', 'D'][q.correctOption - 1]}
+                                      </div>
+                                   </div>
+                                 )}
+                               </div>
+                             ));
+                           })()}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
              );
           })()}
