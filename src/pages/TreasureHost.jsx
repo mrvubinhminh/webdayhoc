@@ -7,6 +7,7 @@ import { ref, set, update, onValue, remove } from 'firebase/database';
 import MathText from '../components/MathText';
 import QuestionGuidePanel from '../components/QuestionGuidePanel';
 import TreasureBoard, { getTeamColor } from '../components/TreasureBoard';
+import { BOARD_SCENARIOS, randomScenario } from '../data/boardScenarios';
 
 // Định nghĩa 5 theme giao diện
 const THEMES = [
@@ -82,6 +83,41 @@ const TreasureHost = () => {
   const [specialCells, setSpecialCells] = useState({});
   const [newCellNo, setNewCellNo] = useState('');
   const [newCellStep, setNewCellStep] = useState('');
+  const [activeScenario, setActiveScenario] = useState('');
+
+  // Áp một kịch bản ô đặc biệt dựng sẵn
+  const applyScenario = (scenario) => {
+    setSpecialCells(scenario.build(boardSize));
+    setActiveScenario(scenario.id);
+  };
+
+  const applyRandomScenario = () => {
+    setSpecialCells(randomScenario(boardSize));
+    setActiveScenario('random');
+  };
+
+  // Đổi kích thước lưới: dựng lại kịch bản cho vừa bàn mới,
+  // nếu đặt tay thì loại các ô đã rơi ra ngoài phạm vi
+  useEffect(() => {
+    if (activeScenario === 'random') {
+      setSpecialCells(randomScenario(boardSize));
+      return;
+    }
+    const sc = BOARD_SCENARIOS.find(s => s.id === activeScenario);
+    if (sc) {
+      setSpecialCells(sc.build(boardSize));
+      return;
+    }
+    setSpecialCells(prev => {
+      const limit = boardSize * boardSize;
+      const next = {};
+      Object.entries(prev).forEach(([cell, step]) => {
+        const c = Number(cell);
+        if (c >= 2 && c < limit && c + step >= 1 && c + step < limit) next[c] = step;
+      });
+      return next;
+    });
+  }, [boardSize]);
 
   const currentAudio = useRef(null);
 
@@ -707,9 +743,57 @@ const TreasureHost = () => {
                     />
                   </div>
 
+                  {/* Kịch bản dựng sẵn */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-gray-400 font-bold text-sm">🎬 Kịch bản ô đặc biệt</label>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={applyRandomScenario}
+                          className="bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg font-bold text-xs transition-colors"
+                        >
+                          🎲 Ngẫu nhiên
+                        </button>
+                        {Object.keys(specialCells).length > 0 && (
+                          <button
+                            onClick={() => { setSpecialCells({}); setActiveScenario(''); }}
+                            className="bg-slate-700 hover:bg-red-600 text-gray-300 hover:text-white px-3 py-1.5 rounded-lg font-bold text-xs transition-colors"
+                          >
+                            🗑 Xoá hết
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
+                      {BOARD_SCENARIOS.map(sc => (
+                        <button
+                          key={sc.id}
+                          onClick={() => applyScenario(sc)}
+                          title={sc.desc}
+                          className={`text-left p-2.5 rounded-lg border transition-all ${
+                            activeScenario === sc.id
+                              ? 'bg-amber-500/25 border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.3)]'
+                              : 'bg-slate-800/80 border-slate-700 hover:border-amber-500/60 hover:bg-slate-800'
+                          }`}
+                        >
+                          <div className="font-black text-white text-xs leading-tight">{sc.name}</div>
+                          <div className="text-gray-400 text-[10px] leading-snug mt-1 line-clamp-2">{sc.desc}</div>
+                        </button>
+                      ))}
+                    </div>
+
+                    {activeScenario && (
+                      <p className="text-amber-300 text-xs mt-2 font-bold">
+                        ✅ Đã tạo {Object.keys(specialCells).length} ô đặc biệt
+                        {activeScenario === 'random' ? ' — bấm 🎲 lần nữa để đổi bàn khác' : ' — bấm lại để xáo vị trí mới'}
+                      </p>
+                    )}
+                  </div>
+
                   {/* Ô đặc biệt */}
                   <div>
-                    <label className="block text-gray-400 mb-2 font-bold text-sm">⚡ Ô đặc biệt (tiến / lùi)</label>
+                    <label className="block text-gray-400 mb-2 font-bold text-sm">⚡ Thêm / sửa thủ công</label>
                     <div className="flex gap-2 mb-3">
                       <input
                         type="number" min="1" max={boardSize * boardSize}
