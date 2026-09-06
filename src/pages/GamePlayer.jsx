@@ -206,7 +206,8 @@ const GamePlayer = () => {
           )}
 
           {roomData.status === 'QUESTION' && (() => {
-            const currentQ = roomData.questions[roomData.currentQuestionIndex];
+            const currentQ = roomData.questions?.[roomData.currentQuestionIndex];
+            if (!currentQ) return null;
             const showQuestion = roomData.settings?.showQuestionOnDevice;
             
             return (
@@ -300,7 +301,8 @@ const GamePlayer = () => {
           })}
 
           {roomData.status === 'REVEAL' && (() => {
-             const currentQ = roomData.questions[roomData.currentQuestionIndex];
+             const currentQ = roomData.questions?.[roomData.currentQuestionIndex];
+             if (!currentQ) return null;
              const isCorrect = currentQ.type === 'TLN'
                 ? me?.currentAnswer?.toString().trim().toLowerCase().replace(/,/g, '.') === currentQ.correctOption?.toString().trim().toLowerCase().replace(/,/g, '.')
                 : me?.currentAnswer === currentQ.correctOption;
