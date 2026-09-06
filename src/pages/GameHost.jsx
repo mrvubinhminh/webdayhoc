@@ -67,6 +67,7 @@ const GameHost = () => {
   const [bgUrl, setBgUrl] = useState(() => localStorage.getItem('gameBgUrl') || '');
   const [bgPresets, setBgPresets] = useState(() => JSON.parse(localStorage.getItem('gameBgPresets') || '[]'));
   const [presetName, setPresetName] = useState('');
+  const [showQuestionOnDevice, setShowQuestionOnDevice] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [selectedStatQ, setSelectedStatQ] = useState(null);
 
@@ -239,7 +240,8 @@ const GameHost = () => {
         gameTitle: gameTitle,
         playMode: playMode,
         teamCount: teamCount,
-        bgUrl: bgUrl
+        bgUrl: bgUrl,
+        showQuestionOnDevice: showQuestionOnDevice
       }
     });
   };
@@ -500,6 +502,20 @@ const GameHost = () => {
                     </div>
                   )}
                 </div>
+
+                {playMode === 'INDIVIDUAL' && (
+                  <label className="flex items-center gap-3 cursor-pointer mt-4 bg-slate-900 p-4 rounded-lg border border-transparent hover:border-emerald-500/50 transition-colors">
+                    <input 
+                      type="checkbox" 
+                      checked={showQuestionOnDevice} 
+                      onChange={(e) => setShowQuestionOnDevice(e.target.checked)}
+                      className="w-5 h-5 accent-emerald-500 cursor-pointer"
+                    />
+                    <span className="text-gray-300 font-bold select-none text-sm">
+                      Hiển thị nội dung câu hỏi trên thiết bị học sinh
+                    </span>
+                  </label>
+                )}
 
                 {playMode === 'TEAM' && (
                   <button onClick={() => window.open('/print-qr', '_blank')} className="mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg w-full flex items-center justify-center gap-2 transition-colors">
