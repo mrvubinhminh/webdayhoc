@@ -5,7 +5,7 @@ import { ref, onValue, set, get, update } from 'firebase/database';
 import { Camera, AlertCircle, Pause, Play, Zap, ZapOff, CheckCircle2 } from 'lucide-react';
 
 // Hai kho phòng: game thường và Truy Tìm Kho Báu — scanner tự dò
-const ROOM_PATHS = ['rooms', 'treasureRooms', 'bankRooms'];
+const ROOM_PATHS = ['rooms', 'treasureRooms', 'bankRooms', 'lighthouseRooms'];
 
 // Số frame liên tiếp phải cho cùng một đáp án thì mới chốt (chống đọc nhầm khi thẻ đang xoay)
 const CONFIRM_STREAK = 2;
@@ -327,7 +327,7 @@ const Scanner = () => {
           <div className="flex justify-between items-center bg-slate-800 p-3 rounded-t-2xl border border-slate-700 gap-2">
             <div className="min-w-0">
               <div className="text-xs text-gray-400 truncate">
-                {dbPath === 'treasureRooms' ? '🏴‍☠️ Kho Báu' : dbPath === 'bankRooms' ? '🏦 Ngân Hàng' : '🎮 Trò chơi'} • {detectCount} mã trong khung
+                {dbPath === 'treasureRooms' ? '🏴‍☠️ Kho Báu' : dbPath === 'bankRooms' ? '🏦 Ngân Hàng' : dbPath === 'lighthouseRooms' ? '🏮 Hải Đăng' : '🎮 Trò chơi'} • {detectCount} mã trong khung
               </div>
               <div className="text-xl font-black text-white">{pin}</div>
             </div>
