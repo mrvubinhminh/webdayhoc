@@ -526,12 +526,31 @@ const GameHost = () => {
                     🖨️ In thẻ QR Đáp Án
                   </button>
                 )}
+
+                <button onClick={() => window.open('https://chuyendoijson.vercel.app/', '_blank')} className="mt-2 bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 px-4 rounded-lg w-full flex items-center justify-center gap-2 transition-colors">
+                  🔄 JSON → Excel
+                </button>
               </div>
             </div>
           </div>
 
-          <div className="mt-10 mb-8">
+          <div className="mt-10 mb-8 space-y-4">
             <QuestionGuidePanel />
+
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl border border-white/20 p-6">
+              <h3 className="text-lg font-bold text-white mb-4">🔧 Công Cụ Hỗ Trợ</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <button onClick={() => navigate('/question-tester')} className="bg-violet-600 hover:bg-violet-500 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">
+                  🧪 Test Câu Hỏi
+                </button>
+                <button onClick={() => window.open('https://chuyendoijson.vercel.app/', '_blank')} className="bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">
+                  🔄 JSON ↔ Excel
+                </button>
+                <button onClick={() => window.open('/scanner', '_blank')} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">
+                  📱 QR Scanner
+                </button>
+              </div>
+            </div>
           </div>
 
           <button
