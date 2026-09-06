@@ -5,10 +5,11 @@ import 'katex/dist/katex.min.css';
 // Component render toán học LaTeX
 const MathText = ({ text }) => {
   const renderMath = (str) => {
-    if (!str) return null;
+    if (str === null || str === undefined || str === '') return null;
+    const safeStr = String(str);
     
     // Tách các khối math bằng $$...$$ hoặc $...$
-    const parts = str.split(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$)/g);
+    const parts = safeStr.split(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$)/g);
     return parts.map((part, i) => {
       let isDisplayMode = false;
       let math = null;
