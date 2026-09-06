@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trophy, Target, ArrowLeft, Users, Mountain, Globe, Flag, HeartPulse, Castle, Hexagon, Snowflake, Sailboat, Car, Lock, Hammer, FlaskConical, Aperture, Rocket, Radar, Dices, Gem } from 'lucide-react';
+import { Trophy, Target, ArrowLeft, Users, Mountain, Globe, Flag, HeartPulse, Castle, Hexagon, Snowflake, Sailboat, Car, Lock, Hammer, FlaskConical, Aperture, Rocket, Radar, Dices, Gem, Landmark } from 'lucide-react';
 
 const GamesMenu = () => {
   const navigate = useNavigate();
@@ -12,6 +12,13 @@ const GamesMenu = () => {
       icon: <Users className="w-8 h-8" />,
       color: 'from-emerald-500 to-teal-700',
       path: '/game/host'
+    },
+    {
+      id: 'bank',
+      title: 'Ngân Hàng Tri Thức',
+      icon: <Landmark className="w-8 h-8" />,
+      color: 'from-yellow-600 to-amber-800',
+      path: '/bank/host'
     },
     {
       id: 'treasure',

@@ -24,12 +24,14 @@ import Scanner from './pages/Scanner';
 import QuestionTester from './pages/QuestionTester';
 import TreasureHost from './pages/TreasureHost';
 import TreasurePlayer from './pages/TreasurePlayer';
+import BankHost from './pages/BankHost';
+import BankPlayer from './pages/BankPlayer';
 
 const EXPECTED_HASH = "ebe106819f36f460184a887c06e18115a19f5d15ce570f9a2318c6f44b78476a";
 
 const AppContent = () => {
   const location = useLocation();
-  const isGameRoute = location.pathname.startsWith('/game/') || location.pathname.startsWith('/play') || location.pathname.startsWith('/treasure') || location.pathname.startsWith('/print-qr') || location.pathname.startsWith('/scanner') || location.pathname.startsWith('/game-nhung/') || location.pathname.startsWith('/tool/') || location.pathname.startsWith('/models/view/') || location.pathname.startsWith('/tools/view/') || location.pathname.startsWith('/students/view/');
+  const isGameRoute = location.pathname.startsWith('/game/') || location.pathname.startsWith('/play') || location.pathname.startsWith('/treasure') || location.pathname.startsWith('/bank') || location.pathname.startsWith('/print-qr') || location.pathname.startsWith('/scanner') || location.pathname.startsWith('/game-nhung/') || location.pathname.startsWith('/tool/') || location.pathname.startsWith('/models/view/') || location.pathname.startsWith('/tools/view/') || location.pathname.startsWith('/students/view/');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [showLogin, setShowLogin] = useState(false);
@@ -90,6 +92,8 @@ const AppContent = () => {
           <Route path="/question-tester" element={<QuestionTester />} />
           <Route path="/treasure/host" element={<TreasureHost />} />
           <Route path="/treasure/play" element={<TreasurePlayer />} />
+          <Route path="/bank/host" element={<BankHost />} />
+          <Route path="/bank/play" element={<BankPlayer />} />
           <Route path="/game/trieu-phu" element={<MillionaireGame />} />
           <Route path="/game/tho-san" element={<ProbabilityHunter />} />
           <Route path="/game/keo-co" element={<TugOfWarGame />} />
