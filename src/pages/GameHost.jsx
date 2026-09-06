@@ -113,6 +113,7 @@ const GameHost = () => {
   const [timeLeft, setTimeLeft] = useState(0);
   const [playMode, setPlayMode] = useState('INDIVIDUAL');
   const [teamCount, setTeamCount] = useState(4);
+  const [bgUrl, setBgUrl] = useState(() => localStorage.getItem('gameBgUrl') || '');
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [selectedStatQ, setSelectedStatQ] = useState(null);
 
@@ -277,7 +278,8 @@ const GameHost = () => {
         revealTimeLimit: revealTimeLimit,
         gameTitle: gameTitle,
         playMode: playMode,
-        teamCount: teamCount
+        teamCount: teamCount,
+        bgUrl: bgUrl
       }
     });
   };
@@ -367,10 +369,20 @@ const GameHost = () => {
   const answerCount = playersList.filter(p => p.currentAnswer).length;
   const sortedTop10 = [...playersList].sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 10);
 
-  const theme = selectedTheme;
+  const theme = roomData?.settings?.theme || selectedTheme;
+  const currentBgUrl = roomData?.settings?.bgUrl || bgUrl;
 
   return (
-    <div className="min-h-screen text-white p-4 md:p-8" style={localGameState !== 'SETUP' ? theme.bgStyle : { background: '#0f172a' }}>
+    <div className="min-h-screen text-white p-4 md:p-8 relative" style={localGameState !== 'SETUP' ? theme.bgStyle : { background: '#0f172a' }}>
+      {localGameState !== 'SETUP' && currentBgUrl && (
+        <div 
+          className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${currentBgUrl})`, opacity: 0.6 }}
+        />
+      )}
+      
+      {/* Cần set các div con có z-10 để đè lên background */}
+      <div className="relative z-10 w-full h-full min-h-screen flex flex-col">
       {localGameState === 'SETUP' && (
         <div className="max-w-3xl mx-auto">
           <button onClick={() => navigate('/games')} className="flex items-center gap-2 text-gray-400 hover:text-white mb-8">
@@ -439,6 +451,20 @@ const GameHost = () => {
                   </div>
                 )}
               </div>
+
+              <div className="bg-slate-800 p-5 rounded-xl border border-slate-700">
+                <label className="block text-gray-400 mb-2 font-bold text-sm">🖼️ Link ảnh nền (tuỳ chọn)</label>
+                <input 
+                  type="text" 
+                  value={bgUrl} 
+                  onChange={(e) => {
+                    setBgUrl(e.target.value);
+                    localStorage.setItem('gameBgUrl', e.target.value);
+                  }}
+                  className="w-full bg-slate-900 text-white text-lg font-bold px-4 py-3 rounded-lg outline-none border border-transparent focus:border-emerald-500" 
+                  placeholder="https://..."
+                />
+              </div>
             </div>
 
             <div className="flex flex-col gap-6">
@@ -487,10 +513,8 @@ const GameHost = () => {
         const playUrl = 'https://webdayhoc.vercel.app/play';
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(playUrl)}&bgcolor=ffffff&color=000000&margin=10`;
         return (
-          <div className="w-full min-h-screen relative overflow-hidden flex flex-col items-center pt-8">
-            <div className="absolute inset-0 z-0 olympia-rays animate-spin-slow pointer-events-none opacity-60"></div>
-            
-            <div className="max-w-5xl w-full mx-auto relative z-10">
+          <div className="w-full min-h-screen relative flex flex-col items-center pt-8 z-10">
+            <div className="max-w-5xl w-full mx-auto">
               <div className="text-center mb-10 animate-fade-in">
                 <h1 className="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] tracking-wide uppercase" style={{ WebkitTextStroke: '1.5px rgba(255,255,255,0.3)' }}>
                   {roomData.settings.gameTitle || 'TRÒ CHƠI DẠY HỌC'}
@@ -794,6 +818,7 @@ const GameHost = () => {
 
         </div>
       )}
+      </div>
     </div>
   );
 };
