@@ -537,67 +537,75 @@ const GameHost = () => {
 
       {localGameState === 'LOBBY' && roomData && (() => {
         const playUrl = 'https://webdayhoc.vercel.app/play';
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(playUrl)}&bgcolor=ffffff&color=000000&margin=10`;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(playUrl)}&bgcolor=ffffff&color=000000&margin=10`;
         return (
-          <div className="w-full min-h-screen relative flex flex-col items-center pt-8 z-10">
-            <div className="max-w-5xl w-full mx-auto">
-              <div className="text-center mb-10 animate-fade-in">
-                <h1 className="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] tracking-wide uppercase" style={{ WebkitTextStroke: '1.5px rgba(255,255,255,0.3)' }}>
-                  {roomData.settings.gameTitle || 'TRÒ CHƠI DẠY HỌC'}
-                </h1>
-                <h2 className="text-xl text-yellow-100/80 mt-4 font-semibold tracking-widest uppercase">
-                  Quét mã QR hoặc nhập PIN để tham gia
-                </h2>
-              </div>
+          <div className="w-full min-h-screen relative flex flex-col z-10">
+            {/* Tiêu đề */}
+            <div className="text-center py-6 animate-fade-in shrink-0">
+              <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] tracking-wide uppercase" style={{ WebkitTextStroke: '1.5px rgba(255,255,255,0.3)' }}>
+                {roomData.settings.gameTitle || 'TRÒ CHƠI DẠY HỌC'}
+              </h1>
+              <h2 className="text-lg text-yellow-100/80 mt-2 font-semibold tracking-widest uppercase">
+                Quét mã QR hoặc nhập PIN để tham gia
+              </h2>
+            </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                <div className="bg-black/40 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-[0_0_40px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center gap-4 transform transition-transform hover:scale-105">
-                  <p className="text-yellow-400 text-xl font-black uppercase tracking-widest text-center w-full border-b border-white/10 pb-4 mb-2">Quét Mã QR</p>
+            {/* Bố cục chính: QR bên trái, danh sách bên phải */}
+            <div className="flex-1 flex flex-col md:flex-row gap-6 px-6 pb-6 overflow-hidden">
+              {/* BÊN TRÁI - QR Code lớn + PIN */}
+              <div className="md:w-[45%] shrink-0 flex flex-col items-center justify-center gap-6">
+                <div className="bg-black/40 backdrop-blur-xl rounded-3xl p-6 border border-white/20 shadow-[0_0_40px_rgba(0,0,0,0.5)] flex flex-col items-center gap-4">
+                  <p className="text-yellow-400 text-xl font-black uppercase tracking-widest text-center w-full border-b border-white/10 pb-3">Quét Mã QR</p>
                   <div className="bg-white p-4 rounded-3xl shadow-2xl">
-                    <img src={qrUrl} alt="QR Code" className="w-56 h-56 rounded-2xl" />
+                    <img src={qrUrl} alt="QR Code" className="w-[280px] h-[280px] md:w-[360px] md:h-[360px] rounded-2xl" />
                   </div>
-                  <p className="text-sm text-gray-300 font-mono mt-2 bg-black/50 px-4 py-2 rounded-full">{playUrl}</p>
+                  <p className="text-xs text-gray-400 font-mono bg-black/50 px-4 py-2 rounded-full">{playUrl}</p>
                 </div>
 
-                <div className="bg-black/40 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-[0_0_40px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center gap-4 transform transition-transform hover:scale-105">
-                  <p className="text-yellow-400 text-xl font-black uppercase tracking-widest text-center w-full border-b border-white/10 pb-4 mb-2">Mã Phòng (PIN)</p>
-                  <div className="text-8xl md:text-9xl font-black tracking-[0.15em] text-white drop-shadow-[0_0_40px_rgba(255,255,255,0.8)] select-all mt-4">
+                <div className="bg-black/40 backdrop-blur-xl rounded-3xl px-10 py-6 border border-white/20 shadow-[0_0_40px_rgba(0,0,0,0.5)] text-center">
+                  <p className="text-yellow-400 text-lg font-black uppercase tracking-widest mb-2">Mã Phòng (PIN)</p>
+                  <div className="text-7xl md:text-8xl font-black tracking-[0.15em] text-white drop-shadow-[0_0_40px_rgba(255,255,255,0.8)] select-all">
                     {roomCode}
                   </div>
                 </div>
               </div>
 
-              <div className="bg-black/60 backdrop-blur-xl rounded-3xl p-6 border border-white/20 mb-6 shadow-2xl">
-                <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
-                  <div className="flex items-center gap-4 text-3xl font-black text-white">
-                    <div className="bg-blue-600 p-3 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.6)]"><Users className="w-8 h-8 text-white" /></div>
+              {/* BÊN PHẢI - Danh sách học sinh + Nút bắt đầu */}
+              <div className="flex-1 flex flex-col bg-black/40 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl overflow-hidden">
+                {/* Header */}
+                <div className="flex justify-between items-center p-5 border-b border-white/10 shrink-0">
+                  <div className="flex items-center gap-3 text-2xl font-black text-white">
+                    <div className="bg-blue-600 p-2.5 rounded-xl shadow-[0_0_20px_rgba(37,99,235,0.6)]"><Users className="w-7 h-7 text-white" /></div>
                     <span>{playersList.length} Học sinh</span>
                   </div>
                   <button
                     onClick={startGame}
                     disabled={playersList.length === 0}
-                    className={`px-10 py-5 rounded-2xl font-black text-2xl flex items-center gap-3 transition-all ${
+                    className={`px-8 py-4 rounded-2xl font-black text-xl flex items-center gap-3 transition-all ${
                       playersList.length > 0
                         ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.5)] text-white hover:scale-105'
                         : 'bg-slate-800 text-gray-500 cursor-not-allowed border border-slate-700'
                     }`}
                   >
-                    <Play className="w-8 h-8" /> BẮT ĐẦU TRÒ CHƠI
+                    <Play className="w-7 h-7" /> BẮT ĐẦU
                   </button>
                 </div>
 
-                <div className="flex flex-wrap gap-4 justify-center min-h-[80px] p-2">
-                  {playersList.length === 0 && (
-                    <p className="text-gray-400 text-xl italic self-center animate-pulse">Đang chờ học sinh tham gia...</p>
-                  )}
-                  {playersList.map((p, i) => (
-                    <div key={i} className="bg-white/10 pr-6 pl-2 py-2 rounded-full text-lg font-bold shadow-lg flex items-center gap-3 border border-white/20 backdrop-blur-sm animate-bounce-in hover:bg-white/20 transition-colors cursor-default">
-                      <div className="w-10 h-10 bg-black/30 rounded-full overflow-hidden p-0.5 shadow-inner">
-                        <img src={p.avatar} alt="avt" className="w-full h-full object-contain" />
+                {/* Danh sách học sinh */}
+                <div className="flex-1 overflow-y-auto p-5">
+                  <div className="flex flex-wrap gap-3 content-start">
+                    {playersList.length === 0 && (
+                      <p className="text-gray-400 text-xl italic w-full text-center py-12 animate-pulse">Đang chờ học sinh tham gia...</p>
+                    )}
+                    {playersList.map((p, i) => (
+                      <div key={i} className="bg-white/10 pr-5 pl-2 py-2 rounded-full text-base font-bold shadow-lg flex items-center gap-2.5 border border-white/20 backdrop-blur-sm animate-bounce-in hover:bg-white/20 transition-colors cursor-default">
+                        <div className="w-9 h-9 bg-black/30 rounded-full overflow-hidden p-0.5 shadow-inner">
+                          <img src={p.avatar} alt="avt" className="w-full h-full object-contain" />
+                        </div>
+                        {p.name}
                       </div>
-                      {p.name}
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
