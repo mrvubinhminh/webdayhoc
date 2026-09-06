@@ -111,6 +111,8 @@ const GameHost = () => {
   const [gameTitle, setGameTitle] = useState('ĐƯỜNG LÊN ĐỈNH OLYMPIA');
   const [roomData, setRoomData] = useState(null);
   const [timeLeft, setTimeLeft] = useState(0);
+  const [playMode, setPlayMode] = useState('INDIVIDUAL');
+  const [teamCount, setTeamCount] = useState(4);
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [selectedStatQ, setSelectedStatQ] = useState(null);
 
@@ -241,15 +243,41 @@ const GameHost = () => {
     
     playAudio('https://files.catbox.moe/eopz4f.mp3');
     
+    const TEAM_NAMES = [
+      "Chiến Binh Toán Học", "Biệt Đội Điểm 10", "Kẻ Huỷ Diệt Bài Tập", "Chuyên Gia Vượt Khó",
+      "Học Bá", "Siêu Nhân Tri Thức", "Đội Quân Tinh Nhuệ", "Thợ Săn Điểm A",
+      "Mọt Sách Năng Động", "Trí Tuệ Vượt Trội", "Những Ngôi Sao Sáng", "Giáo Sư Tương Lai",
+      "IQ Vô Cực", "Chúa Tể Toán Học", "Bậc Thầy Logic", "Kẻ Thách Thức",
+      "Anh Hùng Bàn Phím", "Thần Đồng Chăm Chỉ", "Kẻ Gác Đền", "Kỳ Lân Học Tập",
+      "Cú Đêm Miệt Mài", "Bộ Não Vĩ Đại", "Chiến Thần Tốc Độ", "Thủ Khoa Tương Lai",
+      "Cỗ Máy Chém Đề", "Biệt Đội Khá Bảnh", "Sát Thủ Phòng Thi", "Vua Giải Đố",
+      "Học Cụ Mật Mã", "Đỉnh Cao Trí Tuệ"
+    ];
+
+    let teams = {};
+    if (playMode === 'TEAM') {
+      const shuffledNames = TEAM_NAMES.sort(() => 0.5 - Math.random()).slice(0, teamCount);
+      for (let i = 1; i <= teamCount; i++) {
+        teams[`team_${i}`] = {
+          id: `team_${i}`,
+          index: i,
+          name: shuffledNames[i - 1]
+        };
+      }
+    }
+
     await set(ref(db, `rooms/${code}`), {
       status: 'LOBBY', 
       currentQuestionIndex: 0,
       questions: questions,
       players: {},
+      teams: teams,
       settings: {
         timeLimit: timeLimit,
         revealTimeLimit: revealTimeLimit,
-        gameTitle: gameTitle
+        gameTitle: gameTitle,
+        playMode: playMode,
+        teamCount: teamCount
       }
     });
   };
@@ -416,10 +444,32 @@ const GameHost = () => {
             <div className="flex flex-col gap-6">
               <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 h-full flex flex-col justify-center">
                 <label className="block text-gray-400 mb-2 font-bold text-sm text-center">⏱ Thời gian mỗi câu (giây)</label>
-                <input type="number" value={timeLimit} onChange={(e) => setTimeLimit(parseInt(e.target.value) || 0)} className="w-full bg-slate-900 text-white text-4xl font-black text-center py-4 rounded-lg outline-none border border-transparent focus:border-emerald-500 mb-8" />
+                <input type="number" value={timeLimit} onChange={(e) => setTimeLimit(parseInt(e.target.value) || 0)} className="w-full bg-slate-900 text-white text-3xl font-black text-center py-3 rounded-lg outline-none border border-transparent focus:border-emerald-500 mb-6" />
                 
                 <label className="block text-gray-400 mb-2 font-bold text-sm text-center">👀 Thời gian xem đáp án (giây)</label>
-                <input type="number" value={revealTimeLimit} onChange={(e) => setRevealTimeLimit(parseInt(e.target.value) || 0)} className="w-full bg-slate-900 text-white text-4xl font-black text-center py-4 rounded-lg outline-none border border-transparent focus:border-emerald-500" />
+                <input type="number" value={revealTimeLimit} onChange={(e) => setRevealTimeLimit(parseInt(e.target.value) || 0)} className="w-full bg-slate-900 text-white text-3xl font-black text-center py-3 rounded-lg outline-none border border-transparent focus:border-emerald-500 mb-6" />
+
+                <div className="flex gap-4 mb-4">
+                  <div className="flex-1">
+                    <label className="block text-gray-400 mb-2 font-bold text-sm text-center">Chế độ chơi</label>
+                    <select value={playMode} onChange={e => setPlayMode(e.target.value)} className="w-full bg-slate-900 text-white text-lg font-bold text-center py-3 rounded-lg outline-none border border-transparent focus:border-emerald-500">
+                      <option value="INDIVIDUAL">Cá nhân</option>
+                      <option value="TEAM">Theo nhóm</option>
+                    </select>
+                  </div>
+                  {playMode === 'TEAM' && (
+                    <div className="flex-1">
+                      <label className="block text-gray-400 mb-2 font-bold text-sm text-center">Số nhóm (1-12)</label>
+                      <input type="number" min="1" max="12" value={teamCount} onChange={(e) => setTeamCount(Math.min(12, Math.max(1, parseInt(e.target.value) || 1)))} className="w-full bg-slate-900 text-white text-lg font-bold text-center py-3 rounded-lg outline-none border border-transparent focus:border-emerald-500" />
+                    </div>
+                  )}
+                </div>
+
+                {playMode === 'TEAM' && (
+                  <button onClick={() => window.open('/print-qr', '_blank')} className="mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg w-full flex items-center justify-center gap-2 transition-colors">
+                    🖨️ In thẻ QR Đáp Án
+                  </button>
+                )}
               </div>
             </div>
           </div>

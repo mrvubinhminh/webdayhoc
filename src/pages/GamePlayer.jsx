@@ -11,17 +11,21 @@ const GamePlayer = () => {
   const [localGameState, setLocalGameState] = useState('JOIN'); // JOIN, PLAYING
   const [playerId, setPlayerId] = useState('');
   const [tlnAnswer, setTlnAnswer] = useState('');
+  const [step, setStep] = useState(1);
+  const [selectedTeamId, setSelectedTeamId] = useState('');
+  const [roomSettings, setRoomSettings] = useState(null);
   
   // Realtime Data from Firebase
   const [roomData, setRoomData] = useState(null);
 
   useEffect(() => {
-    if (localGameState === 'PLAYING' && pin) {
+    if ((localGameState === 'PLAYING' || step === 2) && pin) {
       const roomRef = ref(db, `rooms/${pin}`);
       const unsubscribe = onValue(roomRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
           setRoomData(data);
+          setRoomSettings(data.settings);
         } else {
           // Room deleted / ended
           alert("Phòng chơi đã kết thúc!");
@@ -30,26 +34,51 @@ const GamePlayer = () => {
       });
       return () => unsubscribe();
     }
-  }, [localGameState, pin, navigate]);
+  }, [localGameState, step, pin, navigate]);
 
-  const joinRoom = async (e) => {
+  const checkPin = async (e) => {
     e.preventDefault();
-    if (!pin || !name) return;
-
-    // Kiểm tra phòng có tồn tại không
+    if (!pin) return;
     const snapshot = await get(ref(db, `rooms/${pin}`));
     if (!snapshot.exists()) {
       alert("Mã phòng không hợp lệ!");
       return;
     }
+    setStep(2);
+  };
 
-    const newPlayerId = Date.now().toString();
-    setPlayerId(newPlayerId);
-    const avatarUrl = `https://robohash.org/${newPlayerId}?set=set2&size=150x150`;
+  const joinRoom = async (e) => {
+    if (e) e.preventDefault();
+    
+    let finalName = name;
+    let finalPlayerId = Date.now().toString();
+
+    if (roomSettings?.playMode === 'TEAM') {
+      if (!selectedTeamId) {
+        alert("Vui lòng chọn một nhóm!");
+        return;
+      }
+      finalName = roomData.teams[selectedTeamId].name;
+      finalPlayerId = selectedTeamId;
+      
+      if (roomData.players && roomData.players[finalPlayerId]) {
+        alert("Nhóm này đã có người chọn!");
+        return;
+      }
+    } else {
+      if (!name) {
+        alert("Vui lòng nhập tên!");
+        return;
+      }
+    }
+
+    setPlayerId(finalPlayerId);
+    const avatarUrl = `https://robohash.org/${finalPlayerId}?set=set2&size=150x150`;
 
     // Thêm người chơi vào phòng
-    await set(ref(db, `rooms/${pin}/players/${newPlayerId}`), {
-      name: name,
+    await set(ref(db, `rooms/${pin}/players/${finalPlayerId}`), {
+      id: finalPlayerId,
+      name: finalName,
       score: 0,
       currentAnswer: null,
       avatar: avatarUrl
@@ -73,8 +102,8 @@ const GamePlayer = () => {
 
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4">
-      {localGameState === 'JOIN' && (
-        <form onSubmit={joinRoom} className="w-full max-w-sm glass-card p-8 rounded-3xl text-center">
+      {localGameState === 'JOIN' && step === 1 && (
+        <form onSubmit={checkPin} className="w-full max-w-sm glass-card p-8 rounded-3xl text-center">
           <h1 className="text-4xl font-black text-white mb-8">Tham Gia Trò Chơi</h1>
           
           <input
@@ -85,13 +114,62 @@ const GamePlayer = () => {
             className="w-full text-center text-2xl font-bold bg-white text-black rounded-xl p-4 mb-4 outline-none border-4 border-transparent focus:border-emerald-500"
           />
           
-          <input
-            type="text"
-            placeholder="Tên của bạn"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full text-center text-2xl font-bold bg-white text-black rounded-xl p-4 mb-8 outline-none border-4 border-transparent focus:border-emerald-500"
-          />
+          <button 
+            type="submit"
+            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black text-2xl py-4 rounded-xl shadow-[0_10px_0_#047857] active:shadow-[0_0px_0_#047857] active:translate-y-[10px] transition-all"
+          >
+            KẾT NỐI
+          </button>
+
+          <button 
+            type="button"
+            onClick={() => navigate('/')}
+            className="mt-8 text-gray-400 hover:text-white flex items-center justify-center gap-2 w-full"
+          >
+            <ArrowLeft className="w-4 h-4" /> Về trang chủ
+          </button>
+        </form>
+      )}
+
+      {localGameState === 'JOIN' && step === 2 && roomData && (
+        <form onSubmit={joinRoom} className="w-full max-w-2xl glass-card p-8 rounded-3xl text-center">
+          <h1 className="text-3xl font-black text-white mb-6">Mã phòng: {pin}</h1>
+          
+          {roomSettings?.playMode === 'TEAM' ? (
+            <div className="mb-8">
+              <h2 className="text-xl text-emerald-400 font-bold mb-4">Chọn Nhóm Của Bạn</h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {Object.values(roomData.teams || {}).map((team) => {
+                  const isTaken = roomData.players && roomData.players[team.id];
+                  return (
+                    <div 
+                      key={team.id}
+                      onClick={() => !isTaken && setSelectedTeamId(team.id)}
+                      className={`p-4 rounded-xl border-4 text-center cursor-pointer transition-all ${
+                        isTaken 
+                          ? 'bg-slate-800 border-slate-700 opacity-50 cursor-not-allowed'
+                          : selectedTeamId === team.id 
+                            ? 'bg-emerald-600 border-white scale-105 shadow-[0_0_15px_rgba(16,185,129,0.8)]'
+                            : 'bg-slate-700 border-slate-600 hover:border-emerald-500'
+                      }`}
+                    >
+                      <div className={`font-black text-2xl ${isTaken ? 'text-gray-500' : 'text-white'}`}>Nhóm {team.index}</div>
+                      <div className={`text-sm mt-1 ${isTaken ? 'text-gray-600' : 'text-emerald-200'}`}>{team.name}</div>
+                      {isTaken && <div className="text-xs text-red-400 mt-2">Đã chọn</div>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <input
+              type="text"
+              placeholder="Tên của bạn"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full text-center text-2xl font-bold bg-white text-black rounded-xl p-4 mb-8 outline-none border-4 border-transparent focus:border-emerald-500"
+            />
+          )}
           
           <button 
             type="submit"
@@ -102,10 +180,10 @@ const GamePlayer = () => {
 
           <button 
             type="button"
-            onClick={() => navigate('/')}
+            onClick={() => setStep(1)}
             className="mt-8 text-gray-400 hover:text-white flex items-center justify-center gap-2 w-full"
           >
-            <ArrowLeft className="w-4 h-4" /> Về trang chủ
+            <ArrowLeft className="w-4 h-4" /> Quay lại
           </button>
         </form>
       )}
