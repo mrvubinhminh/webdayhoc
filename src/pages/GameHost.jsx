@@ -361,13 +361,14 @@ const GameHost = () => {
       {/* Cần set các div con có z-10 để đè lên background */}
       <div className={`relative z-10 w-full flex flex-col ${roomData?.status !== 'END' ? 'min-h-screen' : 'h-screen'}`}>
       {localGameState === 'SETUP' && (
-        <div className="max-w-3xl mx-auto">
-          <button onClick={() => navigate('/games')} className="flex items-center gap-2 text-gray-400 hover:text-white mb-8">
-            <ArrowLeft className="w-5 h-5" /> Quay lại kho game
-          </button>
-          
-          <h1 className="text-4xl font-black mb-2 text-emerald-400 text-center">🎮 Tạo Phòng Trò Chơi</h1>
-          <p className="text-gray-400 text-center mb-10">Tải file, chọn giao diện và bắt đầu!</p>
+        <div className="relative w-full min-h-screen">
+          <div className="max-w-3xl mx-auto">
+            <button onClick={() => navigate('/games')} className="flex items-center gap-2 text-gray-400 hover:text-white mb-8">
+              <ArrowLeft className="w-5 h-5" /> Quay lại kho game
+            </button>
+
+            <h1 className="text-4xl font-black mb-2 text-emerald-400 text-center">🎮 Tạo Phòng Trò Chơi</h1>
+            <p className="text-gray-400 text-center mb-10">Tải file, chọn giao diện và bắt đầu!</p>
 
           <div className="mb-8">
             <h2 className="text-xl font-bold text-white mb-4 text-center">Chọn Giao Diện Trình Chiếu</h2>
@@ -576,11 +577,13 @@ const GameHost = () => {
             </div>
           </div>
 
+          </div>
+
           <button
             onClick={createRoom} disabled={questions.length === 0 || !gameTitle.trim()}
-            className={`w-full mt-8 py-5 rounded-2xl font-black text-2xl transition-all ${questions.length > 0 && gameTitle.trim() ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/30 hover:scale-[1.02]' : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}
+            className={`absolute top-6 right-6 px-8 py-4 rounded-2xl font-black text-xl transition-all flex items-center gap-2 ${questions.length > 0 && gameTitle.trim() ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/30 hover:scale-105' : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}
           >
-            🚀 TẠO PHÒNG CHƠI
+            🚀 TẠO PHÒNG
           </button>
         </div>
       )}
