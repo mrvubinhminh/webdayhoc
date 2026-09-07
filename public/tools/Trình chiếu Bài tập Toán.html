@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Trình chiếu Bài tập Toán</title>
+<title>Trình chiếu Bài tập Toán - Yêu cầu Đăng nhập</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
@@ -33,7 +33,7 @@
   img{max-width:100%;}
 
   /* ---------- generic buttons ---------- */
-  .btn{border:none;border-radius:999px;padding:9px 18px;font-weight:700;font-size:.92rem;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:6px;}
+  .btn{border:none;border-radius:999px;padding:9px 18px;font-weight:700;font-size:.92rem;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:6px;text-decoration:none;}
   .btn:active{transform:scale(.97);}
   .btn-primary{background:linear-gradient(135deg,var(--blue1),var(--blue2));color:#fff;box-shadow:0 4px 14px rgba(47,128,237,.3);}
   .btn-ghost{background:#f1f4fa;color:var(--ink-soft);}
@@ -121,6 +121,21 @@
   .timer-pop-custom{display:flex;gap:6px;align-items:center;}
   .timer-pop-custom input{width:52px;border:1.5px solid var(--border);border-radius:8px;padding:5px;text-align:center;font-size:.85rem;}
 
+  .dice-pop{position:absolute;top:54px;right:16px;background:#fff;border-radius:14px;box-shadow:0 8px 30px rgba(20,30,60,.2);padding:14px;z-index:15;width:220px;}
+  .dice-pop-title{font-weight:800;font-size:.85rem;color:var(--ink-soft);margin:0 0 10px;}
+  .dice-pop-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+  .dice-pop-row label{font-size:.8rem;font-weight:700;color:var(--ink-soft);flex:none;}
+  .dice-pop-row input{flex:1;min-width:0;border:1.5px solid var(--border);border-radius:8px;padding:6px 8px;text-align:center;font-size:.9rem;}
+  .dice-pop .btn{width:100%;justify-content:center;}
+
+  .layout-pop{position:absolute;top:54px;right:16px;background:#fff;border-radius:14px;box-shadow:0 8px 30px rgba(20,30,60,.2);padding:14px;z-index:15;width:220px;}
+  .layout-pop-title{font-weight:800;font-size:.85rem;color:var(--ink-soft);margin:0 0 10px;}
+  .layout-pop button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:2px solid var(--border);background:#f7f9fc;border-radius:10px;padding:9px 12px;margin-bottom:8px;cursor:pointer;font-size:.85rem;font-weight:700;color:var(--ink);}
+  .layout-pop button:last-child{margin-bottom:0;}
+  .layout-pop button:hover{border-color:#bcd4f7;}
+  .layout-pop button.sel{border-color:var(--blue1);background:#eef5ff;color:var(--blue1);}
+  .layout-pop button .layout-icon{font-size:1.15rem;flex:none;}
+
   .present-body{flex:1;min-height:0;display:flex;flex-direction:row;overflow:hidden;}
   .slide-area{flex:1;min-width:0;overflow:auto;position:relative;padding:26px clamp(14px,2vw,32px) 30px;}
   .slide-area.compact .slide-content{font-size:calc(18px * var(--scale,1));}
@@ -158,6 +173,7 @@
   .q-image{width:100%;height:100%;object-fit:contain;border-radius:14px;margin:0;border:1px solid var(--border);display:block;background:#fff;}
 
   .options{display:grid;gap:10px;}
+  .options.grid2{grid-template-columns:1fr 1fr;}
   .opt{display:flex;gap:12px;align-items:center;background:#fff;border:2px solid var(--border);border-radius:14px;padding:10px 16px;cursor:pointer;transition:.15s;box-shadow:0 2px 10px rgba(20,30,60,.04);}
   .opt:hover{border-color:#bcd4f7;}
   .opt.selected{border-color:var(--blue1);background:#eef5ff;}
@@ -197,6 +213,60 @@
   .nav-arrow:disabled{opacity:.35;cursor:not-allowed;}
   .slide-counter{padding:9px 16px;border-radius:999px;border:2px solid var(--border);font-weight:800;background:#fff;cursor:pointer;color:var(--ink);font-size:.85rem;white-space:nowrap;}
 
+  /* ---- dark presentation theme (nền đen, chữ trắng khi trình chiếu) ---- */
+  #presentScreen.theme-dark{background:#06080f;}
+  #presentScreen.theme-dark .toolbar{background:#10141f;box-shadow:0 2px 14px rgba(0,0,0,.5);}
+  #presentScreen.theme-dark .sep{background:#2a3348;}
+  #presentScreen.theme-dark .icon-btn{background:#1b2130;color:#c7d0e3;}
+  #presentScreen.theme-dark .icon-btn:hover{background:#252c40;}
+  #presentScreen.theme-dark .icon-btn.active{background:var(--blue1);color:#fff;}
+  #presentScreen.theme-dark .fontsize-btn{background:#1b2130;color:#c7d0e3;}
+  #presentScreen.theme-dark .color-dot{box-shadow:0 0 0 1.5px #2a3348;}
+  #presentScreen.theme-dark .color-dot.sel{box-shadow:0 0 0 2.5px #fff;}
+  #presentScreen.theme-dark .timer-btn{background:#241d10;border-color:#5c4218;color:#f0c979;}
+  #presentScreen.theme-dark .timer-btn.running{background:#0f2419;border-color:#215c38;color:#6fcf97;}
+  #presentScreen.theme-dark .timer-btn.low{background:#2a1414;border-color:#5c2323;color:#f08a8a;}
+  #presentScreen.theme-dark .exit-btn{background:#1b2130;border-color:#4a2323;color:#f08a8a;}
+  #presentScreen.theme-dark .exit-btn:hover{background:#2a1414;}
+
+  #presentScreen.theme-dark .slide-area{background:#06080f;}
+  #presentScreen.theme-dark .slide-content,
+  #presentScreen.theme-dark .q-stem{color:#eef1f7;}
+  #presentScreen.theme-dark .q-image{background:#fff;}
+
+  #presentScreen.theme-dark .opt{background:#161b29;border-color:#2a3348;box-shadow:none;}
+  #presentScreen.theme-dark .opt:hover{border-color:#3a4966;}
+  #presentScreen.theme-dark .opt.selected{border-color:var(--blue1);background:#132a4a;}
+  #presentScreen.theme-dark .opt-text{color:#eef1f7;}
+  #presentScreen.theme-dark .options.reveal .opt.correct{border-color:var(--green2);background:#0f2b1c;}
+  #presentScreen.theme-dark .options.reveal .opt.wrong{border-color:var(--red2);background:#331414;}
+
+  #presentScreen.theme-dark .stmt{background:#161b29;border-color:#2a3348;box-shadow:none;}
+  #presentScreen.theme-dark .stmt-text{color:#eef1f7;}
+  #presentScreen.theme-dark .ds-btn{background:#1b2130;border-color:#2a3348;color:#c7d0e3;}
+  #presentScreen.theme-dark .ds-btn:hover{border-color:#3a4966;}
+  #presentScreen.theme-dark .ds-btn.selected{border-color:var(--blue1);background:var(--blue1);color:#fff;}
+  #presentScreen.theme-dark .stmt.reveal .ds-btn.correct-answer{border-color:var(--green2);background:var(--green2);color:#fff;}
+  #presentScreen.theme-dark .stmt.reveal .ds-btn.wrong-selected{border-color:var(--red2);background:var(--red2);color:#fff;}
+
+  #presentScreen.theme-dark .ans-box{background:#161b29;border-color:#2a3348;color:#eef1f7;}
+  #presentScreen.theme-dark .ans-boxes.correct .ans-box{border-color:var(--green2);background:#0f2b1c;color:#6fcf97;}
+  #presentScreen.theme-dark .ans-boxes.wrong .ans-box{border-color:var(--red2);background:#331414;color:#f08a8a;}
+  #presentScreen.theme-dark .correct-note{color:#6fcf97;}
+
+  #presentScreen.theme-dark .bottombar{background:#10141f;box-shadow:0 -2px 14px rgba(0,0,0,.5);}
+  #presentScreen.theme-dark .nav-arrow{background:#1b2130;color:#c7d0e3;}
+  #presentScreen.theme-dark .slide-counter{background:#1b2130;border-color:#2a3348;color:#eef1f7;}
+
+  #presentScreen.theme-dark .calc-panel{background:#10141f;}
+  #presentScreen.theme-dark .calc-panel-head{background:#161b29;border-bottom-color:#2a3348;}
+  #presentScreen.theme-dark .calc-panel-title{color:#eef1f7;}
+  #presentScreen.theme-dark .calc-panel-link,
+  #presentScreen.theme-dark .calc-panel-close{background:#1b2130;color:#c7d0e3;}
+  #presentScreen.theme-dark .calc-panel-link:hover,
+  #presentScreen.theme-dark .calc-panel-close:hover{background:#252c40;}
+  #presentScreen.theme-dark .calc-frame-wrap{background:#161b29;}
+
   /* solution panel */
   .solution-panel{position:fixed;right:0;left:0;bottom:0;margin:0 auto;max-width:none;width:100%;height:50vh;max-height:100vh;background:#000;border-radius:18px 18px 0 0;box-shadow:0 -8px 34px rgba(0,0,0,.5);transform:translateY(105%);transition:transform .25s ease,height .05s linear;z-index:25;display:flex;flex-direction:column;overflow:hidden;}
   .solution-panel.open{transform:translateY(0);}
@@ -210,6 +280,14 @@
   .solution-body{padding:18px 14px 40px;overflow-y:auto;-webkit-overflow-scrolling:touch;font-size:2.3rem;line-height:1.6;color:#f2f2f5;width:100%;}
   .solution-body .katex{color:#f2f2f5;}
   .solution-body b{color:#fff;}
+
+  /* dice / random student picker overlay */
+  .dice-overlay{position:fixed;inset:0;background:rgba(6,8,15,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:50;opacity:0;pointer-events:none;transition:opacity .25s ease;}
+  .dice-overlay.show{opacity:1;pointer-events:auto;cursor:pointer;}
+  .dice-overlay-label{color:#fff;font-weight:800;font-size:clamp(1.1rem,2.6vw,1.7rem);letter-spacing:.4px;opacity:.9;}
+  .dice-overlay-number{font-weight:900;font-size:clamp(7rem,26vw,16rem);line-height:1;color:#ffd166;text-shadow:0 10px 40px rgba(0,0,0,.5);transform:scale(.82);transition:transform .2s cubic-bezier(.34,1.56,.64,1),color .06s linear;}
+  .dice-overlay.settled .dice-overlay-number{transform:scale(1);color:#6fcf97;}
+  .dice-overlay-hint{color:rgba(255,255,255,.55);font-size:.85rem;margin-top:6px;}
 
   /* jump modal */
   .jump-modal{position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;z-index:30;padding:20px;}
@@ -273,6 +351,7 @@
     .q-badge{padding:6px 12px;font-size:.9em;}
     .setup-wrap{padding:20px 10px 150px;}
     .q-body{flex-direction:column;}
+    .options.grid2{grid-template-columns:1fr;}
     .q-image-wrap{order:-1;flex:none;max-width:100%;width:100%;min-height:0;}
     .q-image{height:auto;max-height:42vh;}
     .cover-title{font-size:2.2rem;}
@@ -290,26 +369,233 @@
     .calc-panel.open{border-top-color:var(--border);flex-basis:48%;}
     .slide-area.compact .slide-content{font-size:calc(12px * var(--scale,1));}
   }
+
+  /* LOGIN SCREEN CSS */
+  #loginScreen {
+    position: fixed;
+    inset: 0;
+    background: var(--page-bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999; /* Luôn ở trên cùng khi chưa đăng nhập */
+  }
+  .login-card {
+    background: #fff;
+    padding: 40px 30px;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+  }
+  .login-card h1 {
+    font-size: 1.6rem;
+    margin: 0 0 10px;
+    font-weight: 800;
+  }
+  .login-card p {
+    color: var(--ink-soft);
+    margin: 0 0 30px;
+  }
+  .btn-google {
+    background: #fff;
+    color: #444;
+    border: 1px solid #ddd;
+    padding: 12px 20px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: 0.2s;
+  }
+  .btn-google:hover {
+    background: #f8f9fa;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  }
+  /* ---- summary screen ---- */
+  #summaryScreen{position:fixed;inset:0;z-index:45;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);color:#fff;}
+  .summary-content{position:relative;z-index:2;text-align:center;animation:summaryPop 0.8s cubic-bezier(0.34,1.56,0.64,1);}
+  @keyframes summaryPop{0%{transform:scale(0.8);opacity:0;}100%{transform:scale(1);opacity:1;}}
+  .summary-trophy{font-size:6rem;margin-bottom:10px;filter:drop-shadow(0 0 20px rgba(255,215,0,0.6));}
+  .summary-title{font-size:3rem;font-weight:800;margin:0 0 10px;text-shadow:0 4px 10px rgba(0,0,0,0.5);}
+  .summary-subtitle{font-size:1.4rem;font-weight:600;color:#cbd5e1;margin-bottom:40px;}
+  .summary-btn{background:linear-gradient(135deg,#4facfe,#00f2fe);color:#fff;border:none;padding:16px 40px;border-radius:999px;font-weight:800;font-size:1.2rem;cursor:pointer;box-shadow:0 10px 20px rgba(0,242,254,0.3);transition:transform 0.15s;}
+  .summary-btn:hover{transform:translateY(-3px) scale(1.05);}
+  .confetti{position:absolute;width:10px;height:10px;background-color:#f2d74e;opacity:0;}
+  @keyframes fall{0%{top:-10%;opacity:1;transform:rotate(0deg);}100%{top:110%;opacity:1;transform:rotate(720deg);}}
+
+  /* Cloud Modal */
+  #cloudModal{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .cloud-card{background:#fff;border-radius:20px;width:100%;max-width:800px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,0.2);overflow:hidden;}
+  .cloud-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+  .cloud-header h2{margin:0;font-size:1.4rem;font-weight:800;color:var(--ink);}
+  .cloud-body{padding:20px 24px;overflow-y:auto;flex:1;background:#f8f9fc;}
+  .cloud-item{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;transition:box-shadow 0.2s;}
+  .cloud-item:hover{box-shadow:0 6px 20px rgba(0,0,0,0.06);border-color:#bcd4f7;}
+  .cloud-item-info h3{margin:0 0 6px;font-size:1.1rem;color:var(--blue1);}
+  .cloud-item-meta{font-size:0.85rem;color:var(--ink-soft);display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px;}
+  .cloud-item-meta span{background:#eef2f9;padding:4px 10px;border-radius:6px;font-weight:600;}
+  .cloud-item-note{font-size:0.85rem;color:#666;font-style:italic;}
+  .cloud-item-actions{display:flex;gap:8px;flex-direction:column;}
+  .cloud-empty{text-align:center;padding:40px;color:var(--ink-soft);font-size:1.1rem;}
 </style>
+
+<!-- Firebase SDK -->
+<script type="module">
+  // Import Firebase modules
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+  import { getAuth, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc, getDocs, doc, query, where, orderBy, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyClTIOONdEvnasZZltgKiW70PEF7JekJIA",
+    authDomain: "toan-hoc-tools.firebaseapp.com",
+    projectId: "toan-hoc-tools",
+    storageBucket: "toan-hoc-tools.firebasestorage.app",
+    messagingSenderId: "130413150309",
+    appId: "1:130413150309:web:d0a53fc0efacc241a3868c",
+    measurementId: "G-DPRJEJKXVH"
+  };
+
+  try {
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    window.firebaseDb = db;
+    window.firebaseAuth = auth;
+    window.firebaseFirestore = { addDoc, collection, serverTimestamp, getDocs, query, where, doc, deleteDoc };
+    const provider = new GoogleAuthProvider();
+
+    function showLoginError(error){
+      if(!error) return;
+      console.error(error);
+      if(error.code === 'auth/unauthorized-domain'){
+        alert('Tên miền "'+location.hostname+'" chưa được Firebase cho phép đăng nhập.\n\n'+
+              'Vào Firebase Console → Authentication → Settings → Authorized domains, thêm tên miền này rồi thử lại.');
+      } else {
+        alert('Đăng nhập thất bại: ' + (error.message || error));
+      }
+    }
+
+    // Nếu lần trước phải đăng nhập bằng cách chuyển hướng thì lấy kết quả về ở đây.
+    getRedirectResult(auth).catch(showLoginError);
+
+    // Export ra global để có thể gọi từ các nút bấm HTML
+    window.signInWithGoogle = () => {
+      signInWithPopup(auth, provider).catch(error => {
+        const code = error && error.code;
+        // Thầy/cô tự đóng cửa sổ đăng nhập thì im lặng, không báo lỗi.
+        if(code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') return;
+        // Safari trên iPhone và trình duyệt trong Zalo/Facebook thường chặn pop-up → chuyển hướng cả trang.
+        if(code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment'){
+          signInWithRedirect(auth, provider).catch(showLoginError);
+          return;
+        }
+        showLoginError(error);
+      });
+    };
+
+    window.signOutFirebase = () => {
+      if(confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+        signOut(auth);
+      }
+    };
+
+    // Danh sách các email được phép đăng nhập (Thầy sửa lại email thật ở đây)
+    // Nếu để mảng trống [], hệ thống sẽ cho phép TẤT CẢ mọi người đăng nhập.
+    const ALLOWED_EMAILS = [
+      "vutluc@gmail.com",
+      "vutienlucnhc@gmail.com"
+    ];
+
+    // Theo dõi trạng thái đăng nhập
+    onAuthStateChanged(auth, (user) => {
+      const loginScreen = document.getElementById('loginScreen');
+      const setupScreen = document.getElementById('setupScreen');
+      const presentScreen = document.getElementById('presentScreen');
+      const coverScreen = document.getElementById('coverScreen');
+
+      if (user) {
+        // 1. KIỂM TRA QUYỀN TRUY CẬP (WHITELIST)
+        // Nếu mảng ALLOWED_EMAILS có phần tử, và email người dùng KHÔNG nằm trong mảng đó => Chặn
+        if (ALLOWED_EMAILS.length > 0 && !ALLOWED_EMAILS.includes(user.email)) {
+          alert(`Tài khoản "${user.email}" không có quyền truy cập ứng dụng này. Vui lòng liên hệ quản trị viên!`);
+          signOut(auth); // Đăng xuất họ ra ngay lập tức
+          return;
+        }
+
+        // Đã đăng nhập hợp lệ: Ẩn Login, Hiện Setup (nếu chưa đang trình chiếu)
+        loginScreen.style.display = 'none';
+        
+        // Cập nhật tên user lên header
+        const userNameSpan = document.getElementById('loggedUserName');
+        if(userNameSpan) userNameSpan.textContent = user.displayName;
+
+        // Chỉ bật màn setup nếu đang không ở màn trình chiếu
+        if(presentScreen.hidden && coverScreen.hidden) {
+          setupScreen.hidden = false;
+        }
+      } else {
+        // Chưa đăng nhập: Hiện Login, Ẩn tất cả
+        loginScreen.style.display = 'flex';
+        setupScreen.hidden = true;
+        presentScreen.hidden = true;
+        coverScreen.hidden = true;
+      }
+    });
+
+  } catch (error) {
+    console.error("Lỗi khởi tạo Firebase:", error);
+    // Nếu config sai, vẫn cho phép dùng thử (tùy chọn)
+    // alert("Chưa cấu hình Firebase! Bạn sẽ không thể đăng nhập.");
+  }
+</script>
+
 </head>
 <body>
 
+<!-- ============= LOGIN SCREEN ============= -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div style="font-size: 3rem; margin-bottom: 10px;">🎓</div>
+    <h1>Trình chiếu Bài tập Toán</h1>
+    <p>Vui lòng đăng nhập để sử dụng tính năng tạo bài trình chiếu.</p>
+    <button class="btn-google" onclick="window.signInWithGoogle()">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" alt="Google Logo">
+      Đăng nhập bằng Google
+    </button>
+  </div>
+</div>
+
 <!-- ============= SETUP SCREEN ============= -->
-<div id="setupScreen">
+<div id="setupScreen" hidden>
   <div class="setup-toprow">
+    <span style="font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); margin-right: auto; align-self: center;">
+      Xin chào, <span id="loggedUserName">Giáo viên</span>
+    </span>
+    <button class="btn btn-primary btn-sm" id="btnSaveCloud" onclick="window.saveDeckToCloud(event)">☁️ Lưu bài lên Cloud</button>
+    <button class="btn btn-outline btn-sm" onclick="window.openCloudModal()">📂 Mở bài đã lưu</button>
+    <button class="btn btn-outline btn-sm" onclick="window.signOutFirebase()">🚪 Đăng xuất</button>
+    <a class="btn btn-outline btn-sm" href="https://chuyendoijson.vercel.app/" target="_blank" rel="noopener" title="Công cụ chuyển đổi JSON">🔄 Công cụ chuyển đổi JSON</a>
     <button class="btn btn-red btn-sm" id="btnClearAll">🗑 Xóa toàn bộ dữ liệu đã lưu</button>
   </div>
   <div class="setup-wrap">
     <div class="setup-header">
-      <h1>🎓 Trình chiếu Bài tập Toán</h1>
-      <p>Nhập câu hỏi cho 3 dạng bài (Trắc nghiệm · Đúng-Sai · Trả lời ngắn) để tạo bài trình chiếu tương tác — hiển thị sắc nét cho máy chiếu và điện thoại.</p>
+      <h1 style="background: -webkit-linear-gradient(45deg, #2f80ed, #56ccf2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 2.2rem;">✨ Hệ thống Trình chiếu Chuyên nghiệp</h1>
+      <p style="font-size: 1.05rem; margin-top: 8px;">Soạn thảo, quản lý và trình chiếu bài tập tương tác với độ sắc nét tuyệt đối.</p>
     </div>
 
-    <div class="global-card auto-upload-card" id="autoUploadZone">
-      <div class="auto-upload-icon">🧠📂</div>
+    <div class="global-card auto-upload-card" id="autoUploadZone" style="padding: 40px 20px; border-radius: 20px;">
+      <div class="auto-upload-icon" style="font-size: 3rem; margin-bottom: 10px;">📥</div>
       <div class="auto-upload-text">
-        <b>Tải file Excel — tự động nhận diện loại câu hỏi</b>
-        <div class="hint">Kéo-thả hoặc bấm để chọn một hoặc nhiều file .xlsx (đọc tất cả các sheet). Hỗ trợ <b>file chuẩn dạng ngân hàng câu hỏi</b> — một bảng gộp chung với cột <b>"Loại"</b> (Trắc nghiệm / Đúng-Sai / Trả lời ngắn) tự phân loại từng dòng — hoặc file chia riêng theo từng phần. Không cần chọn thủ công.</div>
+        <b style="font-size: 1.2rem;">Kéo thả file Excel vào đây để tự động nhận diện</b>
+        <div class="hint" style="margin-top: 8px;">Hỗ trợ ngân hàng câu hỏi chuẩn hoặc file chi tiết từng phần. Không cần thao tác thủ công.</div>
       </div>
       <button class="btn btn-primary" id="btnAutoUpload" type="button">📂 Chọn file...</button>
       <button class="btn btn-outline" id="btnUnifiedTemplate" type="button">⬇ Tải file mẫu chuẩn (gộp 3 loại)</button>
@@ -345,6 +631,31 @@
           <input type="text" id="deckSchool" placeholder="VD: Trường THPT Nguyễn Hữu Cảnh">
         </div>
       </div>
+      <div class="global-row" style="margin-top: 15px;">
+        <div class="field">
+          <label>Khối/Lớp</label>
+          <select id="deckGrade" style="min-width:120px;">
+            <option value="12">Lớp 12</option>
+            <option value="11">Lớp 11</option>
+            <option value="10">Lớp 10</option>
+            <option value="Khác">Khác</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Chương</label>
+          <input type="text" id="deckChapter" placeholder="VD: Chương 1">
+        </div>
+        <div class="field">
+          <label>Đối tượng học sinh</label>
+          <input type="text" id="deckTarget" placeholder="VD: Khá, Giỏi">
+        </div>
+      </div>
+      <div class="global-row" style="margin-top: 15px;">
+        <div class="field" style="flex:1; width: 100%;">
+          <label>Ghi chú thêm</label>
+          <input type="text" id="deckNote" placeholder="VD: Dùng cho buổi phụ đạo chiều thứ 5..." style="width:100%;">
+        </div>
+      </div>
     </div>
 
     <!-- PHẦN I -->
@@ -356,16 +667,14 @@
         </div>
         <span class="badge-count" id="countI">0 câu</span>
       </div>
-      <div class="part-desc">Cột dữ liệu: <b>Nội dung, A, B, C, D, Kí hiệu Đ/A (1-4 hoặc A-D), Lời giải, Link ảnh</b> (Link ảnh không bắt buộc).</div>
-      <div class="part-actions">
-        <button class="btn btn-outline btn-sm" data-action="upload" data-part="I">📂 Tải thủ công vào Phần I</button>
+      <div class="part-actions" style="margin-top: 10px;">
+        <button class="btn btn-outline btn-sm" data-action="upload" data-part="I">📂 Upload file Excel</button>
         <input type="file" class="file-input" data-part="I" accept=".xlsx,.xls">
         <button class="btn btn-outline btn-sm" data-action="template" data-part="I">⬇ Tải file mẫu</button>
-        <button class="btn btn-red btn-sm" data-action="clear" data-part="I">Xoá dữ liệu phần này</button>
+        <button class="btn btn-red btn-sm" data-action="clear" data-part="I">Xoá dữ liệu</button>
       </div>
-      <textarea class="paste-area" data-part="I" placeholder="Hoặc dán dữ liệu sao chép trực tiếp từ Excel (Ctrl+C rồi Ctrl+V) vào đây, dòng đầu là tiêu đề cột..."></textarea>
-      <button class="btn btn-ghost btn-sm" style="margin-top:8px;" data-action="ingestPaste" data-part="I">✅ Nhập dữ liệu vừa dán</button>
-      <div class="hint">Mẹo: mở file Excel, bôi đen toàn bộ vùng dữ liệu (kể cả dòng tiêu đề), Ctrl+C rồi dán vào ô trên.</div>
+      <textarea class="paste-area" data-part="I" style="display:none;"></textarea>
+      <button class="btn btn-ghost btn-sm" style="display:none;" data-action="ingestPaste" data-part="I">✅ Nhập dữ liệu vừa dán</button>
       <div class="preview-wrap" id="previewI"></div>
     </div>
 
@@ -378,16 +687,14 @@
         </div>
         <span class="badge-count" id="countII">0 câu</span>
       </div>
-      <div class="part-desc">Cột dữ liệu: <b>Nội dung, a, b, c, d, Đáp án a, Đáp án b, Đáp án c, Đáp án d (ghi Đ hoặc S), Lời giải</b>.</div>
-      <div class="part-actions">
-        <button class="btn btn-outline btn-sm" data-action="upload" data-part="II">📂 Tải thủ công vào Phần II</button>
+      <div class="part-actions" style="margin-top: 10px;">
+        <button class="btn btn-outline btn-sm" data-action="upload" data-part="II">📂 Upload file Excel</button>
         <input type="file" class="file-input" data-part="II" accept=".xlsx,.xls">
         <button class="btn btn-outline btn-sm" data-action="template" data-part="II">⬇ Tải file mẫu</button>
-        <button class="btn btn-red btn-sm" data-action="clear" data-part="II">Xoá dữ liệu phần này</button>
+        <button class="btn btn-red btn-sm" data-action="clear" data-part="II">Xoá dữ liệu</button>
       </div>
-      <textarea class="paste-area" data-part="II" placeholder="Hoặc dán dữ liệu sao chép trực tiếp từ Excel vào đây..."></textarea>
-      <button class="btn btn-ghost btn-sm" style="margin-top:8px;" data-action="ingestPaste" data-part="II">✅ Nhập dữ liệu vừa dán</button>
-      <div class="hint">Mẹo: mở file Excel, bôi đen toàn bộ vùng dữ liệu (kể cả dòng tiêu đề), Ctrl+C rồi dán vào ô trên.</div>
+      <textarea class="paste-area" data-part="II" style="display:none;"></textarea>
+      <button class="btn btn-ghost btn-sm" style="display:none;" data-action="ingestPaste" data-part="II">✅ Nhập dữ liệu vừa dán</button>
       <div class="preview-wrap" id="previewII"></div>
     </div>
 
@@ -400,16 +707,14 @@
         </div>
         <span class="badge-count" id="countIII">0 câu</span>
       </div>
-      <div class="part-desc">Cột dữ liệu: <b>Nội dung, Đáp án, Lời giải</b>.</div>
-      <div class="part-actions">
-        <button class="btn btn-outline btn-sm" data-action="upload" data-part="III">📂 Tải thủ công vào Phần III</button>
+      <div class="part-actions" style="margin-top: 10px;">
+        <button class="btn btn-outline btn-sm" data-action="upload" data-part="III">📂 Upload file Excel</button>
         <input type="file" class="file-input" data-part="III" accept=".xlsx,.xls">
         <button class="btn btn-outline btn-sm" data-action="template" data-part="III">⬇ Tải file mẫu</button>
-        <button class="btn btn-red btn-sm" data-action="clear" data-part="III">Xoá dữ liệu phần này</button>
+        <button class="btn btn-red btn-sm" data-action="clear" data-part="III">Xoá dữ liệu</button>
       </div>
-      <textarea class="paste-area" data-part="III" placeholder="Hoặc dán dữ liệu sao chép trực tiếp từ Excel vào đây..."></textarea>
-      <button class="btn btn-ghost btn-sm" style="margin-top:8px;" data-action="ingestPaste" data-part="III">✅ Nhập dữ liệu vừa dán</button>
-      <div class="hint">Đáp án Phần III là một chuỗi ký tự (số, dấu trừ, dấu phẩy...), ví dụ: <code>-12,5</code>.</div>
+      <textarea class="paste-area" data-part="III" style="display:none;"></textarea>
+      <button class="btn btn-ghost btn-sm" style="display:none;" data-action="ingestPaste" data-part="III">✅ Nhập dữ liệu vừa dán</button>
       <div class="preview-wrap" id="previewIII"></div>
     </div>
   </div>
@@ -434,13 +739,20 @@
       <button class="color-dot sel" id="colorRed" style="background:#eb5757" title="Màu đỏ"></button>
       <button class="color-dot" id="colorBlue" style="background:#2f80ed" title="Màu xanh dương"></button>
       <button class="color-dot" id="colorGreen" style="background:#27ae60" title="Màu xanh lá"></button>
+      <button class="color-dot" id="colorYellow" style="background:#f2c94c" title="Màu vàng"></button>
+      <button class="color-dot" id="colorWhite" style="background:#ffffff" title="Màu trắng"></button>
       <button class="icon-btn" id="toolClear" title="Xoá hết nét vẽ">🗑️</button>
       <div class="sep"></div>
       <div class="jump-wrap" style="position:relative;">
         <button class="icon-btn" id="btnClock" title="Đặt thời gian">🕐</button>
       </div>
       <button class="timer-btn" id="timerBtn">⏳ Bắt đầu (01:00)</button>
+      <button class="icon-btn" id="btnDice" title="Quay số ngẫu nhiên gọi học sinh">🎲</button>
       <button class="icon-btn" id="btnCalc" title="Máy tính MathDA">🧮</button>
+      <button class="icon-btn" id="btnBoard" title="Bảng viết">📝</button>
+      <button class="icon-btn" id="btnClassroom" title="Quản lý lớp học">🏫</button>
+      <button class="icon-btn" id="btnDarkTheme" title="Nền đen, chữ trắng">🌙</button>
+      <button class="icon-btn" id="btnOptLayout" title="Bố cục phương án A,B,C,D">🔳</button>
       <button class="icon-btn" id="btnFullscreen" title="Toàn màn hình">⛶</button>
     </div>
     <button class="exit-btn" id="btnExit">✕ Thoát</button>
@@ -454,10 +766,10 @@
     <div class="calc-resizer" id="calcResizer" title="Kéo để thay đổi kích thước"></div>
     <div class="calc-panel" id="calcPanel">
       <div class="calc-panel-head">
-        <span class="calc-panel-title">🧮 Máy tính MathDA</span>
+        <span class="calc-panel-title" id="calcPanelTitle">🧮 Máy tính MathDA</span>
         <div class="calc-panel-actions">
           <a class="calc-panel-link" id="calcOpenNewTab" href="https://mathda.com/calculator/vi" target="_blank" rel="noopener" title="Mở trong tab mới">↗</a>
-          <button class="calc-panel-close" id="btnCalcClose" title="Đóng máy tính">✕</button>
+          <button class="calc-panel-close" id="btnCalcClose" title="Đóng">✕</button>
         </div>
       </div>
       <div class="calc-frame-wrap" id="calcFrameWrap">
@@ -483,6 +795,12 @@
       <button class="solution-close" id="solutionClose">✕</button>
     </div>
     <div class="solution-body" id="solutionBody"></div>
+  </div>
+
+  <div class="dice-overlay" id="diceOverlay">
+    <div class="dice-overlay-label">🎉 Số may mắn</div>
+    <div class="dice-overlay-number" id="diceOverlayNumber">--</div>
+    <div class="dice-overlay-hint">Chạm để đóng</div>
   </div>
 </div>
 
@@ -514,6 +832,16 @@
   </div>
 </div>
 
+<!-- ============= SUMMARY SCREEN ============= -->
+<div id="summaryScreen" hidden>
+  <div class="summary-content">
+    <div class="summary-trophy">🏆</div>
+    <h1 class="summary-title">Tuyệt vời!</h1>
+    <div class="summary-subtitle" id="summarySubtitle">Đã hoàn thành bài ôn tập</div>
+    <button class="summary-btn" id="btnSummaryFinish">Hoàn tất & Trở về</button>
+  </div>
+</div>
+
 <div class="jump-modal hidden" id="jumpModal">
   <div class="jump-card jump-wrap">
     <button class="icon-btn jump-close" id="jumpClose">✕</button>
@@ -522,12 +850,219 @@
   </div>
 </div>
 
+<!-- ============= CLOUD MODAL ============= -->
+<div id="cloudModal" hidden>
+  <div class="cloud-card">
+    <div class="cloud-header">
+      <h2>📂 Mở bài giảng đã lưu</h2>
+      <button class="icon-btn" onclick="window.closeCloudModal()">✕</button>
+    </div>
+    <div class="cloud-body" id="cloudBody">
+      <!-- items injected here -->
+    </div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
 <script>
 (function(){
 "use strict";
+
+window.saveDeckToCloud = function(ev) {
+  if (!window.firebaseDb || !window.firebaseAuth || !window.firebaseAuth.currentUser) {
+    alert("Vui lòng đăng nhập trước!");
+    return;
+  }
+  const e = ev || window.event;
+  const btn = (e && (e.currentTarget || e.target)) || document.getElementById('btnSaveCloud');
+  const originalText = btn ? btn.innerHTML : '';
+  const setBtn = (html, disabled) => { if(btn){ btn.innerHTML = html; btn.disabled = !!disabled; } };
+  setBtn("⏳ Đang nén...", true);
+
+  try {
+    const { addDoc, collection, serverTimestamp } = window.firebaseFirestore;
+    
+    const meta = {
+      grade: document.getElementById('deckGrade').value,
+      chapter: document.getElementById('deckChapter').value,
+      target: document.getElementById('deckTarget').value,
+      note: document.getElementById('deckNote').value,
+      teacher: document.getElementById('deckTeacher').value,
+      school: document.getElementById('deckSchool').value,
+      title: document.getElementById('deckTitle').value,
+      createdAt: serverTimestamp(),
+      ownerEmail: window.firebaseAuth.currentUser.email
+    };
+
+    const rawParts = { I: deck.parts.I, II: deck.parts.II, III: deck.parts.III };
+    const compressedParts = window.LZString ? window.LZString.compressToUTF16(JSON.stringify(rawParts)) : null;
+
+    const deckData = {
+      meta,
+      settings: { defaultTimer: document.getElementById('defaultTimer').value }
+    };
+    
+    if (compressedParts) {
+       deckData.compressedParts = compressedParts;
+    } else {
+       deckData.I = deck.parts.I;
+       deckData.II = deck.parts.II;
+       deckData.III = deck.parts.III;
+    }
+
+    setBtn("☁️ Đang lưu ngầm...", true);
+    
+    addDoc(collection(window.firebaseDb, "math_decks"), deckData)
+      .then(() => {
+         console.log("Đã lưu bài lên Cloud thành công!");
+      })
+      .catch(error => {
+         console.error("Lỗi khi lưu ngầm:", error);
+         alert("❌ Lỗi khi lưu ngầm: " + error.message);
+      });
+
+    setTimeout(() => {
+      setBtn("✅ Đã lưu", true);
+      setTimeout(() => setBtn(originalText, false), 2000);
+    }, 500);
+
+  } catch (error) {
+    console.error(error);
+    alert("❌ Lỗi khi xử lý lưu: " + error.message);
+    setBtn(originalText, false);
+  }
+};
+
+window.openCloudModal = async function() {
+  if (!window.firebaseDb || !window.firebaseAuth.currentUser) {
+    alert("Vui lòng đăng nhập trước!");
+    return;
+  }
+  document.getElementById('cloudModal').hidden = false;
+  document.getElementById('cloudBody').innerHTML = '<div class="cloud-empty">⏳ Đang tải dữ liệu...</div>';
+
+  try {
+    const { getDocs, query, collection, where } = window.firebaseFirestore;
+    const q = query(
+      collection(window.firebaseDb, "math_decks"),
+      where("meta.ownerEmail", "==", window.firebaseAuth.currentUser.email)
+    );
+    const snap = await getDocs(q);
+    const decks = [];
+    snap.forEach(doc => decks.push({ id: doc.id, ...doc.data() }));
+
+    // Sắp xếp giảm dần theo thời gian (client-side để tránh lỗi composite index)
+    decks.sort((a, b) => {
+      const ta = a.meta.createdAt ? (a.meta.createdAt.toMillis ? a.meta.createdAt.toMillis() : 0) : 0;
+      const tb = b.meta.createdAt ? (b.meta.createdAt.toMillis ? b.meta.createdAt.toMillis() : 0) : 0;
+      return tb - ta;
+    });
+
+    renderCloudDecks(decks);
+  } catch (error) {
+    console.error(error);
+    document.getElementById('cloudBody').innerHTML = '<div class="cloud-empty" style="color:red">❌ Lỗi: ' + error.message + '</div>';
+  }
+};
+
+window.closeCloudModal = function() {
+  document.getElementById('cloudModal').hidden = true;
+};
+
+window.deleteCloudDeck = async function(id) {
+  if(!confirm("Bạn có chắc muốn xóa bài này khỏi Cloud không?")) return;
+  try {
+    const { doc, deleteDoc } = window.firebaseFirestore;
+    await deleteDoc(doc(window.firebaseDb, "math_decks", id));
+    window.openCloudModal(); // Tải lại danh sách
+  } catch (err) {
+    alert("Lỗi khi xóa: " + err.message);
+  }
+};
+
+window.loadDeckFromCloud = function(id) {
+  // Lưu ý: đặt tên khác "deck" để không che mất biến deck của ứng dụng bên dưới.
+  const saved = (window.cachedCloudDecks || []).find(d => d.id === id);
+  if(!saved) return;
+  const meta = saved.meta || {};
+
+  document.getElementById('deckGrade').value = meta.grade || '12';
+  document.getElementById('deckChapter').value = meta.chapter || '';
+  document.getElementById('deckTarget').value = meta.target || '';
+  document.getElementById('deckNote').value = meta.note || '';
+  document.getElementById('deckTeacher').value = meta.teacher || '';
+  document.getElementById('deckSchool').value = meta.school || '';
+  document.getElementById('deckTitle').value = meta.title || '';
+  document.getElementById('defaultTimer').value = (saved.settings && saved.settings.defaultTimer) || '60';
+
+  let parts = null;
+  if (saved.compressedParts && window.LZString) {
+    try {
+      parts = JSON.parse(window.LZString.decompressFromUTF16(saved.compressedParts));
+    } catch(e) {
+      console.error("Lỗi giải nén:", e);
+      alert("❌ Không giải nén được dữ liệu bài này.");
+      return;
+    }
+  } else {
+    parts = { I: saved.I, II: saved.II, III: saved.III };
+  }
+
+  deck.parts.I = parts.I || [];
+  deck.parts.II = parts.II || [];
+  deck.parts.III = parts.III || [];
+  deck.title = meta.title || '';
+  deck.teacher = meta.teacher || DEFAULT_TEACHER;
+  deck.school = meta.school || DEFAULT_SCHOOL;
+  deck.defaultTimer = parseInt(document.getElementById('defaultTimer').value, 10) || 60;
+  timerDuration = deck.defaultTimer;
+  timerRemaining = timerDuration;
+  saveDeck();
+
+  ['I','II','III'].forEach(updatePreview);
+  updateTotal();
+
+  window.closeCloudModal();
+  const n = deck.parts.I.length + deck.parts.II.length + deck.parts.III.length;
+  alert("✅ Đã tải bài từ Cloud: " + n + " câu hỏi.");
+};
+
+function renderCloudDecks(decks) {
+  window.cachedCloudDecks = decks;
+  const container = document.getElementById('cloudBody');
+  if(decks.length === 0) {
+    container.innerHTML = '<div class="cloud-empty">Chưa có bài giảng nào được lưu trên Cloud.</div>';
+    return;
+  }
+  container.innerHTML = decks.map(d => {
+    const title = d.meta.title || "Bài giảng không tên";
+    let dateStr = "Vừa xong";
+    if (d.meta.createdAt && d.meta.createdAt.toDate) {
+      dateStr = d.meta.createdAt.toDate().toLocaleString('vi-VN');
+    }
+    return `
+      <div class="cloud-item">
+        <div class="cloud-item-info">
+          <h3>${title}</h3>
+          <div class="cloud-item-meta">
+            <span>${d.meta.grade === 'Khác' ? 'Lớp Khác' : 'Lớp ' + d.meta.grade}</span>
+            ${d.meta.chapter ? `<span>${d.meta.chapter}</span>` : ''}
+            ${d.meta.target ? `<span>👤 ${d.meta.target}</span>` : ''}
+            <span>🕒 ${dateStr}</span>
+          </div>
+          ${d.meta.note ? `<div class="cloud-item-note">${d.meta.note}</div>` : ''}
+        </div>
+        <div class="cloud-item-actions">
+          <button class="btn btn-primary btn-sm" onclick="window.loadDeckFromCloud('${d.id}')">⬇ Tải xuống</button>
+          <button class="btn btn-red btn-sm" onclick="window.deleteCloudDeck('${d.id}')">🗑 Xóa</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
 
 /* ============================================================
    1. DATA MODEL & PERSISTENCE
@@ -1147,11 +1682,40 @@ function initSetupScreen(){
 }
 
 /* ============================================================
+   4b. HIỆU ỨNG ÂM THANH (nhạc theo từng mốc)
+   ============================================================ */
+const SOUND_URLS = {
+  lessonStart:   'https://files.catbox.moe/eopz4f.mp3', // Mở đầu bài học
+  questionOpen:  'https://files.catbox.moe/amew8w.mp3', // Mở câu hỏi từng câu
+  showAnswer:    'https://files.catbox.moe/r1fiz6.mp3', // Click hiện đáp án
+  lessonSummary: 'https://files.catbox.moe/12vlpb.mp3'  // Tổng kết bài
+};
+const soundCache = {};
+function initSounds(){
+  Object.keys(SOUND_URLS).forEach(key=>{
+    try{
+      const audio = new Audio(SOUND_URLS[key]);
+      audio.preload = 'auto';
+      soundCache[key] = audio;
+    }catch(e){}
+  });
+}
+function playSound(key){
+  const audio = soundCache[key];
+  if(!audio) return;
+  try{
+    audio.currentTime = 0;
+    audio.play().catch(()=>{}); // bỏ qua nếu trình duyệt tạm chặn autoplay
+  }catch(e){}
+}
+
+/* ============================================================
    5. PRESENTATION STATE
    ============================================================ */
 let slides = [];
 let currentSlide = 0;
 let scale = 1;
+let optionsLayout = 'list'; // 'list' (1 cột) | 'grid2' (2 hàng x 2 cột) — áp dụng cho phương án A,B,C,D Phần I
 
 function buildSlides(){
   slides = [];
@@ -1193,6 +1757,7 @@ function enterSlidesFromCover(){
   document.getElementById('presentScreen').hidden = false;
   resizeCanvas();
   renderSlide();
+  playSound('lessonStart');
 }
 
 function exitCoverToSetup(){
@@ -1200,11 +1765,35 @@ function exitCoverToSetup(){
   document.getElementById('setupScreen').hidden = false;
 }
 
+function createConfetti() {
+  const colors = ['#f2d74e', '#95c3de', '#ff9a91', '#f29cb1', '#93b8c0', '#ffd166', '#0ea5e9'];
+  const container = document.getElementById('summaryScreen');
+  document.querySelectorAll('.confetti').forEach(el => el.remove());
+  for (let i = 0; i < 80; i++) {
+    const conf = document.createElement('div');
+    conf.classList.add('confetti');
+    conf.style.left = Math.random() * 100 + 'vw';
+    conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    conf.style.animation = `fall ${Math.random() * 3 + 2}s linear forwards`;
+    conf.style.animationDelay = Math.random() * 2 + 's';
+    container.appendChild(conf);
+  }
+}
+
+function returnToSetupFromSummary(){
+  document.getElementById('summaryScreen').hidden = true;
+  document.getElementById('setupScreen').hidden = false;
+  document.querySelectorAll('.confetti').forEach(el => el.remove());
+}
+
 function exitPresentation(){
   stopTimer();
   closeSolution();
   document.getElementById('presentScreen').hidden = true;
-  document.getElementById('setupScreen').hidden = false;
+  document.getElementById('summarySubtitle').textContent = 'Đã hoàn thành: ' + (deck.title || 'Bài ôn tập');
+  document.getElementById('summaryScreen').hidden = false;
+  createConfetti();
+  playSound('lessonSummary');
 }
 
 /* ============================================================
@@ -1229,7 +1818,7 @@ function renderSlide(){
 
   let mainHtml = '';
   if(slide.type==='I'){
-    mainHtml += '<div class="options'+(slide.data._revealed?' reveal':'')+'" id="optionsWrap">';
+    mainHtml += '<div class="options'+(optionsLayout==='grid2'?' grid2':'')+(slide.data._revealed?' reveal':'')+'" id="optionsWrap">';
     slide.data.options.forEach((opt,i)=>{
       const sel = slide.data._selected===i ? ' selected' : '';
       const cls = slide.data._revealed ? (i===slide.data.correctIndex ? ' correct' : (slide.data._selected===i ? ' wrong' : '')) : '';
@@ -1368,11 +1957,12 @@ function toggleAnswer(){
   const slide = slides[currentSlide];
   slide.data._revealed = !slide.data._revealed;
   renderSlide();
+  if(slide.data._revealed) playSound('showAnswer');
 }
 
-function goPrev(){ if(currentSlide>0){ currentSlide--; renderSlide(); } }
-function goNext(){ if(currentSlide<slides.length-1){ currentSlide++; renderSlide(); } }
-function goTo(i){ if(i>=0 && i<slides.length){ currentSlide=i; renderSlide(); closeJumpModal(); } }
+function goPrev(){ if(currentSlide>0){ currentSlide--; renderSlide(); playSound('questionOpen'); } }
+function goNext(){ if(currentSlide<slides.length-1){ currentSlide++; renderSlide(); playSound('questionOpen'); } }
+function goTo(i){ if(i>=0 && i<slides.length && i!==currentSlide){ currentSlide=i; renderSlide(); closeJumpModal(); playSound('questionOpen'); } else { closeJumpModal(); } }
 
 /* ============================================================
    7. SOLUTION PANEL
@@ -1501,17 +2091,34 @@ function clearCanvas(){
 }
 
 /* ============================================================
-   CALCULATOR PANEL (MathDA)
+   TOOL PANEL (Máy tính MathDA + Bảng viết) — dùng chung 1 khung bên phải
    ============================================================ */
-const CALC_URL = 'https://mathda.com/calculator/vi';
-// Kích thước gốc (px) mà trang MathDA hiển thị đúng CHỈ phần máy tính (không sidebar/Solver) —
-// dựa theo ảnh chụp màn hình thực tế của trang ở độ rộng hẹp. Ta cố định iframe ở kích thước
-// này rồi thu nhỏ bằng transform:scale() để luôn khớp gọn trong khung, không bị cắt xén.
-const CALC_IFRAME_W = 854;
-const CALC_IFRAME_H = 1166;
+const TOOL_DEFS = {
+  calc: {
+    title: '🧮 Máy tính MathDA',
+    url: 'https://mathda.com/calculator/vi',
+    // 'fit': trang chỉ hiển thị ĐÚNG phần máy tính (ẩn sidebar/Solver) ở kích thước gốc này —
+    // dựa theo ảnh chụp thực tế ở độ rộng hẹp — nên ta cố định iframe ở kích thước đó rồi thu
+    // nhỏ bằng transform:scale() để luôn khớp gọn trong khung, không bị cắt xén.
+    mode: 'fit', refW: 854, refH: 1166
+  },
+  board: {
+    title: '📝 Bảng viết',
+    url: 'https://boardtienluc.vercel.app/',
+    // 'fill': ứng dụng bảng tự responsive theo khung chứa, chỉ cần lấp đầy 100%.
+    mode: 'fill'
+  },
+  classroom: {
+    title: '🏫 Quản lý lớp học',
+    url: 'https://dojovtl.vercel.app/',
+    // 'fill': ứng dụng quản lý lớp học tự responsive theo khung chứa, chỉ cần lấp đầy 100%.
+    mode: 'fill'
+  }
+};
 const CALC_PANEL_STORAGE_KEY = 'mathCalcPanelWidthPct';
 const CALC_PANEL_DEFAULT_PCT = 50;
-let calcOpen = false;
+let toolOpen = false;
+let activeTool = null; // 'calc' | 'board' | 'classroom' | null
 
 function isDesktopSplit(){
   return window.matchMedia('(min-width:721px)').matches;
@@ -1527,14 +2134,27 @@ function saveCalcWidthPct(pct){
   try{ localStorage.setItem(CALC_PANEL_STORAGE_KEY, String(Math.round(pct*10)/10)); }catch(e){}
 }
 
-function toggleCalculator(){
-  calcOpen = !calcOpen;
+function openTool(key){
+  const def = TOOL_DEFS[key];
+  if(!def) return;
   const panel = document.getElementById('calcPanel');
   const resizer = document.getElementById('calcResizer');
   const area = document.getElementById('slideArea');
-  const btn = document.getElementById('btnCalc');
-  const desktop = isDesktopSplit();
-  if(calcOpen){
+  const iframe = document.getElementById('calcIframe');
+  const titleEl = document.getElementById('calcPanelTitle');
+  const linkEl = document.getElementById('calcOpenNewTab');
+
+  const switchingTool = (activeTool !== key);
+  activeTool = key;
+  titleEl.textContent = def.title;
+  linkEl.href = def.url;
+  if(switchingTool || !iframe.src || iframe.src==='about:blank'){
+    iframe.src = def.url;
+  }
+
+  if(!toolOpen){
+    toolOpen = true;
+    const desktop = isDesktopSplit();
     if(desktop){
       panel.style.flexBasis = getSavedCalcWidthPct()+'%';
       resizer.classList.add('active');
@@ -1544,28 +2164,34 @@ function toggleCalculator(){
     }
     panel.classList.add('open');
     area.classList.add('compact');
-    btn.classList.add('active');
-    loadCalcIframeOnce();
-  } else {
-    panel.style.flexBasis = '0%';
-    panel.classList.remove('open');
-    resizer.classList.remove('active');
-    area.classList.remove('compact');
-    btn.classList.remove('active');
   }
+  syncToolButtonsActiveState();
   animateCalcFit();
 }
-function closeCalculator(){
-  if(!calcOpen) return;
-  toggleCalculator();
+function closeToolPanel(){
+  if(!toolOpen) return;
+  toolOpen = false;
+  activeTool = null;
+  const panel = document.getElementById('calcPanel');
+  const resizer = document.getElementById('calcResizer');
+  const area = document.getElementById('slideArea');
+  panel.style.flexBasis = '0%';
+  panel.classList.remove('open');
+  resizer.classList.remove('active');
+  area.classList.remove('compact');
+  syncToolButtonsActiveState();
+  animateCalcFit();
 }
-function loadCalcIframeOnce(){
-  const iframe = document.getElementById('calcIframe');
-  if(iframe && (!iframe.src || iframe.src==='about:blank')){
-    iframe.src = CALC_URL;
-  }
+function toggleTool(key){
+  if(toolOpen && activeTool===key) closeToolPanel();
+  else openTool(key);
 }
-// Trong suốt thời gian trượt (mở/đóng) panel, liên tục cập nhật canvas vẽ + tỉ lệ máy tính
+function syncToolButtonsActiveState(){
+  document.getElementById('btnCalc').classList.toggle('active', toolOpen && activeTool==='calc');
+  document.getElementById('btnBoard').classList.toggle('active', toolOpen && activeTool==='board');
+  document.getElementById('btnClassroom').classList.toggle('active', toolOpen && activeTool==='classroom');
+}
+// Trong suốt thời gian trượt (mở/đóng) panel, liên tục cập nhật canvas vẽ + tỉ lệ khung công cụ
 // để chuyển động mượt, chuyên nghiệp thay vì giật cục ở khung hình cuối.
 function animateCalcFit(){
   const start = performance.now();
@@ -1581,19 +2207,28 @@ function fitCalcFrame(){
   const panel = document.getElementById('calcPanel');
   const wrap = document.getElementById('calcFrameWrap');
   const iframe = document.getElementById('calcIframe');
-  if(!panel || !wrap || !iframe || !panel.classList.contains('open')) return;
+  if(!panel || !wrap || !iframe || !panel.classList.contains('open') || !activeTool) return;
+  const def = TOOL_DEFS[activeTool];
+  if(def.mode === 'fill'){
+    iframe.style.transform = 'none';
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.left = '0';
+    iframe.style.top = '0';
+    return;
+  }
   const availW = wrap.clientWidth, availH = wrap.clientHeight;
   if(availW<=0 || availH<=0) return;
-  const scale = Math.min(availW/CALC_IFRAME_W, availH/CALC_IFRAME_H);
-  const scaledW = CALC_IFRAME_W*scale, scaledH = CALC_IFRAME_H*scale;
-  iframe.style.width = CALC_IFRAME_W+'px';
-  iframe.style.height = CALC_IFRAME_H+'px';
+  const scale = Math.min(availW/def.refW, availH/def.refH);
+  const scaledW = def.refW*scale, scaledH = def.refH*scale;
+  iframe.style.width = def.refW+'px';
+  iframe.style.height = def.refH+'px';
   iframe.style.transform = 'scale('+scale+')';
   iframe.style.left = Math.max(0,(availW-scaledW)/2)+'px';
   iframe.style.top = Math.max(0,(availH-scaledH)/2)+'px';
 }
 function syncCalcPanelForViewport(){
-  if(!calcOpen) return;
+  if(!toolOpen) return;
   const panel = document.getElementById('calcPanel');
   const resizer = document.getElementById('calcResizer');
   if(isDesktopSplit()){
@@ -1634,7 +2269,7 @@ function initCalcResizer(){
     document.removeEventListener('touchend', onUp);
   }
   function onDown(e){
-    if(!calcOpen || !isDesktopSplit()) return;
+    if(!toolOpen || !isDesktopSplit()) return;
     dragging = true;
     resizer.classList.add('dragging');
     body.classList.add('dragging');
@@ -1795,6 +2430,156 @@ function closeTimerPopover(){
 }
 
 /* ============================================================
+   11b. DICE / QUAY SỐ NGẪU NHIÊN GỌI HỌC SINH
+   ============================================================ */
+const DICE_RANGE_STORAGE_KEY = 'mathDiceRange';
+const DICE_SPIN_MS = 3000;   // thời gian hiệu ứng quay trước khi chốt số
+const DICE_SHOW_MS = 3000;   // thời gian giữ số hiển thị sau khi chốt
+const DICE_TICK_MS = 70;     // tốc độ đổi số khi đang quay
+const DICE_COLORS = ['#ffd166','#eb5757','#56ccf2','#a78bfa','#6fcf97','#f2994a'];
+let diceSpinInterval = null;
+let diceSettleTimeout = null;
+let diceHideTimeout = null;
+let diceSpinning = false;
+
+function getSavedDiceRange(){
+  try{
+    const obj = JSON.parse(localStorage.getItem(DICE_RANGE_STORAGE_KEY));
+    if(obj && Number.isFinite(obj.min) && Number.isFinite(obj.max) && obj.min>=1 && obj.max>=obj.min){
+      return obj;
+    }
+  }catch(e){}
+  return { min:1, max:48 };
+}
+function saveDiceRange(min, max){
+  try{ localStorage.setItem(DICE_RANGE_STORAGE_KEY, JSON.stringify({min:min, max:max})); }catch(e){}
+}
+function openDicePopover(){
+  closeDicePopover();
+  const range = getSavedDiceRange();
+  const pop = document.createElement('div');
+  pop.className = 'dice-pop';
+  pop.id = 'dicePop';
+  pop.innerHTML =
+    '<p class="dice-pop-title">🎲 Quay số gọi học sinh</p>'+
+    '<div class="dice-pop-row"><label>Từ</label><input type="number" min="1" id="diceMin" value="'+range.min+'"></div>'+
+    '<div class="dice-pop-row"><label>Đến</label><input type="number" min="1" id="diceMax" value="'+range.max+'"></div>'+
+    '<button class="btn btn-primary btn-sm" id="diceSpinBtn">🎲 Quay số</button>';
+  document.querySelector('.toolbar').appendChild(pop);
+  document.getElementById('diceSpinBtn').addEventListener('click', spinDice);
+  setTimeout(()=>{ document.addEventListener('click', outsideDicePop); }, 0);
+}
+function outsideDicePop(e){
+  const pop = document.getElementById('dicePop');
+  if(pop && !pop.contains(e.target) && e.target.id!=='btnDice'){
+    closeDicePopover();
+  }
+}
+function closeDicePopover(){
+  const pop = document.getElementById('dicePop');
+  if(pop) pop.remove();
+  document.removeEventListener('click', outsideDicePop);
+}
+function randomIntInRange(min, max){
+  return Math.floor(Math.random()*(max-min+1))+min;
+}
+function spinDice(){
+  if(diceSpinning) return;
+  let min = parseInt(document.getElementById('diceMin').value, 10);
+  let max = parseInt(document.getElementById('diceMax').value, 10);
+  if(!Number.isFinite(min)) min = 1;
+  if(!Number.isFinite(max)) max = 48;
+  if(min < 1) min = 1;
+  if(max < min) max = min;
+  saveDiceRange(min, max);
+  closeDicePopover();
+
+  diceSpinning = true;
+  const overlay = document.getElementById('diceOverlay');
+  const numEl = document.getElementById('diceOverlayNumber');
+  const hintEl = overlay.querySelector('.dice-overlay-hint');
+  overlay.classList.remove('settled');
+  hintEl.style.visibility = 'hidden';
+  requestAnimationFrame(()=>{ overlay.classList.add('show'); });
+
+  clearInterval(diceSpinInterval);
+  clearTimeout(diceSettleTimeout);
+  clearTimeout(diceHideTimeout);
+
+  diceSpinInterval = setInterval(()=>{
+    numEl.textContent = randomIntInRange(min, max);
+    numEl.style.color = DICE_COLORS[Math.floor(Math.random()*DICE_COLORS.length)];
+  }, DICE_TICK_MS);
+
+  diceSettleTimeout = setTimeout(()=>{
+    clearInterval(diceSpinInterval);
+    numEl.textContent = randomIntInRange(min, max);
+    numEl.style.color = '';
+    overlay.classList.add('settled');
+    hintEl.style.visibility = '';
+    diceHideTimeout = setTimeout(hideDiceOverlay, DICE_SHOW_MS);
+  }, DICE_SPIN_MS);
+}
+function hideDiceOverlay(){
+  clearInterval(diceSpinInterval);
+  clearTimeout(diceSettleTimeout);
+  clearTimeout(diceHideTimeout);
+  diceSpinning = false;
+  const overlay = document.getElementById('diceOverlay');
+  overlay.classList.remove('show');
+  overlay.classList.remove('settled');
+}
+
+/* ============================================================
+   11c. BỐ CỤC PHƯƠNG ÁN A,B,C,D (1 cột / 2 hàng)
+   ============================================================ */
+const OPT_LAYOUT_STORAGE_KEY = 'mathOptionsLayout';
+function getSavedOptionsLayout(){
+  try{
+    const v = localStorage.getItem(OPT_LAYOUT_STORAGE_KEY);
+    if(v==='grid2' || v==='list') return v;
+  }catch(e){}
+  return 'list';
+}
+function saveOptionsLayout(mode){
+  try{ localStorage.setItem(OPT_LAYOUT_STORAGE_KEY, mode); }catch(e){}
+}
+function openLayoutPopover(){
+  closeLayoutPopover();
+  const pop = document.createElement('div');
+  pop.className = 'layout-pop';
+  pop.id = 'layoutPop';
+  pop.innerHTML =
+    '<p class="layout-pop-title">🔳 Bố cục phương án</p>'+
+    '<button data-mode="list" class="'+(optionsLayout==='list'?'sel':'')+'"><span class="layout-icon">▤</span> 1 cột (mặc định)</button>'+
+    '<button data-mode="grid2" class="'+(optionsLayout==='grid2'?'sel':'')+'"><span class="layout-icon">▦</span> 2 hàng (2×2)</button>';
+  document.querySelector('.toolbar').appendChild(pop);
+  pop.querySelectorAll('[data-mode]').forEach(b=>{
+    b.addEventListener('click', ()=>setOptionsLayout(b.getAttribute('data-mode')));
+  });
+  setTimeout(()=>{ document.addEventListener('click', outsideLayoutPop); }, 0);
+}
+function outsideLayoutPop(e){
+  const pop = document.getElementById('layoutPop');
+  if(pop && !pop.contains(e.target) && e.target.id!=='btnOptLayout'){
+    closeLayoutPopover();
+  }
+}
+function closeLayoutPopover(){
+  const pop = document.getElementById('layoutPop');
+  if(pop) pop.remove();
+  document.removeEventListener('click', outsideLayoutPop);
+}
+function setOptionsLayout(mode){
+  optionsLayout = (mode==='grid2') ? 'grid2' : 'list';
+  saveOptionsLayout(optionsLayout);
+  closeLayoutPopover();
+  if(slides[currentSlide] && slides[currentSlide].type==='I'){
+    renderSlide();
+  }
+}
+
+/* ============================================================
    12. TOUCH SWIPE + KEYBOARD
    ============================================================ */
 function setupSwipe(){
@@ -1827,6 +2612,33 @@ function setupKeyboard(){
 }
 
 /* ============================================================
+   12b. DARK PRESENTATION THEME (nền đen, chữ trắng)
+   ============================================================ */
+const DARK_THEME_STORAGE_KEY = 'mathPresentDarkTheme';
+function isDarkThemeSaved(){
+  try{ return localStorage.getItem(DARK_THEME_STORAGE_KEY) === '1'; }catch(e){ return false; }
+}
+function saveDarkThemePref(on){
+  try{ localStorage.setItem(DARK_THEME_STORAGE_KEY, on ? '1' : '0'); }catch(e){}
+}
+function applyDarkTheme(on){
+  const screen = document.getElementById('presentScreen');
+  const btn = document.getElementById('btnDarkTheme');
+  if(!screen) return;
+  screen.classList.toggle('theme-dark', on);
+  if(btn){
+    btn.classList.toggle('active', on);
+    btn.textContent = on ? '☀️' : '🌙';
+    btn.title = on ? 'Nền sáng, chữ đen' : 'Nền đen, chữ trắng';
+  }
+}
+function toggleDarkTheme(){
+  const on = !document.getElementById('presentScreen').classList.contains('theme-dark');
+  applyDarkTheme(on);
+  saveDarkThemePref(on);
+}
+
+/* ============================================================
    13. WIRE UP PRESENTATION TOOLBAR
    ============================================================ */
 function initPresentScreen(){
@@ -1841,17 +2653,27 @@ function initPresentScreen(){
   document.getElementById('colorRed').addEventListener('click', ()=>setColor('#eb5757','colorRed'));
   document.getElementById('colorBlue').addEventListener('click', ()=>setColor('#2f80ed','colorBlue'));
   document.getElementById('colorGreen').addEventListener('click', ()=>setColor('#27ae60','colorGreen'));
+  document.getElementById('colorYellow').addEventListener('click', ()=>setColor('#f2c94c','colorYellow'));
+  document.getElementById('colorWhite').addEventListener('click', ()=>setColor('#ffffff','colorWhite'));
   document.getElementById('toolClear').addEventListener('click', clearCanvas);
   document.getElementById('btnClock').addEventListener('click', (e)=>{ e.stopPropagation(); openTimerPopover(); });
   document.getElementById('timerBtn').addEventListener('click', timerToggle);
+  document.getElementById('btnDice').addEventListener('click', (e)=>{ e.stopPropagation(); openDicePopover(); });
+  document.getElementById('diceOverlay').addEventListener('click', hideDiceOverlay);
   document.getElementById('btnFullscreen').addEventListener('click', ()=>{
     if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
     else document.exitFullscreen().catch(()=>{});
   });
   document.getElementById('btnExit').addEventListener('click', exitPresentation);
-  document.getElementById('btnCalc').addEventListener('click', toggleCalculator);
-  document.getElementById('btnCalcClose').addEventListener('click', closeCalculator);
+  document.getElementById('btnCalc').addEventListener('click', ()=>toggleTool('calc'));
+  document.getElementById('btnBoard').addEventListener('click', ()=>toggleTool('board'));
+  document.getElementById('btnClassroom').addEventListener('click', ()=>toggleTool('classroom'));
+  document.getElementById('btnCalcClose').addEventListener('click', closeToolPanel);
   initCalcResizer();
+  document.getElementById('btnDarkTheme').addEventListener('click', toggleDarkTheme);
+  applyDarkTheme(isDarkThemeSaved());
+  document.getElementById('btnOptLayout').addEventListener('click', (e)=>{ e.stopPropagation(); openLayoutPopover(); });
+  optionsLayout = getSavedOptionsLayout();
 
   document.getElementById('btnShowAnswer').addEventListener('click', toggleAnswer);
   document.getElementById('btnShowSolution').addEventListener('click', toggleSolution);
@@ -1867,6 +2689,7 @@ function initPresentScreen(){
 
   document.getElementById('btnCoverStart').addEventListener('click', enterSlidesFromCover);
   document.getElementById('coverBack').addEventListener('click', exitCoverToSetup);
+  document.getElementById('btnSummaryFinish').addEventListener('click', returnToSetupFromSummary);
 
   document.getElementById('slideContent').style.setProperty('--scale', scale);
 }
@@ -1878,6 +2701,7 @@ document.addEventListener('DOMContentLoaded', function(){
   loadDeck();
   timerDuration = deck.defaultTimer || 60;
   timerRemaining = timerDuration;
+  initSounds();
   initSetupScreen();
   initPresentScreen();
 });
