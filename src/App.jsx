@@ -39,12 +39,15 @@ import CompassHost from './pages/CompassHost';
 import CompassPlayer from './pages/CompassPlayer';
 import ValuesHost from './pages/ValuesHost';
 import ValuesPlayer from './pages/ValuesPlayer';
+import PTHStudentView from './pages/PTHStudentView';
+import PTHTeacherDashboard from './pages/PTHTeacherDashboard';
+import PTHProjectorView from './pages/PTHProjectorView';
 
 const EXPECTED_HASH = "ebe106819f36f460184a887c06e18115a19f5d15ce570f9a2318c6f44b78476a";
 
 const AppContent = () => {
   const location = useLocation();
-  const isGameRoute = location.pathname.startsWith('/game/') || location.pathname.startsWith('/play') || location.pathname.startsWith('/treasure') || location.pathname.startsWith('/bank') || location.pathname.startsWith('/lighthouse') || location.pathname.startsWith('/race') || location.pathname.startsWith('/climb') || location.pathname.startsWith('/vault') || location.pathname.startsWith('/compass') || location.pathname.startsWith('/values') || location.pathname.startsWith('/print-qr') || location.pathname.startsWith('/scanner') || location.pathname.startsWith('/game-nhung/') || location.pathname.startsWith('/tool/') || location.pathname.startsWith('/models/view/') || location.pathname.startsWith('/tools/view/') || location.pathname.startsWith('/students/view/');
+  const isGameRoute = location.pathname.startsWith('/game/') || location.pathname.startsWith('/play') || location.pathname.startsWith('/treasure') || location.pathname.startsWith('/bank') || location.pathname.startsWith('/lighthouse') || location.pathname.startsWith('/race') || location.pathname.startsWith('/climb') || location.pathname.startsWith('/vault') || location.pathname.startsWith('/compass') || location.pathname.startsWith('/values') || location.pathname.startsWith('/scenario') || location.pathname.startsWith('/print-qr') || location.pathname.startsWith('/scanner') || location.pathname.startsWith('/game-nhung/') || location.pathname.startsWith('/tool/') || location.pathname.startsWith('/models/view/') || location.pathname.startsWith('/tools/view/') || location.pathname.startsWith('/students/view/');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [showLogin, setShowLogin] = useState(false);
@@ -120,6 +123,9 @@ const AppContent = () => {
           <Route path="/compass/play" element={<CompassPlayer />} />
           <Route path="/values/host" element={<ValuesHost />} />
           <Route path="/values/play" element={<ValuesPlayer />} />
+          <Route path="/scenario/host" element={<PTHTeacherDashboard />} />
+          <Route path="/scenario/projector" element={<PTHProjectorView />} />
+          <Route path="/scenario/play" element={<PTHStudentView />} />
           <Route path="/game/trieu-phu" element={<MillionaireGame />} />
           <Route path="/game/tho-san" element={<ProbabilityHunter />} />
           <Route path="/game/keo-co" element={<TugOfWarGame />} />

@@ -35,7 +35,7 @@ const ACTIVITIES = [
     icon: <Drama className="w-9 h-9" />,
     color: 'from-emerald-500 to-teal-800',
     path: '/scenario/host',
-    ready: false,
+    ready: true,
     tag: 'Hướng đến xã hội',
     desc: 'Tình huống thật của tuổi 16–18. Học sinh chọn cách xử lý và viết lý do, cả lớp thảo luận trên nền phân bố ẩn danh.',
     outcome: 'Lý do từng em viết, làm tư liệu thảo luận'
