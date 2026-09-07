@@ -24,7 +24,7 @@ const ACTIVITIES = [
     icon: <Gem className="w-9 h-9" />,
     color: 'from-amber-400 to-orange-700',
     path: '/values/host',
-    ready: false,
+    ready: true,
     tag: 'Hướng vào bản thân',
     desc: 'Mỗi em có ngân sách có hạn để đấu giá các giá trị nghề nghiệp. Buộc phải ưu tiên, không thể chọn tất cả.',
     outcome: 'Bảng giá trị của từng em và của cả lớp'
