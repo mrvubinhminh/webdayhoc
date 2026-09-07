@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { db } from '../firebase';
 import { ref, set, onValue, get, update } from 'firebase/database';
 import MathText from '../components/MathText';
-import { carOf } from '../components/RaceTrack';
+import { carOf, CAR_FLIP } from '../components/RaceTrack';
 
 const SESSION_KEY = 'racePlayerSession';
 const saveSession = (pin, playerId) => { try { localStorage.setItem(SESSION_KEY, JSON.stringify({ pin, playerId })); } catch { /* bị chặn */ } };
@@ -227,7 +227,7 @@ const RacePlayer = () => {
 
           {roomData.status === 'LOBBY' && (
             <div className="text-center">
-              <div className="text-7xl mb-3">{carOf(me?.carIndex)}</div>
+              <div className="text-7xl mb-3" style={CAR_FLIP}>{carOf(me?.carIndex)}</div>
               <h2 className="text-2xl font-bold text-white">Chào {me?.name || name}!</h2>
               <p className="text-red-300 font-bold mt-1">{me?.className || className}</p>
               <div className="bg-red-500/15 border-2 border-red-500 rounded-2xl px-8 py-4 my-5">
@@ -256,9 +256,9 @@ const RacePlayer = () => {
 
           {/* --- Đang làm bài --- */}
           {roomData.status === 'RACING' && !submitted && currentQ && (
-            <div className="w-full flex flex-col h-[94vh] py-1">
-              {/* Thanh trạng thái */}
-              <div className="shrink-0 flex items-center gap-2 mb-2">
+            <div className="w-full flex flex-col min-h-[92vh] py-1">
+              {/* Thanh trạng thái dính trên đầu để luôn thấy đồng hồ */}
+              <div className="sticky top-0 z-20 -mx-1 px-1 py-1.5 bg-slate-900/95 backdrop-blur-sm flex items-center gap-2 flex-wrap rounded-b-xl">
                 <div className={`px-3 py-1.5 rounded-full font-black text-sm border flex items-center gap-1.5 ${timeLeft <= 60 ? 'bg-red-500/25 border-red-500 text-red-300 animate-pulse' : 'bg-slate-800 border-slate-700 text-white'}`}>
                   <Clock className="w-4 h-4" /> {mmss(timeLeft)}
                 </div>
@@ -276,19 +276,19 @@ const RacePlayer = () => {
               </div>
 
               {/* Thanh tiến độ */}
-              <div className="shrink-0 h-2 bg-slate-800 rounded-full overflow-hidden mb-2">
+              <div className="shrink-0 h-2 bg-slate-800 rounded-full overflow-hidden my-2">
                 <div className="h-full bg-gradient-to-r from-red-500 to-amber-400 transition-all duration-500" style={{ width: `${(cursor / totalQ) * 100}%` }} />
               </div>
 
-              {/* Nội dung câu hỏi */}
-              <div className="shrink-0 max-h-[34%] overflow-y-auto bg-slate-800 p-3 rounded-2xl border border-slate-700 text-left mb-2">
-                <div className="text-white text-base md:text-lg font-medium whitespace-pre-wrap"><MathText text={currentQ.question} /></div>
-                {currentQ.image && <div className="mt-2 flex justify-center"><img src={currentQ.image} alt="minh hoạ" className="max-h-28 rounded-lg object-contain" /></div>}
+              {/* Câu hỏi hiện trọn vẹn, dài bao nhiêu cũng không bị cắt */}
+              <div className="bg-slate-800 p-4 rounded-2xl border border-slate-700 text-left mb-3">
+                <div className="text-white text-base md:text-lg font-medium whitespace-pre-wrap leading-relaxed"><MathText text={currentQ.question} /></div>
+                {currentQ.image && <div className="mt-3 flex justify-center"><img src={currentQ.image} alt="minh hoạ" className="max-h-48 rounded-lg object-contain" /></div>}
               </div>
 
               {/* Trả lời */}
               {currentQ.type === 'TLN' ? (
-                <div className="flex-1 min-h-0 flex flex-col gap-3 justify-center">
+                <div className="flex flex-col gap-3 pb-2">
                   <input type="text" value={tlnAnswer} onChange={(e) => setTlnAnswer(e.target.value)} placeholder="Nhập câu trả lời..."
                     className="w-full text-center bg-slate-900 border-4 border-slate-700 text-white text-3xl font-black py-6 rounded-3xl outline-none focus:border-red-500" />
                   <button onClick={() => { if (tlnAnswer.trim()) answer(tlnAnswer.trim()); }}
@@ -297,7 +297,7 @@ const RacePlayer = () => {
                   </button>
                 </div>
               ) : (
-                <div className="flex-1 min-h-0 grid grid-rows-4 gap-2">
+                <div className="flex flex-col gap-2.5 pb-2">
                   {[
                     { num: 1, color: 'bg-red-500', shape: 'border-red-700' },
                     { num: 2, color: 'bg-blue-500', shape: 'border-blue-700' },
@@ -305,9 +305,9 @@ const RacePlayer = () => {
                     { num: 4, color: 'bg-emerald-500', shape: 'border-emerald-700' }
                   ].map(o => (
                     <button key={o.num} onClick={() => answer(o.num)}
-                      className={`w-full min-h-0 rounded-2xl ${o.color} border-b-[6px] ${o.shape} active:translate-y-1 active:border-b-0 transition-transform flex items-center gap-3 px-3 py-2 text-left overflow-hidden`}>
-                      <span className="text-3xl font-black text-white/80 shrink-0 w-9 text-center">{['A', 'B', 'C', 'D'][o.num - 1]}</span>
-                      <span className="flex-1 text-white font-bold text-base overflow-y-auto max-h-full">
+                      className={`w-full min-h-[68px] rounded-2xl ${o.color} border-b-[6px] ${o.shape} active:translate-y-1 active:border-b-0 transition-transform flex items-start gap-3 px-3 py-3 text-left`}>
+                      <span className="text-3xl font-black text-white/80 shrink-0 w-9 text-center leading-tight">{['A', 'B', 'C', 'D'][o.num - 1]}</span>
+                      <span className="flex-1 text-white font-bold text-base leading-relaxed pt-1 break-words">
                         <MathText text={[currentQ.optionA, currentQ.optionB, currentQ.optionC, currentQ.optionD][o.num - 1] || ''} />
                       </span>
                     </button>

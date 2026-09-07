@@ -3,6 +3,9 @@ import React from 'react';
 const CARS = ['🏎️', '🚗', '🚙', '🛻', '🚕', '🏍️', '🚓', '🚌', '🚐', '🛺', '🚚', '🦽'];
 export const carOf = (i) => CARS[(i || 0) % CARS.length];
 
+// Emoji xe vẽ sẵn quay đầu sang trái, phải lật ngang mới hướng về vạch đích bên phải
+export const CAR_FLIP = { transform: 'scaleX(-1)', display: 'inline-block' };
+
 const MEDALS = ['🥇', '🥈', '🥉'];
 
 /**
@@ -52,7 +55,7 @@ const RaceTrack = ({ players = [], totalQuestions = 1, maxLanes = 12, compact = 
                     className="absolute top-1/2 -translate-y-1/2 flex items-center gap-1.5 transition-all duration-700 ease-out whitespace-nowrap"
                     style={{ left: `calc(${pct}% - ${pct > 88 ? 60 : 0}px)` }}
                   >
-                    <span className={compact ? 'text-lg' : 'text-2xl'}>{carOf(p.carIndex)}</span>
+                    <span className={compact ? 'text-lg' : 'text-2xl'} style={CAR_FLIP}>{carOf(p.carIndex)}</span>
                     <span className={`font-bold text-white/90 ${compact ? 'text-[11px]' : 'text-sm'} max-w-[130px] truncate`}>
                       {p.name}
                     </span>
