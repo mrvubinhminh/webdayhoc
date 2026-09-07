@@ -32,12 +32,14 @@ import RaceHost from './pages/RaceHost';
 import RacePlayer from './pages/RacePlayer';
 import ClimbHost from './pages/ClimbHost';
 import ClimbPlayer from './pages/ClimbPlayer';
+import VaultHost from './pages/VaultHost';
+import VaultPlayer from './pages/VaultPlayer';
 
 const EXPECTED_HASH = "ebe106819f36f460184a887c06e18115a19f5d15ce570f9a2318c6f44b78476a";
 
 const AppContent = () => {
   const location = useLocation();
-  const isGameRoute = location.pathname.startsWith('/game/') || location.pathname.startsWith('/play') || location.pathname.startsWith('/treasure') || location.pathname.startsWith('/bank') || location.pathname.startsWith('/lighthouse') || location.pathname.startsWith('/race') || location.pathname.startsWith('/climb') || location.pathname.startsWith('/print-qr') || location.pathname.startsWith('/scanner') || location.pathname.startsWith('/game-nhung/') || location.pathname.startsWith('/tool/') || location.pathname.startsWith('/models/view/') || location.pathname.startsWith('/tools/view/') || location.pathname.startsWith('/students/view/');
+  const isGameRoute = location.pathname.startsWith('/game/') || location.pathname.startsWith('/play') || location.pathname.startsWith('/treasure') || location.pathname.startsWith('/bank') || location.pathname.startsWith('/lighthouse') || location.pathname.startsWith('/race') || location.pathname.startsWith('/climb') || location.pathname.startsWith('/vault') || location.pathname.startsWith('/print-qr') || location.pathname.startsWith('/scanner') || location.pathname.startsWith('/game-nhung/') || location.pathname.startsWith('/tool/') || location.pathname.startsWith('/models/view/') || location.pathname.startsWith('/tools/view/') || location.pathname.startsWith('/students/view/');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [showLogin, setShowLogin] = useState(false);
@@ -106,6 +108,8 @@ const AppContent = () => {
           <Route path="/race/play" element={<RacePlayer />} />
           <Route path="/climb/host" element={<ClimbHost />} />
           <Route path="/climb/play" element={<ClimbPlayer />} />
+          <Route path="/vault/host" element={<VaultHost />} />
+          <Route path="/vault/play" element={<VaultPlayer />} />
           <Route path="/game/trieu-phu" element={<MillionaireGame />} />
           <Route path="/game/tho-san" element={<ProbabilityHunter />} />
           <Route path="/game/keo-co" element={<TugOfWarGame />} />

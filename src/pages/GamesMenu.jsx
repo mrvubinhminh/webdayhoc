@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trophy, Target, ArrowLeft, Users, Mountain, Globe, Flag, HeartPulse, Castle, Hexagon, Snowflake, Sailboat, Car, Lock, Hammer, FlaskConical, Aperture, Rocket, Radar, Dices, Gem, Landmark, Lightbulb, FlagTriangleRight, MountainSnow } from 'lucide-react';
+import { Trophy, Target, ArrowLeft, Users, Mountain, Globe, Flag, HeartPulse, Castle, Hexagon, Snowflake, Sailboat, Car, Lock, Hammer, FlaskConical, Aperture, Rocket, Radar, Dices, Gem, Landmark, Lightbulb, FlagTriangleRight, MountainSnow, KeyRound } from 'lucide-react';
 
 const GamesMenu = () => {
   const navigate = useNavigate();
@@ -12,6 +12,13 @@ const GamesMenu = () => {
       icon: <Users className="w-8 h-8" />,
       color: 'from-emerald-500 to-teal-700',
       path: '/game/host'
+    },
+    {
+      id: 'vault',
+      title: 'Vượt Ải Mật Mã',
+      icon: <KeyRound className="w-8 h-8" />,
+      color: 'from-amber-400 to-stone-700',
+      path: '/vault/host'
     },
     {
       id: 'climb',
