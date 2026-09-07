@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trophy, Target, ArrowLeft, Users, Mountain, Globe, Flag, HeartPulse, Castle, Hexagon, Snowflake, Sailboat, Car, Lock, Hammer, FlaskConical, Aperture, Rocket, Radar, Dices, Gem, Landmark, Lightbulb } from 'lucide-react';
+import { Trophy, Target, ArrowLeft, Users, Mountain, Globe, Flag, HeartPulse, Castle, Hexagon, Snowflake, Sailboat, Car, Lock, Hammer, FlaskConical, Aperture, Rocket, Radar, Dices, Gem, Landmark, Lightbulb, FlagTriangleRight } from 'lucide-react';
 
 const GamesMenu = () => {
   const navigate = useNavigate();
@@ -12,6 +12,13 @@ const GamesMenu = () => {
       icon: <Users className="w-8 h-8" />,
       color: 'from-emerald-500 to-teal-700',
       path: '/game/host'
+    },
+    {
+      id: 'race-live',
+      title: 'Đường Đua Tri Thức',
+      icon: <FlagTriangleRight className="w-8 h-8" />,
+      color: 'from-red-500 to-rose-800',
+      path: '/race/host'
     },
     {
       id: 'lighthouse',
@@ -71,7 +78,7 @@ const GamesMenu = () => {
     },
     {
       id: 'race',
-      title: 'Đường Đua Tri Thức',
+      title: 'Đường Đua Mini',
       icon: <Flag className="w-8 h-8" />,
       color: 'from-yellow-500 to-orange-500',
       path: '/game-nhung/duong-dua-tri-thuc'
