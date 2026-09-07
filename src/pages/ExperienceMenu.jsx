@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Compass, Gem, Drama } from 'lucide-react';
+import { ArrowLeft, Compass, Gem, Drama, Map } from 'lucide-react';
 
 /**
  * Kho hoạt động cho môn Hoạt động trải nghiệm, hướng nghiệp.
@@ -28,6 +28,17 @@ const ACTIVITIES = [
     tag: 'Hướng vào bản thân',
     desc: 'Mỗi em có ngân sách có hạn để đấu giá các giá trị nghề nghiệp. Buộc phải ưu tiên, không thể chọn tất cả.',
     outcome: 'Bảng giá trị của từng em và của cả lớp'
+  },
+  {
+    id: 'path',
+    title: 'Lộ Trình Nghề Nghiệp',
+    icon: <Map className="w-9 h-9" />,
+    color: 'from-cyan-500 to-emerald-700',
+    path: '/path/host',
+    ready: true,
+    tag: 'Chủ đề 11 · lập kế hoạch',
+    desc: 'Mỗi em vẽ con đường từ hôm nay tới nghề mơ ước qua 6 chặng. Làm dần qua nhiều tiết, lưu tự động.',
+    outcome: 'Bản kế hoạch cá nhân — sản phẩm dự án nộp được'
   },
   {
     id: 'scenario',
@@ -59,10 +70,10 @@ const ExperienceMenu = () => {
           Không chấm đúng sai — giúp học sinh hiểu chính mình
         </p>
         <p className="text-sky-300/70 text-center mb-12 text-sm max-w-2xl mx-auto">
-          Ba hoạt động bổ trợ nhau: em <b>thích</b> gì → em <b>coi trọng</b> gì → em sẽ <b>hành xử</b> thế nào
+          Bốn hoạt động nối tiếp nhau: em <b>thích</b> gì → em <b>coi trọng</b> gì → em sẽ <b>hành xử</b> thế nào → em <b>đi đường nào</b>
         </p>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
           {ACTIVITIES.map(a => (
             <div
               key={a.id}
@@ -99,7 +110,7 @@ const ExperienceMenu = () => {
           <p className="text-gray-300 text-sm leading-relaxed">
             <b className="text-white">Vì sao tách riêng khỏi kho trò chơi?</b> Các trò trong kho game đều chấm đúng/sai để lấy điểm.
             Hoạt động trải nghiệm thì ngược lại — hỏi <i>“em thích làm việc với con người hay với máy móc?”</i> thì không ai sai cả.
-            Vì vậy ba hoạt động này không cho điểm số, mà trả về <b className="text-sky-300">chân dung của từng học sinh</b>.
+            Vì vậy bốn hoạt động này không cho điểm số, mà trả về <b className="text-sky-300">chân dung của từng học sinh</b>.
           </p>
         </div>
       </div>
