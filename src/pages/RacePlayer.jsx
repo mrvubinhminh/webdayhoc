@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { db } from '../firebase';
 import { ref, set, onValue, get, update } from 'firebase/database';
 import MathText from '../components/MathText';
+import { useFocusGuard } from '../hooks/useFocusGuard';
 import { carOf, CAR_FLIP } from '../components/RaceTrack';
 
 const SESSION_KEY = 'racePlayerSession';
@@ -177,6 +178,30 @@ const RacePlayer = () => {
     await update(ref(db, `raceRooms/${pin}/players/${playerId}`), { finishedAt: Date.now() });
   };
 
+  // Ghi nhận việc rời khỏi màn hình làm bài để thầy cô nắm được
+  const guardOn = roomData?.status === 'RACING' && !stopped && !!playerId;
+  const focusGuard = useFocusGuard({
+    enabled: guardOn,
+    onEvent: (ev) => {
+      if (!playerId || !pin) return;
+      if (ev.type === 'return') {
+        update(ref(db, `raceRooms/${pin}/players/${playerId}`), {
+          awayCount: (me?.awayCount || 0) + 1,
+          awayMs: (me?.awayMs || 0) + ev.ms,
+          lastAwayAt: ev.at
+        });
+      } else if (ev.type === 'screenshot') {
+        update(ref(db, `raceRooms/${pin}/players/${playerId}`), {
+          shotCount: (me?.shotCount || 0) + 1
+        });
+      } else if (ev.type === 'blur') {
+        update(ref(db, `raceRooms/${pin}/players/${playerId}`), {
+          blurCount: (me?.blurCount || 0) + 1
+        });
+      }
+    }
+  });
+
   const mmss = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
   const playersList = roomData?.players ? Object.values(roomData.players) : [];
@@ -268,6 +293,11 @@ const RacePlayer = () => {
                 <div className="px-3 py-1.5 rounded-full bg-emerald-900/50 border border-emerald-700 text-emerald-300 font-bold text-sm">
                   ✅ {me?.correctCount || 0}
                 </div>
+                  {(me?.awayCount || 0) > 0 && (
+                    <div className="px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-600 text-amber-300 font-bold text-sm" title="Số lần em rời khỏi màn hình làm bài">
+                      👁 {me.awayCount}
+                    </div>
+                  )}
                 {qTimeLeft !== null && (
                   <div className={`ml-auto px-3 py-1.5 rounded-full font-black text-sm border ${qTimeLeft <= 5 ? 'bg-red-500/25 border-red-500 text-red-300 animate-pulse' : 'bg-amber-500/20 border-amber-600 text-amber-300'}`}>
                     ⏱ {qTimeLeft}s
@@ -366,6 +396,29 @@ const RacePlayer = () => {
                     </span>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Nhắc nhở khi học sinh vừa quay lại sau khi rời màn hình */}
+          {focusGuard.justReturned && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
+              <div className="w-full max-w-sm bg-slate-900 border-4 border-amber-500 rounded-3xl p-7 text-center">
+                <div className="text-6xl mb-2">⚠️</div>
+                <h2 className="text-2xl font-black text-amber-300">Em vừa rời màn hình</h2>
+                <p className="text-white/85 mt-2 font-bold">
+                  Rời {focusGuard.justReturned.seconds} giây · lần thứ {me?.awayCount || focusGuard.awayCount}
+                </p>
+                <p className="text-gray-400 text-sm mt-3 leading-relaxed">
+                  Thầy cô nhìn thấy được số lần rời màn hình trong bài làm của em.
+                  Hãy ở lại trang này cho tới khi làm xong nhé!
+                </p>
+                <button
+                  onClick={focusGuard.dismissWarning}
+                  className="mt-5 w-full bg-amber-500 hover:bg-amber-400 text-slate-900 py-4 rounded-2xl font-black text-lg"
+                >
+                  ĐÃ HIỂU, LÀM TIẾP
+                </button>
               </div>
             </div>
           )}

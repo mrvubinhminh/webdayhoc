@@ -7,6 +7,7 @@ import { ref, set, update, onValue, remove, get } from 'firebase/database';
 import QuestionGuidePanel from '../components/QuestionGuidePanel';
 import GameRulesOverlay from '../components/GameRulesOverlay';
 import MountainClimb from '../components/MountainClimb';
+import { suspicionOf } from '../hooks/useFocusGuard';
 import { LEVELS, levelOf, parseLevel, groupByLevel, passCountFor, maxScoreOf, toTen } from '../data/climbLevels';
 
 const THEMES = [
@@ -190,7 +191,7 @@ const ClimbHost = () => {
 
   // Xuất bảng điểm: 4 cột chính, kèm phân tích tầng để thầy nhìn phân hoá
   const exportExcel = () => {
-    const rows = [['STT', 'Họ tên', 'Lớp', 'Điểm', 'Tầng đạt được', 'NB', 'TH', 'VD', 'VDC', 'Tổng câu đúng']];
+    const rows = [['STT', 'Họ tên', 'Lớp', 'Điểm', 'Tầng đạt được', 'NB', 'TH', 'VD', 'VDC', 'Tổng câu đúng', 'Số lần rời màn hình', 'Tổng thời gian rời (giây)', 'Nghi chụp màn hình', 'Ghi chú']];
     ranked.forEach((p, i) => {
       const lv = p.reachedLevel || 0;
       const per = p.perLevel || {};
@@ -204,11 +205,15 @@ const ClimbHost = () => {
         `${per[2]?.correct || 0}/${groups[2].length}`,
         `${per[3]?.correct || 0}/${groups[3].length}`,
         `${per[4]?.correct || 0}/${groups[4].length}`,
-        p.correctCount || 0
+        p.correctCount || 0,
+        p.awayCount || 0,
+        Math.round((p.awayMs || 0) / 1000),
+        p.shotCount || 0,
+        suspicionOf({ awayCount: p.awayCount || 0, shotCount: p.shotCount || 0 }).label
       ]);
     });
     const ws = XLSX.utils.aoa_to_sheet(rows);
-    ws['!cols'] = [{ wch: 6 }, { wch: 26 }, { wch: 10 }, { wch: 8 }, { wch: 16 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 14 }];
+    ws['!cols'] = [{ wch: 6 }, { wch: 26 }, { wch: 10 }, { wch: 8 }, { wch: 16 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 14 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 16 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "BangDiem");
     const stamp = new Date().toLocaleDateString('vi-VN').replace(/\//g, '-');
@@ -499,6 +504,26 @@ const ClimbHost = () => {
             footer="Cứ từng bậc một nhé! 🧗"
           />
 
+            {(() => {
+              // Nhắc thầy cô ngay khi có em rời màn hình nhiều lần
+              const flagged = playersList.filter(p => (p.awayCount || 0) >= 2 || (p.shotCount || 0) > 0);
+              if (flagged.length === 0) return null;
+              return (
+                <div className="bg-amber-950/70 border-2 border-amber-500 rounded-2xl px-4 py-2.5 flex items-center gap-3 flex-wrap">
+                  <span className="text-2xl">👁</span>
+                  <span className="font-black text-amber-200">{flagged.length} bạn rời màn hình nhiều lần:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {flagged.slice(0, 8).map(p => (
+                      <span key={p.id} className="bg-amber-500/20 border border-amber-600 text-amber-100 px-2.5 py-1 rounded-full text-sm font-bold">
+                        {p.name} · {p.awayCount || 0} lần{(p.shotCount || 0) > 0 ? ' 📸' : ''}
+                      </span>
+                    ))}
+                    {flagged.length > 8 && <span className="text-amber-300 text-sm font-bold self-center">+{flagged.length - 8} bạn</span>}
+                  </div>
+                </div>
+              );
+            })()}
+
           <div className="flex-1">
             <MountainClimb players={playersList} />
           </div>
@@ -574,6 +599,7 @@ const ClimbHost = () => {
                       <th className="px-4 py-2.5 font-bold text-right">Điểm</th>
                       <th className="px-4 py-2.5 font-bold">Tầng đạt được</th>
                       {LEVELS.map(lv => <th key={lv.id} className="px-3 py-2.5 font-bold text-center" style={{ color: lv.color }}>{lv.short}</th>)}
+                      <th className="px-4 py-2.5 font-bold text-center">👁 Rời màn hình</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -595,11 +621,23 @@ const ClimbHost = () => {
                               {groups[l.id].length === 0 ? '—' : `${per[l.id]?.correct || 0}/${groups[l.id].length}`}
                             </td>
                           ))}
+                          <td className="px-4 py-2.5 text-center">
+                            {(() => {
+                              const sus = suspicionOf({ awayCount: p.awayCount || 0, shotCount: p.shotCount || 0 });
+                              return (
+                                <span className={`font-bold text-sm ${sus.color}`}>
+                                  {p.awayCount || 0} lần
+                                  {(p.awayMs || 0) > 0 && <span className="text-gray-500"> · {Math.round((p.awayMs || 0) / 1000)}s</span>}
+                                  {(p.shotCount || 0) > 0 && <span className="text-red-400"> · 📸{p.shotCount}</span>}
+                                </span>
+                              );
+                            })()}
+                          </td>
                         </tr>
                       );
                     })}
                     {ranked.length === 0 && (
-                      <tr><td colSpan="9" className="px-4 py-8 text-center text-gray-500">Không có nhà leo núi nào</td></tr>
+                      <tr><td colSpan="10" className="px-4 py-8 text-center text-gray-500">Không có nhà leo núi nào</td></tr>
                     )}
                   </tbody>
                 </table>

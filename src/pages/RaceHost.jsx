@@ -7,6 +7,7 @@ import { ref, set, update, onValue, remove, get } from 'firebase/database';
 import QuestionGuidePanel from '../components/QuestionGuidePanel';
 import GameRulesOverlay from '../components/GameRulesOverlay';
 import RaceTrack from '../components/RaceTrack';
+import { suspicionOf } from '../hooks/useFocusGuard';
 
 const THEMES = [
   { id: 'speed',  name: '🏁 Tốc Độ',  bgStyle: { background: 'linear-gradient(135deg,#0c0a09 0%,#1c1917 50%,#7f1d1d 100%)' }, preview: 'from-red-900 via-stone-900 to-black' },
@@ -188,7 +189,7 @@ const RaceHost = () => {
   // Xuất bảng điểm: 4 cột chính theo yêu cầu, kèm vài cột tham khảo phía sau
   const exportExcel = () => {
     const startedAt = roomData?.startedAt || 0;
-    const rows = [['STT', 'Họ tên', 'Lớp', 'Điểm', 'Số câu đúng', 'Số câu đã làm', 'Tổng câu', 'Thời gian làm bài']];
+    const rows = [['STT', 'Họ tên', 'Lớp', 'Điểm', 'Số câu đúng', 'Số câu đã làm', 'Tổng câu', 'Thời gian làm bài', 'Số lần rời màn hình', 'Tổng thời gian rời (giây)', 'Nghi chụp màn hình', 'Ghi chú']];
 
     ranked.forEach((p, i) => {
       const correct = p.correctCount || 0;
@@ -201,12 +202,16 @@ const RaceHost = () => {
         correct,
         p.answeredCount || 0,
         totalQ,
-        secs === null ? 'Chưa nộp' : mmss(secs)
+        secs === null ? 'Chưa nộp' : mmss(secs),
+        p.awayCount || 0,
+        Math.round((p.awayMs || 0) / 1000),
+        p.shotCount || 0,
+        suspicionOf({ awayCount: p.awayCount || 0, shotCount: p.shotCount || 0 }).label
       ]);
     });
 
     const ws = XLSX.utils.aoa_to_sheet(rows);
-    ws['!cols'] = [{ wch: 6 }, { wch: 26 }, { wch: 10 }, { wch: 8 }, { wch: 12 }, { wch: 14 }, { wch: 10 }, { wch: 16 }];
+    ws['!cols'] = [{ wch: 6 }, { wch: 26 }, { wch: 10 }, { wch: 8 }, { wch: 12 }, { wch: 14 }, { wch: 10 }, { wch: 16 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 16 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "BangDiem");
 
@@ -470,6 +475,26 @@ const RaceHost = () => {
             footer="Cố lên các tay đua! 🏎️"
           />
 
+            {(() => {
+              // Nhắc thầy cô ngay khi có em rời màn hình nhiều lần
+              const flagged = playersList.filter(p => (p.awayCount || 0) >= 2 || (p.shotCount || 0) > 0);
+              if (flagged.length === 0) return null;
+              return (
+                <div className="bg-amber-950/70 border-2 border-amber-500 rounded-2xl px-4 py-2.5 flex items-center gap-3 flex-wrap">
+                  <span className="text-2xl">👁</span>
+                  <span className="font-black text-amber-200">{flagged.length} bạn rời màn hình nhiều lần:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {flagged.slice(0, 8).map(p => (
+                      <span key={p.id} className="bg-amber-500/20 border border-amber-600 text-amber-100 px-2.5 py-1 rounded-full text-sm font-bold">
+                        {p.name} · {p.awayCount || 0} lần{(p.shotCount || 0) > 0 ? ' 📸' : ''}
+                      </span>
+                    ))}
+                    {flagged.length > 8 && <span className="text-amber-300 text-sm font-bold self-center">+{flagged.length - 8} bạn</span>}
+                  </div>
+                </div>
+              );
+            })()}
+
           <div className="flex-1">
             <RaceTrack players={playersList} totalQuestions={totalQ} maxLanes={14} />
           </div>
@@ -548,6 +573,7 @@ const RaceHost = () => {
                       <th className="px-4 py-2.5 font-bold text-right">Điểm</th>
                       <th className="px-4 py-2.5 font-bold text-right">Đúng</th>
                       <th className="px-4 py-2.5 font-bold text-right">Thời gian</th>
+                      <th className="px-4 py-2.5 font-bold text-center">👁 Rời màn hình</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -562,11 +588,23 @@ const RaceHost = () => {
                           <td className={`px-4 py-2.5 text-right font-black text-xl ${sc >= 8 ? 'text-emerald-400' : sc >= 5 ? 'text-amber-400' : 'text-red-400'}`}>{sc}</td>
                           <td className="px-4 py-2.5 text-right text-gray-300 font-bold">{p.correctCount || 0}/{totalQ}</td>
                           <td className="px-4 py-2.5 text-right text-gray-400 text-sm">{secs === null ? 'Chưa nộp' : mmss(secs)}</td>
+                          <td className="px-4 py-2.5 text-center">
+                            {(() => {
+                              const sus = suspicionOf({ awayCount: p.awayCount || 0, shotCount: p.shotCount || 0 });
+                              return (
+                                <span className={`font-bold text-sm ${sus.color}`}>
+                                  {p.awayCount || 0} lần
+                                  {(p.awayMs || 0) > 0 && <span className="text-gray-500"> · {Math.round((p.awayMs || 0) / 1000)}s</span>}
+                                  {(p.shotCount || 0) > 0 && <span className="text-red-400"> · 📸{p.shotCount}</span>}
+                                </span>
+                              );
+                            })()}
+                          </td>
                         </tr>
                       );
                     })}
                     {ranked.length === 0 && (
-                      <tr><td colSpan="6" className="px-4 py-8 text-center text-gray-500">Không có tay đua nào</td></tr>
+                      <tr><td colSpan="7" className="px-4 py-8 text-center text-gray-500">Không có tay đua nào</td></tr>
                     )}
                   </tbody>
                 </table>
