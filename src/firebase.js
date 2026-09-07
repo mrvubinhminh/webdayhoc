@@ -1,6 +1,5 @@
 import { initializeApp } from "firebase/app";
 import { getDatabase } from "firebase/database";
-import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC3Pzttuh4vBXErie5KrU4kF6--TJFTxcM",
@@ -15,7 +14,5 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-// Phòng Tình Huống lưu trên Firestore, các hoạt động còn lại dùng Realtime Database
-const dbFirestore = getFirestore(app);
 
-export { db, dbFirestore };
+export { db };

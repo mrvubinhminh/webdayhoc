@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { dbFirestore as db } from '../firebase';
-import { doc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../firebase';
+import { ref, onValue, set } from 'firebase/database';
 import { situations } from '../data/pth_situations';
 
 function StudentView() {
@@ -10,19 +10,19 @@ function StudentView() {
   const [selectedOption, setSelectedOption] = useState('');
   const [reason, setReason] = useState('');
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
-  const roomId = 'default-room'; // Fixed for demo
+  const roomId = 'default-room';
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'rooms', roomId), (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        if (data.activeSituationId !== activeSituationId) {
-          setActiveSituationId(data.activeSituationId);
-          setHasSubmitted(false);
-          setSelectedOption('');
-          setReason('');
-        }
+    const unsub = onValue(ref(db, `scenarioRooms/${roomId}`), (snap) => {
+      const data = snap.val();
+      if (!data) return;
+      if (data.activeSituationId !== activeSituationId) {
+        setActiveSituationId(data.activeSituationId);
+        setHasSubmitted(false);
+        setSelectedOption('');
+        setReason('');
       }
     });
     return () => unsub();
@@ -35,22 +35,27 @@ function StudentView() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedOption || !reason.trim()) return;
+    if (!selectedOption) { alert('Em hãy chọn một phương án trước nhé!'); return; }
+    if (!reason.trim()) { alert('Em hãy viết ngắn gọn lý do vì sao chọn phương án đó.'); return; }
 
+    setIsSending(true);
     try {
-      // In a real app, use a unique student ID. Here we use a combination of name and timestamp or just name.
-      const docId = `${studentInfo.name.replace(/\s+/g, '_')}_${activeSituationId}`;
-      await setDoc(doc(db, `rooms/${roomId}/votes`, docId), {
+      // Khoá theo tên + số tình huống nên mỗi em chỉ có một phiếu cho mỗi tình huống
+      const voteId = `${studentInfo.name.replace(/[^\p{L}\p{N}]+/gu, '_')}_${activeSituationId}`;
+      await set(ref(db, `scenarioRooms/${roomId}/votes/${voteId}`), {
+        id: voteId,
         studentName: studentInfo.name,
         situationId: activeSituationId,
         optionId: selectedOption,
-        reason: reason,
-        timestamp: serverTimestamp()
+        reason: reason.trim(),
+        timestamp: Date.now()
       });
       setHasSubmitted(true);
     } catch (error) {
       console.error("Error submitting vote:", error);
-      alert("Có lỗi xảy ra, vui lòng thử lại! (Kiểm tra kết nối Firebase)");
+      alert("Chưa gửi được, em kiểm tra lại mạng rồi thử lần nữa nhé!");
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -139,9 +144,14 @@ function StudentView() {
               ></textarea>
             </div>
 
-            <button type="submit" className="btn-primary" style={{ width: '100%', fontSize: '1.1rem' }} disabled={!selectedOption}>
-              Gửi lựa chọn
+            <button type="submit" className="btn-primary" style={{ width: '100%', fontSize: '1.1rem' }} disabled={!selectedOption || !reason.trim() || isSending}>
+              {isSending ? 'Đang gửi…' : 'Gửi lựa chọn'}
             </button>
+            {!isSending && (!selectedOption || !reason.trim()) && (
+              <p style={{ textAlign: 'center', marginTop: '0.75rem', opacity: 0.7, fontSize: '0.9rem' }}>
+                {!selectedOption ? 'Chọn một phương án để gửi được' : 'Viết thêm lý do rồi mới gửi được'}
+              </p>
+            )}
           </form>
         )}
       </div>

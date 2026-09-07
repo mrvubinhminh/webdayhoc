@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { dbFirestore as db } from '../firebase';
-import { doc, onSnapshot, collection, query, where } from 'firebase/firestore';
+import { db } from '../firebase';
+import { ref, onValue } from 'firebase/database';
 import { situations } from '../data/pth_situations';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
@@ -12,22 +12,17 @@ function ProjectorView() {
   const roomId = 'default-room';
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'rooms', roomId), (docSnap) => {
-      if (docSnap.exists()) {
-        setActiveSituationId(docSnap.data().activeSituationId || 1);
-      }
+    const unsub = onValue(ref(db, `scenarioRooms/${roomId}`), (snap) => {
+      const data = snap.val();
+      if (data?.activeSituationId) setActiveSituationId(data.activeSituationId);
     });
     return () => unsub();
   }, []);
 
   useEffect(() => {
-    const q = query(collection(db, `rooms/${roomId}/votes`), where("situationId", "==", activeSituationId));
-    const unsub = onSnapshot(q, (querySnapshot) => {
-      const votesData = [];
-      querySnapshot.forEach((doc) => {
-        votesData.push({ id: doc.id, ...doc.data() });
-      });
-      setVotes(votesData);
+    const unsub = onValue(ref(db, `scenarioRooms/${roomId}/votes`), (snap) => {
+      const all = snap.val() || {};
+      setVotes(Object.values(all).filter(v => v.situationId === activeSituationId));
     });
     return () => unsub();
   }, [activeSituationId]);

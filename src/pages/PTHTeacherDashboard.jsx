@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { dbFirestore as db } from '../firebase';
-import { doc, onSnapshot, setDoc, collection, query, where, updateDoc } from 'firebase/firestore';
+import { db } from '../firebase';
+import { ref, onValue, set, update } from 'firebase/database';
 import { situations } from '../data/pth_situations';
 import * as XLSX from 'xlsx';
 
@@ -13,36 +13,30 @@ function TeacherDashboard() {
 
   // Listen to active situation
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'rooms', roomId), (docSnap) => {
-      if (docSnap.exists()) {
-        setActiveSituationId(docSnap.data().activeSituationId || 1);
-      } else {
-        // Initialize room if not exists
-        setDoc(doc(db, 'rooms', roomId), { activeSituationId: 1 });
-      }
+    const unsub = onValue(ref(db, `scenarioRooms/${roomId}`), (snap) => {
+      const data = snap.val();
+      if (data?.activeSituationId) setActiveSituationId(data.activeSituationId);
+      else set(ref(db, `scenarioRooms/${roomId}`), { activeSituationId: 1 });
     });
     return () => unsub();
   }, []);
 
   // Listen to votes for the current situation
   useEffect(() => {
-    const q = query(collection(db, `rooms/${roomId}/votes`), where("situationId", "==", activeSituationId));
-    const unsub = onSnapshot(q, (querySnapshot) => {
-      const votesData = [];
-      querySnapshot.forEach((doc) => {
-        votesData.push({ id: doc.id, ...doc.data() });
-      });
-      setVotes(votesData);
+    const unsub = onValue(ref(db, `scenarioRooms/${roomId}/votes`), (snap) => {
+      const all = snap.val() || {};
+      // Realtime Database không lọc sẵn như Firestore nên lọc tại đây
+      setVotes(Object.values(all).filter(v => v.situationId === activeSituationId));
     });
     return () => unsub();
   }, [activeSituationId]);
 
   const changeSituation = async (newId) => {
-    await setDoc(doc(db, 'rooms', roomId), { activeSituationId: newId }, { merge: true });
+    await update(ref(db, `scenarioRooms/${roomId}`), { activeSituationId: newId });
   };
 
   const toggleHighlight = async (voteId, currentStatus) => {
-    await updateDoc(doc(db, `rooms/${roomId}/votes`, voteId), {
+    await update(ref(db, `scenarioRooms/${roomId}/votes/${voteId}`), {
       isHighlighted: !currentStatus
     });
   };
