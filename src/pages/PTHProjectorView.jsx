@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { db } from '../firebase';
 import { ref, onValue } from 'firebase/database';
 import { situations } from '../data/pth_situations';
@@ -7,25 +8,35 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
 
 function ProjectorView() {
+  const [searchParams] = useSearchParams();
   const [activeSituationId, setActiveSituationId] = useState(1);
   const [votes, setVotes] = useState([]);
-  const roomId = 'default-room';
+
+  // Mã phòng lấy từ đường dẫn, nếu mở thẳng thì lấy phòng giáo viên vừa tạo trên máy này
+  const [roomId, setRoomId] = useState(() => {
+    const fromUrl = searchParams.get('pin');
+    if (fromUrl) return fromUrl;
+    try { return localStorage.getItem('pth_host_room') || ''; } catch { return ''; }
+  });
+  const [pinInput, setPinInput] = useState('');
 
   useEffect(() => {
+    if (!roomId) return;
     const unsub = onValue(ref(db, `scenarioRooms/${roomId}`), (snap) => {
       const data = snap.val();
       if (data?.activeSituationId) setActiveSituationId(data.activeSituationId);
     });
     return () => unsub();
-  }, []);
+  }, [roomId]);
 
   useEffect(() => {
+    if (!roomId) return;
     const unsub = onValue(ref(db, `scenarioRooms/${roomId}/votes`), (snap) => {
       const all = snap.val() || {};
       setVotes(Object.values(all).filter(v => v.situationId === activeSituationId));
     });
     return () => unsub();
-  }, [activeSituationId]);
+  }, [roomId, activeSituationId]);
 
   const situation = situations.find(s => s.id === activeSituationId);
   
@@ -41,11 +52,38 @@ function ProjectorView() {
 
   const highlightedReasons = votes.filter(v => v.isHighlighted);
 
+  if (!roomId) {
+    return (
+      <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+        <div className="glass-panel" style={{ padding: '2rem', maxWidth: '420px', width: '100%', textAlign: 'center' }}>
+          <h2>🖥️ Màn chiếu Phòng Tình Huống</h2>
+          <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Nhập mã phòng của lớp đang học.</p>
+          <form
+            onSubmit={(e) => { e.preventDefault(); if (/^\d{6}$/.test(pinInput.trim())) setRoomId(pinInput.trim()); }}
+            style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}
+          >
+            <input
+              type="tel" inputMode="numeric" maxLength={6} className="input-field"
+              placeholder="Mã phòng" value={pinInput}
+              onChange={e => setPinInput(e.target.value.replace(/\D/g, ''))}
+              style={{ textAlign: 'center', fontSize: '1.8rem', letterSpacing: '8px', fontFamily: 'monospace' }}
+            />
+            <button type="submit" className="btn-primary">Mở màn chiếu</button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   if (!situation) return <div className="container" style={{ textAlign: 'center', fontSize: '2rem', marginTop: '20vh' }}>Đang tải...</div>;
 
   return (
-    <div style={{ padding: '2rem 4rem', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ padding: '2rem 4rem', minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
       
+      <div style={{ position: 'absolute', top: '1rem', right: '1.5rem', fontSize: '1.1rem', color: 'var(--text-secondary)' }}>
+        Mã phòng: <strong style={{ fontFamily: 'monospace', letterSpacing: '3px', color: 'var(--accent-primary)' }}>{roomId}</strong>
+      </div>
+
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '3rem', color: 'var(--accent-primary)', textTransform: 'uppercase' }}>
           {situation.title}

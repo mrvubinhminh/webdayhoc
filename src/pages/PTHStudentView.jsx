@@ -1,36 +1,89 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { db } from '../firebase';
-import { ref, onValue, set } from 'firebase/database';
+import { ref, onValue, get, set } from 'firebase/database';
 import { situations } from '../data/pth_situations';
 
+const SESSION_KEY = 'pth_student_session';
+const saveSession = (pin, name) => { try { localStorage.setItem(SESSION_KEY, JSON.stringify({ pin, name })); } catch { /* bị chặn */ } };
+const readSession = () => { try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch { return null; } };
+const clearSession = () => { try { localStorage.removeItem(SESSION_KEY); } catch { /* không sao */ } };
+
 function StudentView() {
-  const [studentInfo, setStudentInfo] = useState({ name: '', id: '' });
-  const [isJoined, setIsJoined] = useState(false);
+  const [searchParams] = useSearchParams();
+  const urlPin = searchParams.get('pin') || '';
+
+  const [pinInput, setPinInput] = useState(urlPin);
+  const [nameInput, setNameInput] = useState('');
+  const [joinError, setJoinError] = useState('');
+  const [isJoining, setIsJoining] = useState(false);
+
+  const [roomId, setRoomId] = useState('');
+  const [studentName, setStudentName] = useState('');
   const [activeSituationId, setActiveSituationId] = useState(1);
   const [selectedOption, setSelectedOption] = useState('');
   const [reason, setReason] = useState('');
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
-  const roomId = 'default-room';
-
+  // Vào lại phòng cũ sau khi tải lại trang hoặc rớt mạng
   useEffect(() => {
+    const s = readSession();
+    if (!s?.pin || !s?.name) return;
+    if (urlPin && urlPin !== s.pin) { clearSession(); return; }
+    get(ref(db, `scenarioRooms/${s.pin}`)).then((snap) => {
+      if (!snap.exists()) { clearSession(); return; }
+      setRoomId(s.pin);
+      setStudentName(s.name);
+    }).catch(() => {});
+  }, [urlPin]);
+
+  // Theo dõi tình huống giáo viên đang chiếu
+  useEffect(() => {
+    if (!roomId) return;
     const unsub = onValue(ref(db, `scenarioRooms/${roomId}`), (snap) => {
       const data = snap.val();
-      if (!data) return;
+      if (!data) { clearSession(); setRoomId(''); setJoinError('Phòng đã đóng.'); return; }
       if (data.activeSituationId !== activeSituationId) {
         setActiveSituationId(data.activeSituationId);
-        setHasSubmitted(false);
         setSelectedOption('');
         setReason('');
+        setHasSubmitted(false);
       }
     });
     return () => unsub();
-  }, [activeSituationId]);
+  }, [roomId, activeSituationId]);
 
-  const handleJoin = (e) => {
+  // Nếu em đã gửi phiếu cho tình huống này rồi thì hiện lại trạng thái đã gửi
+  useEffect(() => {
+    if (!roomId || !studentName) return;
+    const voteId = `${studentName.replace(/[^\p{L}\p{N}]+/gu, '_')}_${activeSituationId}`;
+    get(ref(db, `scenarioRooms/${roomId}/votes/${voteId}`))
+      .then(snap => { if (snap.exists()) setHasSubmitted(true); })
+      .catch(() => {});
+  }, [roomId, studentName, activeSituationId]);
+
+  const handleJoin = async (e) => {
     e.preventDefault();
-    if (studentInfo.name.trim()) setIsJoined(true);
+    const pin = pinInput.trim();
+    const name = nameInput.trim();
+    if (!/^\d{6}$/.test(pin)) { setJoinError('Mã phòng gồm 6 chữ số, em kiểm tra lại nhé.'); return; }
+    if (!name) { setJoinError('Em nhập họ tên trước nhé.'); return; }
+
+    setIsJoining(true);
+    setJoinError('');
+    try {
+      const snap = await get(ref(db, `scenarioRooms/${pin}`));
+      if (!snap.exists()) { setJoinError('Không tìm thấy phòng có mã này.'); return; }
+      saveSession(pin, name);
+      setRoomId(pin);
+      setStudentName(name);
+      setActiveSituationId(snap.val().activeSituationId || 1);
+    } catch {
+      setJoinError('Chưa kết nối được, em kiểm tra lại mạng rồi thử lần nữa nhé.');
+    } finally {
+      setIsJoining(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -41,10 +94,10 @@ function StudentView() {
     setIsSending(true);
     try {
       // Khoá theo tên + số tình huống nên mỗi em chỉ có một phiếu cho mỗi tình huống
-      const voteId = `${studentInfo.name.replace(/[^\p{L}\p{N}]+/gu, '_')}_${activeSituationId}`;
+      const voteId = `${studentName.replace(/[^\p{L}\p{N}]+/gu, '_')}_${activeSituationId}`;
       await set(ref(db, `scenarioRooms/${roomId}/votes/${voteId}`), {
         id: voteId,
-        studentName: studentInfo.name,
+        studentName,
         situationId: activeSituationId,
         optionId: selectedOption,
         reason: reason.trim(),
@@ -59,21 +112,33 @@ function StudentView() {
     }
   };
 
-  if (!isJoined) {
+  if (!roomId) {
     return (
       <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
         <div className="glass-panel animate-fade-in" style={{ padding: '2rem', maxWidth: '400px', width: '100%', textAlign: 'center' }}>
-          <h2>Vào Phòng Tình Huống</h2>
+          <h2>🎭 Vào Phòng Tình Huống</h2>
           <form onSubmit={handleJoin} style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <input 
-              type="text" 
-              className="input-field" 
-              placeholder="Nhập Họ Tên..." 
-              value={studentInfo.name}
-              onChange={e => setStudentInfo({...studentInfo, name: e.target.value})}
-              required
+            <input
+              type="tel"
+              inputMode="numeric"
+              maxLength={6}
+              className="input-field"
+              placeholder="Mã phòng (6 chữ số)"
+              value={pinInput}
+              onChange={e => setPinInput(e.target.value.replace(/\D/g, ''))}
+              style={{ textAlign: 'center', fontSize: '1.6rem', letterSpacing: '8px', fontFamily: 'monospace' }}
             />
-            <button type="submit" className="btn-primary">Tham gia ngay</button>
+            <input
+              type="text"
+              className="input-field"
+              placeholder="Nhập Họ Tên..."
+              value={nameInput}
+              onChange={e => setNameInput(e.target.value)}
+            />
+            {joinError && <p style={{ color: 'var(--danger, #ef4444)', fontSize: '0.95rem' }}>{joinError}</p>}
+            <button type="submit" className="btn-primary" disabled={isJoining}>
+              {isJoining ? 'Đang vào…' : 'Tham gia ngay'}
+            </button>
           </form>
         </div>
       </div>
@@ -86,9 +151,9 @@ function StudentView() {
 
   return (
     <div className="container animate-fade-in" style={{ maxWidth: '800px', padding: '2rem 1rem' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', borderBottom: '1px solid var(--border)', paddingBottom: '1rem' }}>
-        <div>Xin chào, <strong className="text-gradient">{studentInfo.name}</strong></div>
-        <div style={{ color: 'var(--success)' }}>🟢 Đã kết nối</div>
+      <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', borderBottom: '1px solid var(--border)', paddingBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <div>Xin chào, <strong className="text-gradient">{studentName}</strong></div>
+        <div style={{ color: 'var(--success)' }}>🟢 Phòng {roomId}</div>
       </header>
 
       <div className="glass-panel" style={{ padding: '2rem' }}>
@@ -107,8 +172,8 @@ function StudentView() {
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
               {situation.options.map(opt => (
-                <label 
-                  key={opt.id} 
+                <label
+                  key={opt.id}
                   style={{
                     display: 'block',
                     padding: '1rem',
@@ -119,10 +184,10 @@ function StudentView() {
                     transition: 'all 0.2s'
                   }}
                 >
-                  <input 
-                    type="radio" 
-                    name="option" 
-                    value={opt.id} 
+                  <input
+                    type="radio"
+                    name="option"
+                    value={opt.id}
                     checked={selectedOption === opt.id}
                     onChange={() => setSelectedOption(opt.id)}
                     style={{ marginRight: '10px' }}
@@ -134,9 +199,9 @@ function StudentView() {
 
             <div style={{ marginBottom: '1.5rem' }}>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Vì sao em chọn phương án này?</label>
-              <textarea 
-                className="input-field" 
-                rows="3" 
+              <textarea
+                className="input-field"
+                rows="3"
                 placeholder="Gõ ngắn gọn lý do của em vào đây (ẩn danh trên máy chiếu)..."
                 value={reason}
                 onChange={e => setReason(e.target.value)}
