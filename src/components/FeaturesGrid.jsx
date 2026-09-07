@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calculator, Gamepad2, Box, Target } from 'lucide-react';
+import { Calculator, Gamepad2, Box, Target, Compass } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const FeaturesGrid = () => {
@@ -21,6 +21,15 @@ const FeaturesGrid = () => {
       color: 'from-purple-500 to-purple-700',
       iconBg: 'bg-purple-500/10 text-purple-500 border-purple-500/30',
       path: '/games'
+    },
+    {
+      id: 'hdtnhn',
+      title: 'Hoạt động trải nghiệm',
+      description: 'Hướng nghiệp, giá trị sống, kỹ năng — không chấm điểm',
+      icon: <Compass className="w-8 h-8" />,
+      color: 'from-sky-500 to-indigo-700',
+      iconBg: 'bg-sky-500/10 text-sky-400 border-sky-500/30',
+      path: '/hdtnhn'
     },
     {
       id: '3d',
