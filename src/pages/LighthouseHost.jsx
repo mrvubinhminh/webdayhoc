@@ -61,6 +61,10 @@ const LighthouseHost = () => {
   const [selectedTheme, setSelectedTheme] = useState(THEMES[0]);
   const [gameTitle, setGameTitle] = useState('NGỌN HẢI ĐĂNG');
   const [roomData, setRoomData] = useState(null);
+  // Giữ trạng thái phòng lần trước bằng ref, KHÔNG đưa roomData vào deps của
+  // useEffect lắng nghe: làm vậy thì mỗi lần có dữ liệu mới, listener lại bị huỷ
+  // rồi đăng ký lại, khiến Firebase gửi lại toàn bộ phòng thay vì phần thay đổi.
+  const prevRoom = useRef(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [bgUrl, setBgUrl] = useState(() => localStorage.getItem('lighthouseBgUrl') || '');
   const [showQuestionOnDevice, setShowQuestionOnDevice] = useState(false);
@@ -94,11 +98,13 @@ const LighthouseHost = () => {
     const unsub = onValue(r, (snap) => {
       const data = snap.val();
       if (!data) return;
-      if (!roomData || roomData.status !== data.status) setTimeLeft(secondsFor(data.status, data.settings, data));
+      const prev = prevRoom.current;
+      if (!prev || prev.status !== data.status) setTimeLeft(secondsFor(data.status, data.settings, data));
+      prevRoom.current = data;
       setRoomData(data);
     });
     return () => unsub();
-  }, [roomCode, roomData]);
+  }, [roomCode]);
 
   useEffect(() => {
     let timer;

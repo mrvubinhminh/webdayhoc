@@ -74,6 +74,10 @@ const TreasureHost = () => {
   const [selectedTheme, setSelectedTheme] = useState(THEMES[0]);
   const [gameTitle, setGameTitle] = useState('TRUY TÌM KHO BÁU');
   const [roomData, setRoomData] = useState(null);
+  // Giữ trạng thái phòng lần trước bằng ref, KHÔNG đưa roomData vào deps của
+  // useEffect lắng nghe: làm vậy thì mỗi lần có dữ liệu mới, listener lại bị huỷ
+  // rồi đăng ký lại, khiến Firebase gửi lại toàn bộ phòng thay vì phần thay đổi.
+  const prevRoom = useRef(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [playMode, setPlayMode] = useState('INDIVIDUAL');
   const [teamCount, setTeamCount] = useState(4);
@@ -149,7 +153,7 @@ const TreasureHost = () => {
       const unsubscribe = onValue(roomRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
-          if (roomData && roomData.status !== data.status) {
+          if (prevRoom.current && prevRoom.current.status !== data.status) {
              if (data.status === 'QUESTION') {
                // Cột 9 của Excel cho phép đặt thời gian riêng từng câu
                setTimeLeft(data.questions?.[data.currentQuestionIndex]?.timeLimit || data.settings.timeLimit || 60);
@@ -161,18 +165,19 @@ const TreasureHost = () => {
                setTimeLeft(DICE_ROLL_SECONDS);
              }
           }
-          if (!roomData && data) {
+          if (!prevRoom.current && data) {
              if (data.status === 'QUESTION') setTimeLeft(data.questions?.[data.currentQuestionIndex]?.timeLimit || data.settings.timeLimit || 60);
              else if (data.status === 'REVEAL') setTimeLeft(data.settings.revealTimeLimit || 60);
              else if (data.status === 'STAR_PICK') setTimeLeft(STAR_PICK_SECONDS);
              else if (data.status === 'DICE_ROLL') setTimeLeft(DICE_ROLL_SECONDS);
           }
+          prevRoom.current = data;
           setRoomData(data);
         }
       });
       return () => unsubscribe();
     }
-  }, [roomCode, roomData]);
+  }, [roomCode]);
 
   useEffect(() => {
     let timer;

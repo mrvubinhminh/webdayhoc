@@ -70,6 +70,10 @@ const BankHost = () => {
   const [selectedTheme, setSelectedTheme] = useState(THEMES[0]);
   const [gameTitle, setGameTitle] = useState('NGÂN HÀNG TRI THỨC');
   const [roomData, setRoomData] = useState(null);
+  // Giữ trạng thái phòng lần trước bằng ref, KHÔNG đưa roomData vào deps của
+  // useEffect lắng nghe: làm vậy thì mỗi lần có dữ liệu mới, listener lại bị huỷ
+  // rồi đăng ký lại, khiến Firebase gửi lại toàn bộ phòng thay vì phần thay đổi.
+  const prevRoom = useRef(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [playMode, setPlayMode] = useState('TEAM');
   const [teamCount, setTeamCount] = useState(4);
@@ -112,12 +116,13 @@ const BankHost = () => {
     const unsubscribe = onValue(roomRef, (snapshot) => {
       const data = snapshot.val();
       if (!data) return;
-      const changed = !roomData || roomData.status !== data.status;
-      if (changed) setTimeLeft(secondsFor(data.status, data.settings, data));
+      const prev = prevRoom.current;
+      if (!prev || prev.status !== data.status) setTimeLeft(secondsFor(data.status, data.settings, data));
+      prevRoom.current = data;
       setRoomData(data);
     });
     return () => unsubscribe();
-  }, [roomCode, roomData]);
+  }, [roomCode]);
 
   useEffect(() => {
     let timer;
