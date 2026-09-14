@@ -161,6 +161,8 @@ const RacePlayer = () => {
       answeredCount: (me?.answeredCount || 0) + 1,
       [`answers/${order[cursor]}`]: choice === null ? '' : choice
     };
+    // Đánh dấu câu làm sai (hoặc bỏ qua) để cuối giờ giáo viên chiếu lại chữa chung
+    if (!isCorrect) updates[`wrongs/${order[cursor]}`] = true;
     if (done) updates.finishedAt = Date.now();
 
     await update(ref(db, `raceRooms/${pin}/players/${playerId}`), updates);

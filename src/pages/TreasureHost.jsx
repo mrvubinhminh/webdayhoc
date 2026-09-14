@@ -6,6 +6,8 @@ import { db } from '../firebase';
 import { QR_CARD, buildQrTeams } from '../constants/qrTeams';
 import { ref, set, update, onValue, remove, get } from 'firebase/database';
 import MathText from '../components/MathText';
+import WrongQuestionReview from '../components/WrongQuestionReview';
+import { rankWrongQuestions, wrongCountFromQuestion } from '../constants/wrongStats';
 import QuestionGuidePanel from '../components/QuestionGuidePanel';
 import TreasureBoard, { applySpecialCell, getTeamColor } from '../components/TreasureBoard';
 import { BOARD_SCENARIOS, randomScenario } from '../data/boardScenarios';
@@ -81,6 +83,9 @@ const TreasureHost = () => {
   const [showQuestionOnDevice, setShowQuestionOnDevice] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [selectedStatQ, setSelectedStatQ] = useState(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  // Các câu lớp sai nhiều nhất, để chiếu lên chữa lại cuối giờ
+  const wrongRanked = rankWrongQuestions(roomData?.questions, wrongCountFromQuestion);
   const [enableHighStakes, setEnableHighStakes] = useState(false);
   // Bản đồ kho báu (chỉ dùng cho chế độ nhóm)
   const [boardSize, setBoardSize] = useState(6);
@@ -1614,12 +1619,22 @@ const TreasureHost = () => {
                   </button>
                 </div>
 
+                {/* Chiếu chữa bài toàn màn hình — dựng qua portal nên luôn phủ kín */}
+                <WrongQuestionReview open={reviewOpen} onClose={() => setReviewOpen(false)} items={wrongRanked} unit="nhóm" />
+
                 {showStatsModal && (
                   <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-slate-900 border-2 border-slate-700 rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden relative">
                       <button onClick={() => setShowStatsModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white bg-slate-800 rounded-full p-2 z-10">✕</button>
                       <div className="p-6 border-b border-slate-700 bg-slate-800/50">
                         <h2 className="text-3xl font-black text-white flex items-center gap-3"><XCircle className="text-red-500" /> Thống Kê Các Câu Sai</h2>
+                    <button
+                    onClick={() => { setShowStatsModal(false); setReviewOpen(true); }}
+                    disabled={wrongRanked.length === 0}
+                    className="mt-4 w-full bg-red-600 hover:bg-red-500 disabled:bg-slate-800 disabled:text-gray-500 disabled:cursor-not-allowed text-white font-black py-4 rounded-2xl text-lg md:text-xl flex items-center justify-center gap-3 transition-colors"
+                  >
+                    🖥️ Chiếu chữa bài toàn màn hình ({wrongRanked.length} câu)
+                  </button>
                       </div>
                       <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
                         {(() => {
@@ -1718,7 +1733,10 @@ const TreasureHost = () => {
                   </div>
 
                   {/* Modal Thống kê */}
-                  {showStatsModal && (
+                  {/* Chiếu chữa bài toàn màn hình — dựng qua portal nên luôn phủ kín */}
+                <WrongQuestionReview open={reviewOpen} onClose={() => setReviewOpen(false)} items={wrongRanked} unit="nhóm" />
+
+                {showStatsModal && (
                     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                       <div className="bg-slate-900 border-2 border-slate-700 rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden relative animate-bounce-in">
                         <button onClick={() => setShowStatsModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white bg-slate-800 rounded-full p-2 z-10 transition-colors">
@@ -1728,6 +1746,13 @@ const TreasureHost = () => {
                            <h2 className="text-3xl font-black text-white flex items-center gap-3">
                               <XCircle className="text-red-500" /> Thống Kê Các Câu Sai
                            </h2>
+                           <button
+                    onClick={() => { setShowStatsModal(false); setReviewOpen(true); }}
+                    disabled={wrongRanked.length === 0}
+                    className="mt-4 w-full bg-red-600 hover:bg-red-500 disabled:bg-slate-800 disabled:text-gray-500 disabled:cursor-not-allowed text-white font-black py-4 rounded-2xl text-lg md:text-xl flex items-center justify-center gap-3 transition-colors"
+                  >
+                    🖥️ Chiếu chữa bài toàn màn hình ({wrongRanked.length} câu)
+                  </button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
                            {(() => {

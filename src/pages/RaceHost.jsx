@@ -8,6 +8,8 @@ import QuestionGuidePanel from '../components/QuestionGuidePanel';
 import GameRulesOverlay from '../components/GameRulesOverlay';
 import RaceTrack from '../components/RaceTrack';
 import { suspicionOf } from '../hooks/useFocusGuard';
+import WrongQuestionReview from '../components/WrongQuestionReview';
+import { rankWrongQuestions, wrongCountFromPlayers } from '../constants/wrongStats';
 
 const THEMES = [
   { id: 'speed',  name: '🏁 Tốc Độ',  bgStyle: { background: 'linear-gradient(135deg,#0c0a09 0%,#1c1917 50%,#7f1d1d 100%)' }, preview: 'from-red-900 via-stone-900 to-black' },
@@ -35,6 +37,7 @@ const RaceHost = () => {
   const [gameTitle, setGameTitle] = useState('ĐƯỜNG ĐUA TRI THỨC');
   const [defaultClass, setDefaultClass] = useState('');
   const [roomData, setRoomData] = useState(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const [bgUrl, setBgUrl] = useState(() => localStorage.getItem('raceBgUrl') || '');
   const [resumeRoom, setResumeRoom] = useState(null);
@@ -171,6 +174,8 @@ const RaceHost = () => {
   };
 
   const playersList = roomData?.players ? Object.values(roomData.players) : [];
+  // Mỗi em tự làm theo nhịp riêng nên số người sai được cộng lại từ dấu vết của từng em
+  const wrongRanked = rankWrongQuestions(roomData?.questions, wrongCountFromPlayers(roomData?.players));
   const totalQ = roomData?.questions?.length || questions.length || 1;
 
   const ranked = [...playersList].sort((a, b) => {
@@ -549,10 +554,16 @@ const RaceHost = () => {
             </div>
 
             {/* Nút xuất Excel */}
-            <div className="flex justify-center gap-3 mb-6">
+            <WrongQuestionReview open={reviewOpen} onClose={() => setReviewOpen(false)} items={wrongRanked} unit="học sinh" />
+
+            <div className="flex justify-center gap-3 mb-6 flex-wrap">
               <button onClick={exportExcel}
                 className="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black text-lg flex items-center gap-3 shadow-[0_8px_0_#047857] active:translate-y-2 active:shadow-none transition-all">
                 <FileSpreadsheet className="w-6 h-6" /> XUẤT BẢNG ĐIỂM EXCEL
+              </button>
+              <button onClick={() => setReviewOpen(true)} disabled={wrongRanked.length === 0}
+                className="bg-red-600 hover:bg-red-500 disabled:bg-slate-800 disabled:text-gray-500 disabled:cursor-not-allowed text-white px-8 py-4 rounded-2xl font-black text-lg flex items-center gap-3 transition-colors">
+                🖥️ CHIẾU CHỮA BÀI ({wrongRanked.length} câu sai)
               </button>
               <button onClick={closeRoom} className="bg-red-700 hover:bg-red-600 text-white px-6 py-4 rounded-2xl font-black">Thoát &amp; Xoá Phòng</button>
             </div>

@@ -168,6 +168,8 @@ const ClimbPlayer = () => {
       correctCount: (me?.correctCount || 0) + (isCorrect ? 1 : 0),
       [`perLevel/${curLevel}`]: per
     };
+    // Đánh dấu câu làm sai (hoặc bỏ qua) để cuối giờ giáo viên chiếu lại chữa chung
+    if (!isCorrect) updates[`wrongs/${qIndex}`] = true;
 
     // Còn câu trong tầng thì đi tiếp
     if (rest.length > 0) {

@@ -175,7 +175,9 @@ const VaultPlayer = () => {
       await update(ref(db, base), {
         queue: rest,
         attemptCorrect: correctSoFar,
-        [`seen/${gateIdx}/${qId}`]: qId
+        [`seen/${gateIdx}/${qId}`]: qId,
+        // Đánh dấu câu làm sai để cuối giờ chiếu lại chữa chung
+        ...(isCorrect ? {} : { [`wrongs/${qId}`]: true })
       });
       setTlnAnswer('');
       busy.current = false;
@@ -190,7 +192,9 @@ const VaultPlayer = () => {
     const updates = {
       [`seen/${gateIdx}/${qId}`]: qId,
       [`gates/${gateIdx}`]: { passed, attempts, correct: correctSoFar, of: queue.length + 0 || perAttempt },
-      attemptCorrect: 0
+      attemptCorrect: 0,
+      // Đánh dấu câu làm sai để cuối giờ chiếu lại chữa chung
+      ...(isCorrect ? {} : { [`wrongs/${qId}`]: true })
     };
 
     if (passed && nextGate) {
