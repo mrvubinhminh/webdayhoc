@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { db } from '../firebase';
 import { ref, set, onValue, get, update } from 'firebase/database';
 import MathText from '../components/MathText';
+import { QUIZ_TEXT } from '../constants/quizText';
 import CapitalChart, { colorOf } from '../components/CapitalChart';
 import { BET_LEVELS, betAmountOf } from '../data/bankRules';
 
@@ -293,8 +294,8 @@ const BankPlayer = () => {
             }
 
             return (
-              <div className="w-full flex flex-col h-[92vh] py-2">
-                <div className="shrink-0 mb-2 flex items-center justify-center gap-2 flex-wrap">
+              <div className="w-full flex flex-col min-h-[92vh] py-2">
+                <div className="sticky top-0 z-20 -mx-1 px-1 py-1.5 mb-2 bg-slate-900/95 backdrop-blur-sm flex items-center justify-center gap-2 flex-wrap rounded-b-xl">
                   <div className="bg-slate-800 px-4 py-1.5 rounded-full text-base font-bold text-amber-400 border border-slate-700">
                     Câu {roomData.currentQuestionIndex + 1}
                   </div>
@@ -307,14 +308,14 @@ const BankPlayer = () => {
                 </div>
 
                 {showQuestion ? (
-                  <div className="flex-1 min-h-0 flex flex-col gap-2">
-                    <div className="shrink-0 max-h-[38%] overflow-y-auto bg-slate-800 p-3 rounded-2xl border border-slate-700 text-left">
-                      <div className="text-white text-base md:text-lg font-medium whitespace-pre-wrap"><MathText text={q.question} /></div>
+                  <div className="flex flex-col gap-2">
+                    <div className="bg-slate-800 p-4 rounded-2xl border border-slate-700 text-left">
+                      <div className={`text-white font-medium whitespace-pre-wrap ${QUIZ_TEXT}`}><MathText text={q.question} /></div>
                       {q.image && <div className="mt-2 flex justify-center"><img src={q.image} alt="minh hoạ" className="max-h-32 rounded-lg object-contain" /></div>}
                     </div>
 
                     {q.type === 'TLN' ? (
-                      <div className="flex-1 min-h-0 flex flex-col gap-3 justify-center">
+                      <div className="flex flex-col gap-3 pb-2">
                         <input
                           type="text" value={tlnAnswer} onChange={(e) => setTlnAnswer(e.target.value)} placeholder="Nhập câu trả lời..."
                           className="w-full text-center bg-slate-900 border-4 border-slate-700 text-white text-3xl font-black py-6 rounded-3xl outline-none focus:border-amber-500"
@@ -327,14 +328,14 @@ const BankPlayer = () => {
                         </button>
                       </div>
                     ) : (
-                      <div className="flex-1 min-h-0 grid grid-rows-4 gap-2">
+                      <div className="flex flex-col gap-2.5 pb-2">
                         {OPTS.map(opt => (
                           <button
                             key={opt.num} onClick={() => submitAnswer(opt.num)}
-                            className={`w-full min-h-0 rounded-2xl ${opt.color} border-b-[6px] ${opt.shape} active:translate-y-1 active:border-b-0 transition-transform flex items-center gap-3 px-3 py-2 text-left overflow-hidden`}
+                            className={`w-full min-h-[68px] rounded-2xl ${opt.color} border-b-[6px] ${opt.shape} active:translate-y-1 active:border-b-0 transition-transform flex items-start gap-3 px-3 py-3 text-left`}
                           >
-                            <span className="text-3xl font-black text-white/80 shrink-0 w-9 text-center">{['A', 'B', 'C', 'D'][opt.num - 1]}</span>
-                            <span className="flex-1 text-white font-bold text-base overflow-y-auto max-h-full">
+                            <span className="text-3xl font-black text-white/80 shrink-0 w-9 text-center leading-tight">{['A', 'B', 'C', 'D'][opt.num - 1]}</span>
+                            <span className={`flex-1 text-white font-bold pt-1 break-words ${QUIZ_TEXT}`}>
                               <MathText text={[q.optionA, q.optionB, q.optionC, q.optionD][opt.num - 1] || ''} />
                             </span>
                           </button>

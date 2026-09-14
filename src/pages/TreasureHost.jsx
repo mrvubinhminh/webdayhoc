@@ -728,15 +728,20 @@ const TreasureHost = () => {
                 </div>
 
                 {playMode === 'INDIVIDUAL' && (
-                  <label className="flex items-center gap-3 cursor-pointer mt-4 bg-slate-900 p-4 rounded-lg border border-transparent hover:border-emerald-500/50 transition-colors">
+                  <label className="flex items-start gap-3 cursor-pointer mt-4 bg-slate-900 p-4 rounded-lg border border-transparent hover:border-emerald-500/50 transition-colors">
                     <input
                       type="checkbox"
                       checked={showQuestionOnDevice}
                       onChange={(e) => setShowQuestionOnDevice(e.target.checked)}
-                      className="w-5 h-5 accent-emerald-500 cursor-pointer"
+                      className="w-5 h-5 accent-emerald-500 cursor-pointer shrink-0 mt-0.5"
                     />
-                    <span className="text-gray-300 font-bold select-none text-sm">
-                      Hiển thị nội dung câu hỏi trên thiết bị học sinh
+                    <span className="select-none">
+                      <span className="block text-gray-300 font-bold text-sm">
+                        Hiển thị câu hỏi và các phương án trên thiết bị học sinh
+                      </span>
+                      <span className="block text-gray-500 font-medium text-xs mt-1 leading-relaxed">
+                        Học sinh đọc đề, đọc nội dung A B C D rồi bấm chọn ngay trên máy. Bỏ chọn thì máy chỉ hiện 4 ô màu A B C D.
+                      </span>
                     </span>
                   </label>
                 )}

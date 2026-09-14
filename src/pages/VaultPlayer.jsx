@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { db } from '../firebase';
 import { ref, set, onValue, get, update } from 'firebase/database';
 import MathText from '../components/MathText';
+import { QUIZ_TEXT } from '../constants/quizText';
 import { useFocusGuard } from '../hooks/useFocusGuard';
 import { buildGates, passCountFor, drawAttempt, splitSecret, scoreOf, DEFAULT_SECRET } from '../data/vaultRules';
 
@@ -371,7 +372,7 @@ const VaultPlayer = () => {
                 </div>
 
                 <div className="bg-slate-800 p-4 rounded-2xl border border-slate-700 text-left mb-3">
-                  <div className="text-white text-base md:text-lg font-medium whitespace-pre-wrap leading-relaxed"><MathText text={currentQ.question} /></div>
+                  <div className={`text-white font-medium whitespace-pre-wrap ${QUIZ_TEXT}`}><MathText text={currentQ.question} /></div>
                   {currentQ.image && <div className="mt-3 flex justify-center"><img src={currentQ.image} alt="minh hoạ" className="max-h-48 rounded-lg object-contain" /></div>}
                 </div>
 
@@ -395,7 +396,7 @@ const VaultPlayer = () => {
                       <button key={o.num} onClick={() => answer(o.num)}
                         className={`w-full min-h-[68px] rounded-2xl ${o.color} border-b-[6px] ${o.shape} active:translate-y-1 active:border-b-0 transition-transform flex items-start gap-3 px-3 py-3 text-left`}>
                         <span className="text-3xl font-black text-white/80 shrink-0 w-9 text-center leading-tight">{['A', 'B', 'C', 'D'][o.num - 1]}</span>
-                        <span className="flex-1 text-white font-bold text-base leading-relaxed pt-1 break-words">
+                        <span className={`flex-1 text-white font-bold pt-1 break-words ${QUIZ_TEXT}`}>
                           <MathText text={[currentQ.optionA, currentQ.optionB, currentQ.optionC, currentQ.optionD][o.num - 1] || ''} />
                         </span>
                       </button>

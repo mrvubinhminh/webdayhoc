@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { db } from '../firebase';
 import { ref, set, onValue, get, update } from 'firebase/database';
 import MathText from '../components/MathText';
+import { QUIZ_TEXT } from '../constants/quizText';
 import TreasureBoard, { applySpecialCell, getTeamColor } from '../components/TreasureBoard';
 
 const AVATAR_STYLES = [
@@ -399,7 +400,7 @@ const TreasurePlayer = () => {
               { num: 4, color: 'bg-emerald-500', shape: 'border-emerald-700' }
             ];
             return (
-            <div className="w-full max-w-2xl text-center flex flex-col h-[92vh] py-2">
+            <div className="w-full max-w-2xl text-center flex flex-col min-h-[92vh] py-2">
               {me?.currentAnswer ? (
                  <div className="bg-slate-800 p-8 rounded-3xl animate-fade-in border border-slate-700 my-auto">
                     <CheckCircle className="w-24 h-24 text-emerald-400 mx-auto mb-4" />
@@ -407,9 +408,9 @@ const TreasurePlayer = () => {
                     <p className="text-gray-400 text-xl">Chờ các bạn khác nhé...</p>
                  </div>
               ) : (
-                <div className="flex flex-col h-full min-h-0">
-                  {/* Thanh trạng thái gọn: số câu + ngôi sao */}
-                  <div className="shrink-0 mb-2 flex items-center justify-center gap-2 flex-wrap">
+                <div className="flex flex-col">
+                  {/* Thanh trạng thái dính trên đầu để luôn thấy số câu và ngôi sao */}
+                  <div className="sticky top-0 z-20 -mx-1 px-1 py-1.5 mb-2 bg-slate-900/95 backdrop-blur-sm flex items-center justify-center gap-2 flex-wrap rounded-b-xl">
                     <div className="bg-slate-800 px-4 py-1.5 rounded-full text-base font-bold text-emerald-400 shadow-lg border border-slate-700">
                       Câu {roomData.currentQuestionIndex + 1}
                     </div>
@@ -428,10 +429,10 @@ const TreasurePlayer = () => {
                   </div>
 
                   {showQuestion ? (
-                    <div className="flex-1 min-h-0 flex flex-col gap-2">
-                      {/* Nội dung câu hỏi */}
-                      <div className="shrink-0 max-h-[38%] overflow-y-auto custom-scrollbar bg-slate-800 p-3 rounded-2xl border border-slate-700 shadow-xl text-left">
-                        <div className="text-white text-base md:text-lg font-medium whitespace-pre-wrap">
+                    <div className="flex flex-col gap-2">
+                      {/* Đề bài hiện trọn vẹn, dài bao nhiêu cũng không bị cắt */}
+                      <div className="bg-slate-800 p-4 rounded-2xl border border-slate-700 shadow-xl text-left">
+                        <div className={`text-white font-medium whitespace-pre-wrap ${QUIZ_TEXT}`}>
                           <MathText text={currentQ.question} />
                         </div>
                         {currentQ.image && (
@@ -443,7 +444,7 @@ const TreasurePlayer = () => {
 
                       {/* Phương án = nút trả lời luôn */}
                       {currentQ.type === 'TLN' ? (
-                        <div className="flex-1 min-h-0 flex flex-col gap-3 justify-center">
+                        <div className="flex flex-col gap-3 pb-2">
                           <input
                             type="text"
                             value={tlnAnswer}
@@ -464,17 +465,17 @@ const TreasurePlayer = () => {
                           </button>
                         </div>
                       ) : (
-                        <div className="flex-1 min-h-0 grid grid-rows-4 gap-2">
+                        <div className="flex flex-col gap-2.5 pb-2">
                           {OPTION_STYLES.map((opt) => (
                             <button
                               key={opt.num}
                               onClick={() => submitAnswer(opt.num)}
-                              className={`w-full min-h-0 rounded-2xl ${opt.color} border-b-[6px] ${opt.shape} shadow-xl active:translate-y-1 active:border-b-0 transition-transform flex items-center gap-3 px-3 py-2 text-left overflow-hidden`}
+                              className={`w-full min-h-[68px] rounded-2xl ${opt.color} border-b-[6px] ${opt.shape} shadow-xl active:translate-y-1 active:border-b-0 transition-transform flex items-start gap-3 px-3 py-3 text-left`}
                             >
-                              <span className="text-3xl font-black text-white/80 shrink-0 w-9 text-center">
+                              <span className="text-3xl font-black text-white/80 shrink-0 w-9 text-center leading-tight">
                                 {['A', 'B', 'C', 'D'][opt.num - 1]}
                               </span>
-                              <span className="flex-1 text-white font-bold text-base md:text-lg overflow-y-auto max-h-full custom-scrollbar">
+                              <span className={`flex-1 text-white font-bold pt-1 break-words ${QUIZ_TEXT}`}>
                                 <MathText text={currentQ.options?.[opt.num - 1] || ''} />
                               </span>
                             </button>

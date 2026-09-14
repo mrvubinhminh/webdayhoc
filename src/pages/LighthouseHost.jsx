@@ -406,9 +406,12 @@ const LighthouseHost = () => {
                   <input type="number" value={revealTimeLimit} onChange={(e) => setRevealTimeLimit(parseInt(e.target.value) || 0)}
                     className="w-full bg-slate-900 text-white text-3xl font-black text-center py-3 rounded-lg outline-none mb-5" />
 
-                  <label className="flex items-center gap-3 cursor-pointer bg-slate-900 p-4 rounded-lg border border-transparent hover:border-sky-500/50">
-                    <input type="checkbox" checked={showQuestionOnDevice} onChange={(e) => setShowQuestionOnDevice(e.target.checked)} className="w-5 h-5 accent-sky-500 cursor-pointer" />
-                    <span className="text-gray-300 font-bold select-none text-sm">Hiển thị nội dung câu hỏi trên thiết bị học sinh</span>
+                  <label className="flex items-start gap-3 cursor-pointer bg-slate-900 p-4 rounded-lg border border-transparent hover:border-sky-500/50">
+                    <input type="checkbox" checked={showQuestionOnDevice} onChange={(e) => setShowQuestionOnDevice(e.target.checked)} className="w-5 h-5 accent-sky-500 cursor-pointer shrink-0 mt-0.5" />
+                    <span className="select-none">
+                      <span className="block text-gray-300 font-bold text-sm">Hiển thị câu hỏi và các phương án trên thiết bị học sinh</span>
+                      <span className="block text-gray-500 font-medium text-xs mt-1 leading-relaxed">Học sinh đọc đề, đọc nội dung A B C D rồi bấm chọn ngay trên máy. Bỏ chọn thì máy chỉ hiện 4 ô màu A B C D.</span>
+                    </span>
                   </label>
 
                   <button onClick={() => window.open('/print-qr', '_blank')} className="mt-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg w-full">
