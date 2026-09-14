@@ -389,6 +389,7 @@ const TreasureHost = () => {
 
     await set(ref(db, `treasureRooms/${code}`), {
       status: 'LOBBY', 
+      createdAt: Date.now(),
       currentQuestionIndex: 0,
       questions: questions,
       players: startingPlayers,

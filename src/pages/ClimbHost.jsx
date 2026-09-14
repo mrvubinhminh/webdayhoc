@@ -147,6 +147,7 @@ const ClimbHost = () => {
 
     await set(ref(db, `climbRooms/${code}`), {
       status: 'LOBBY',
+      createdAt: Date.now(),
       questions,
       players: {},
       settings: { totalMinutes, passRatio, retries, gameTitle, bgUrl, defaultClass }

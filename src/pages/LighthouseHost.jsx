@@ -204,6 +204,7 @@ const LighthouseHost = () => {
 
     await set(ref(db, `lighthouseRooms/${code}`), {
       status: 'LOBBY',
+      createdAt: Date.now(),
       currentQuestionIndex: 0,
       questions,
       players: {},

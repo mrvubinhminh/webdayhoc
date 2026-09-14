@@ -296,6 +296,7 @@ const GameHost = () => {
 
     await set(ref(db, `rooms/${code}`), {
       status: 'LOBBY', 
+      createdAt: Date.now(),
       currentQuestionIndex: 0,
       questions: questions,
       players: startingPlayers,

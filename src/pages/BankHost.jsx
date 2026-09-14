@@ -272,6 +272,7 @@ const BankHost = () => {
 
     await set(ref(db, `bankRooms/${code}`), {
       status: 'LOBBY',
+      createdAt: Date.now(),
       currentQuestionIndex: 0,
       questions,
       players: {},

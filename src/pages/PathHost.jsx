@@ -54,7 +54,7 @@ const PathHost = () => {
     setLocalState('LOBBY');
     setShowRules(true);
     await set(ref(db, `pathRooms/${code}`), {
-      status: 'LOBBY', players: {}, settings: { gameTitle, defaultClass }
+      status: 'LOBBY', createdAt: Date.now(), players: {}, settings: { gameTitle, defaultClass }
     });
   };
 

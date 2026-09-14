@@ -39,6 +39,7 @@ import CompassHost from './pages/CompassHost';
 import CompassPlayer from './pages/CompassPlayer';
 import ValuesHost from './pages/ValuesHost';
 import ValuesPlayer from './pages/ValuesPlayer';
+import CleanupRooms from './pages/CleanupRooms';
 import PTHStudentView from './pages/PTHStudentView';
 import PTHTeacherDashboard from './pages/PTHTeacherDashboard';
 import PTHProjectorView from './pages/PTHProjectorView';
@@ -55,7 +56,7 @@ const AppContent = () => {
   const [showLogin, setShowLogin] = useState(false);
 
   // Các route yêu cầu đăng nhập (ngoài trang chủ và trò chơi)
-  const isProtectedRoute = location.pathname.startsWith('/models') || location.pathname.startsWith('/tools') || location.pathname.startsWith('/students');
+  const isProtectedRoute = location.pathname.startsWith('/models') || location.pathname.startsWith('/tools') || location.pathname.startsWith('/students') || location.pathname.startsWith('/don-dep');
 
   useEffect(() => {
     const storedHash = localStorage.getItem('math_assistant_auth');
@@ -103,6 +104,8 @@ const AppContent = () => {
           {/* Route công khai - không cần đăng nhập */}
           <Route path="/" element={<Home />} />
           <Route path="/games" element={<GamesMenu />} />
+          {/* Trang xoá phòng cũ: bắt đăng nhập vì thao tác này xoá hẳn dữ liệu */}
+          <Route path="/don-dep" element={isAuthenticated ? <CleanupRooms /> : <LoginScreen onLoginSuccess={() => setIsAuthenticated(true)} />} />
           <Route path="/game/host" element={<GameHost />} />
           <Route path="/play" element={<GamePlayer />} />
           <Route path="/print-qr" element={<PrintQR />} />

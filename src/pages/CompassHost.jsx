@@ -88,6 +88,7 @@ const CompassHost = () => {
 
     await set(ref(db, `compassRooms/${code}`), {
       status: 'LOBBY',
+      createdAt: Date.now(),
       players: {},
       settings: { mode, totalMinutes, gameTitle, defaultClass }
     });

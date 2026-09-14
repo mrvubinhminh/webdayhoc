@@ -145,6 +145,7 @@ const RaceHost = () => {
 
     await set(ref(db, `raceRooms/${code}`), {
       status: 'LOBBY',
+      createdAt: Date.now(),
       questions,
       players: {},
       settings: { totalMinutes, shuffle, instantFeedback, gameTitle, bgUrl, defaultClass }

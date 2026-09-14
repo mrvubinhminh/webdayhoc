@@ -203,9 +203,19 @@ const GamesMenu = () => {
         <h1 className="text-4xl md:text-5xl font-bold text-white text-center mb-4 uppercase tracking-wider">
           Kho Trò Chơi
         </h1>
-        <p className="text-gray-400 text-center mb-12 text-lg">
+        <p className="text-gray-400 text-center mb-6 text-lg">
           Chọn một trò chơi để bắt đầu
         </p>
+
+        <div className="flex justify-center mb-12">
+          <button
+            onClick={() => navigate('/don-dep')}
+            className="flex items-center gap-2 bg-slate-900/70 hover:bg-slate-800 border border-slate-700 hover:border-red-500/60 text-gray-300 hover:text-red-300 font-bold px-5 py-2.5 rounded-full transition-colors"
+            title="Xoá các phòng đã chơi xong hoặc bỏ quên trên Firebase"
+          >
+            🧹 Dọn phòng cũ
+          </button>
+        </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
           {games.map(game => (

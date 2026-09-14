@@ -98,6 +98,7 @@ const ValuesHost = () => {
 
     await set(ref(db, `valuesRooms/${code}`), {
       status: 'LOBBY',
+      createdAt: Date.now(),
       players: {},
       order,
       roundIndex: 0,

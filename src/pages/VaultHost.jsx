@@ -165,6 +165,7 @@ const VaultHost = () => {
 
     await set(ref(db, `vaultRooms/${code}`), {
       status: 'LOBBY',
+      createdAt: Date.now(),
       questions,
       players: {},
       settings: { totalMinutes, perAttempt, passRatio, secret: secret.trim() || DEFAULT_SECRET, gameTitle, bgUrl, defaultClass }
