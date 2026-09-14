@@ -1,8 +1,13 @@
 import React from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
+import { MAX_QR_TEAMS } from '../constants/qrTeams';
 
 const PrintQR = () => {
-  const cards = Array.from({ length: 12 }, (_, i) => i + 1);
+  const [searchParams] = useSearchParams();
+  // Màn tạo phòng mở trang này kèm ?teams=N nên chỉ in đúng số thẻ cần dùng
+  const teams = Math.min(MAX_QR_TEAMS, Math.max(1, parseInt(searchParams.get('teams'), 10) || MAX_QR_TEAMS));
+  const cards = Array.from({ length: teams }, (_, i) => i + 1);
 
   return (
     <div className="bg-white min-h-screen font-sans text-black p-4">
@@ -21,12 +26,13 @@ const PrintQR = () => {
       </div>
 
       <div className="no-print max-w-2xl mx-auto mb-8 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r shadow">
-        <h2 className="text-lg font-bold text-blue-800 mb-2">Hướng dẫn in thẻ Đáp Án QR</h2>
+        <h2 className="text-lg font-bold text-blue-800 mb-2">Hướng dẫn in thẻ Đáp Án QR — {teams} thẻ</h2>
         <ul className="list-disc pl-5 text-blue-900 space-y-1">
           <li>Nhấn phím <strong>Ctrl + P</strong> (hoặc <strong>Cmd + P</strong> trên máy Mac) để mở hộp thoại in.</li>
           <li>Chọn khổ giấy <strong>A4</strong>.</li>
           <li>Đảm bảo tỷ lệ (Scale) là <strong>Mặc định (Default)</strong> hoặc <strong>Vừa vặn (Fit to page)</strong>.</li>
           <li>Cắt mỗi trang thành các thẻ vuông theo đường viền nét đứt.</li>
+          <li>Mỗi nhóm giữ một thẻ. Khi trả lời, nhóm <strong>xoay thẻ</strong> sao cho chữ cái mình chọn nằm ở phía trên rồi giơ lên.</li>
         </ul>
         <button 
           onClick={() => window.print()}

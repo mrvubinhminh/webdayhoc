@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { ArrowLeft, Upload, Play, Users, Trophy, ChevronRight, CheckCircle2, XCircle, Crown, Download } from 'lucide-react';
 import { db } from '../firebase';
+import { QR_CARD, buildQrTeams } from '../constants/qrTeams';
 import { ref, set, update, onValue, remove, get } from 'firebase/database';
 import MathText from '../components/MathText';
 import QuestionGuidePanel from '../components/QuestionGuidePanel';
-import TreasureBoard, { getTeamColor } from '../components/TreasureBoard';
+import TreasureBoard, { applySpecialCell, getTeamColor } from '../components/TreasureBoard';
 import { BOARD_SCENARIOS, randomScenario } from '../data/boardScenarios';
 import GameRulesOverlay from '../components/GameRulesOverlay';
 
@@ -193,6 +194,45 @@ const TreasureHost = () => {
     return () => clearInterval(timer);
   }, [roomData?.status, roomData?.paused, timeLeft]);
 
+  /**
+   * Chế độ thẻ QR: không nhóm nào có điện thoại để bấm gieo xúc sắc,
+   * nên màn hình giáo viên gieo hộ. Các nhóm gieo lần lượt cách nhau một
+   * nhịp để cả lớp kịp nhìn quân mình nhảy trên bản đồ, và toàn bộ lượt
+   * gieo luôn gọn trong 6 giây của vòng DICE_ROLL.
+   */
+  const autoRolledForRef = useRef(null);
+  useEffect(() => {
+    if (!roomCode || roomData?.status !== 'DICE_ROLL') return;
+    if (roomData.settings?.playMode !== QR_CARD) return;
+
+    const key = roomData.currentQuestionIndex;
+    if (autoRolledForRef.current === key) return;
+    autoRolledForRef.current = key;
+
+    const queue = Object.values(roomData.players || {}).filter(p => p.canRoll && !p.hasRolled);
+    if (queue.length === 0) return;
+
+    const size = roomData.settings?.boardSize || 6;
+    const total = size * size;
+    const specials = roomData.settings?.specialCells || {};
+    const gap = Math.min(700, Math.floor((DICE_ROLL_SECONDS * 1000 - 900) / queue.length));
+
+    const timers = queue.map((p, i) => setTimeout(() => {
+      const dice = Math.floor(Math.random() * 6) + 1;
+      const stepped = Math.min((p.position || 1) + dice, total);
+      const { finalPosition, jumped } = applySpecialCell(stepped, specials, total);
+      update(ref(db, `treasureRooms/${roomCode}/players/${p.id}`), {
+        diceValue: dice,
+        hasRolled: true,
+        position: finalPosition,
+        lastJump: jumped,
+        justLanded: true
+      });
+    }, 400 + i * gap));
+
+    return () => timers.forEach(clearTimeout);
+  }, [roomCode, roomData?.status, roomData?.currentQuestionIndex]);
+
   // Tạm dừng / chạy lại đồng hồ (dùng khi giáo viên đang quét thẻ QR đáp án)
   const togglePause = async () => {
     if (!roomCode) return;
@@ -318,7 +358,15 @@ const TreasureHost = () => {
     ];
 
     let teams = {};
-    if (playMode === 'TEAM') {
+    let startingPlayers = {};
+    // Chế độ thẻ QR: dựng sẵn nhóm kèm vị trí xuất phát trên bản đồ kho báu
+    if (playMode === QR_CARD) {
+      const built = buildQrTeams(teamCount);
+      teams = built.teams;
+      Object.keys(built.players).forEach(id => {
+        startingPlayers[id] = { ...built.players[id], position: 1, canRoll: false, hasRolled: false, diceValue: null };
+      });
+    } else if (playMode === 'TEAM') {
       const shuffledNames = TEAM_NAMES.sort(() => 0.5 - Math.random()).slice(0, teamCount);
       for (let i = 1; i <= teamCount; i++) {
         teams[`team_${i}`] = {
@@ -333,7 +381,7 @@ const TreasureHost = () => {
       status: 'LOBBY', 
       currentQuestionIndex: 0,
       questions: questions,
-      players: {},
+      players: startingPlayers,
       teams: teams,
       settings: {
         timeLimit: timeLimit,
@@ -343,9 +391,9 @@ const TreasureHost = () => {
         teamCount: teamCount,
         bgUrl: bgUrl,
         showQuestionOnDevice: showQuestionOnDevice,
-        enableHighStakes: enableHighStakes,
+        enableHighStakes: playMode === QR_CARD ? false : enableHighStakes,
         // Bản đồ kho báu chỉ chạy ở chế độ nhóm
-        boardEnabled: playMode === 'TEAM',
+        boardEnabled: playMode !== 'INDIVIDUAL',
         boardSize: boardSize,
         boardBgUrl: boardBgUrl,
         specialCells: specialCells
@@ -716,16 +764,29 @@ const TreasureHost = () => {
                     <label className="block text-gray-400 mb-2 font-bold text-sm text-center">Chế độ chơi</label>
                     <select value={playMode} onChange={e => setPlayMode(e.target.value)} className="w-full bg-slate-900 text-white text-lg font-bold text-center py-3 rounded-lg outline-none border border-transparent focus:border-emerald-500">
                       <option value="INDIVIDUAL">Cá nhân</option>
-                      <option value="TEAM">Theo nhóm</option>
+                      <option value="TEAM">Theo nhóm (mỗi nhóm 1 điện thoại)</option>
+                      <option value={QR_CARD}>Theo nhóm — thẻ QR (HS không có điện thoại)</option>
                     </select>
                   </div>
-                  {playMode === 'TEAM' && (
+                  {playMode !== 'INDIVIDUAL' && (
                     <div className="flex-1">
                       <label className="block text-gray-400 mb-2 font-bold text-sm text-center">Số nhóm (1-12)</label>
                       <input type="number" min="1" max="12" value={teamCount} onChange={(e) => setTeamCount(Math.min(12, Math.max(1, parseInt(e.target.value) || 1)))} className="w-full bg-slate-900 text-white text-lg font-bold text-center py-3 rounded-lg outline-none border border-transparent focus:border-emerald-500" />
                     </div>
                   )}
                 </div>
+
+                {playMode === QR_CARD && (
+                  <div className="mt-4 bg-indigo-950/60 border border-indigo-500/50 rounded-lg p-4">
+                    <p className="text-indigo-300 font-bold text-sm mb-2">🎴 Chơi bằng thẻ QR — học sinh không cần điện thoại</p>
+                    <ul className="text-gray-400 text-xs leading-relaxed list-disc pl-5 space-y-1">
+                      <li>Các nhóm được tạo sẵn khi mở phòng, không nhóm nào phải vào phòng.</li>
+                      <li>In thẻ cho từng nhóm, mỗi thẻ xoay 4 hướng ứng với A · B · C · D.</li>
+                      <li>Giáo viên dùng điện thoại của mình quét thẻ để chốt phương án cho cả lớp.</li>
+                      <li>Ngôi Sao Hy Vọng không dùng được vì thẻ giấy không bấm chọn được.</li>
+                    </ul>
+                  </div>
+                )}
 
                 {playMode === 'INDIVIDUAL' && (
                   <label className="flex items-start gap-3 cursor-pointer mt-4 bg-slate-900 p-4 rounded-lg border border-transparent hover:border-emerald-500/50 transition-colors">
@@ -776,13 +837,13 @@ const TreasureHost = () => {
             >
               <h2 className="text-xl font-black text-amber-400 flex items-center gap-2">🗺️ Bản Đồ Kho Báu — đang tắt</h2>
               <p className="text-gray-400 text-sm mt-1">
-                Bản đồ, xúc sắc và ô đặc biệt chỉ chạy ở <b className="text-amber-300">chế độ Theo nhóm</b>.
-                Bấm vào đây để chuyển sang chơi nhóm và mở phần cài đặt bản đồ.
+                Bản đồ, xúc sắc và ô đặc biệt chỉ chạy khi <b className="text-amber-300">chơi theo nhóm</b>
+                (dùng điện thoại hoặc dùng thẻ QR). Bấm vào đây để chuyển sang chơi nhóm và mở phần cài đặt bản đồ.
               </p>
             </button>
           )}
 
-          {playMode === 'TEAM' && (
+          {playMode !== 'INDIVIDUAL' && (
             <div className="mt-8 bg-gradient-to-br from-amber-950/60 to-slate-900 p-6 rounded-2xl border-2 border-amber-600/40">
               <h2 className="text-2xl font-black text-amber-400 mb-1 flex items-center gap-2">🗺️ Bản Đồ Kho Báu</h2>
               <p className="text-gray-400 text-sm mb-5">Nhóm trả lời đúng được gieo xúc sắc để tiến trên bản đồ. Về ô cờ 🏁 là thắng!</p>
@@ -980,7 +1041,12 @@ const TreasureHost = () => {
 
       {localGameState === 'LOBBY' && roomData && (() => {
         const playUrl = `https://webdayhoc.vercel.app/treasure/play?pin=${roomCode}`;
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(playUrl)}&bgcolor=ffffff&color=000000&margin=10`;
+        const qrCardMode = roomData.settings?.playMode === QR_CARD;
+        const teamsTotal = roomData.settings?.teamCount || playersList.length;
+        // Chơi bằng thẻ: mã QR trên màn chiếu mở sẵn máy quét cho điện thoại giáo viên
+        const scannerUrl = `${window.location.origin}/scanner?pin=${roomCode}`;
+        const qrTarget = qrCardMode ? scannerUrl : playUrl;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(qrTarget)}&bgcolor=ffffff&color=000000&margin=10`;
         const specials = Object.entries(roomData.settings?.specialCells || {});
         const ups = specials.filter(([, v]) => v > 0).length;
         const downs = specials.filter(([, v]) => v < 0).length;
@@ -1018,7 +1084,9 @@ const TreasureHost = () => {
                 {roomData.settings.gameTitle || 'TRUY TÌM KHO BÁU'}
               </h1>
               <h2 className="text-lg text-yellow-100/80 mt-2 font-semibold tracking-widest uppercase">
-                Quét mã QR hoặc nhập PIN để tham gia
+                {qrCardMode
+                  ? `${teamsTotal} nhóm đã sẵn sàng — học sinh không cần điện thoại`
+                  : 'Quét mã QR hoặc nhập PIN để tham gia'}
               </h2>
             </div>
 
@@ -1027,11 +1095,29 @@ const TreasureHost = () => {
               {/* BÊN TRÁI - QR Code lớn + PIN */}
               <div className="md:w-[45%] shrink-0 flex flex-col items-center justify-center gap-6">
                 <div className="bg-black/40 backdrop-blur-xl rounded-3xl p-6 border border-white/20 shadow-[0_0_40px_rgba(0,0,0,0.5)] flex flex-col items-center gap-4">
-                  <p className="text-yellow-400 text-xl font-black uppercase tracking-widest text-center w-full border-b border-white/10 pb-3">Quét Mã QR</p>
+                  <p className="text-yellow-400 text-xl font-black uppercase tracking-widest text-center w-full border-b border-white/10 pb-3">
+                    {qrCardMode ? 'Quét để mở máy quét thẻ' : 'Quét Mã QR'}
+                  </p>
                   <div className="bg-white p-4 rounded-3xl shadow-2xl">
                     <img src={qrUrl} alt="QR Code" className="w-[280px] h-[280px] md:w-[360px] md:h-[360px] rounded-2xl" />
                   </div>
-                  <p className="text-xs text-gray-400 font-mono bg-black/50 px-4 py-2 rounded-full">{playUrl}</p>
+                  <p className="text-xs text-gray-400 font-mono bg-black/50 px-4 py-2 rounded-full">{qrTarget}</p>
+                  {qrCardMode && (
+                    <div className="flex gap-3 w-full">
+                      <button
+                        onClick={() => window.open(`/print-qr?teams=${teamsTotal}`, '_blank')}
+                        className="flex-1 bg-white/10 hover:bg-white/20 border border-white/25 text-white font-bold py-3 rounded-xl transition-colors"
+                      >
+                        🖨️ In {teamsTotal} thẻ
+                      </button>
+                      <button
+                        onClick={() => window.open(`/scanner?pin=${roomCode}`, '_blank')}
+                        className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-colors"
+                      >
+                        📷 Mở máy quét
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="bg-black/40 backdrop-blur-xl rounded-3xl px-10 py-6 border border-white/20 shadow-[0_0_40px_rgba(0,0,0,0.5)] text-center">
@@ -1048,7 +1134,7 @@ const TreasureHost = () => {
                 <div className="flex justify-between items-center p-5 border-b border-white/10 shrink-0">
                   <div className="flex items-center gap-3 text-2xl font-black text-white">
                     <div className="bg-blue-600 p-2.5 rounded-xl shadow-[0_0_20px_rgba(37,99,235,0.6)]"><Users className="w-7 h-7 text-white" /></div>
-                    <span>{playersList.length} Học sinh</span>
+                    <span>{playersList.length} {qrCardMode ? 'Nhóm (thẻ QR)' : 'Học sinh'}</span>
                   </div>
                   <button
                     onClick={() => setShowRules(true)}

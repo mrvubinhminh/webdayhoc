@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import jsQR from 'jsqr';
 import { db } from '../firebase';
 import { ref, onValue, set, get, update } from 'firebase/database';
@@ -11,7 +12,9 @@ const ROOM_PATHS = ['rooms', 'treasureRooms', 'bankRooms', 'lighthouseRooms'];
 const CONFIRM_STREAK = 2;
 
 const Scanner = () => {
-  const [pin, setPin] = useState('');
+  // Màn chờ của giáo viên hiện mã QR mở thẳng /scanner?pin=... nên khỏi gõ lại
+  const [searchParams] = useSearchParams();
+  const [pin, setPin] = useState(() => (searchParams.get('pin') || '').replace(/\D/g, ''));
   const [dbPath, setDbPath] = useState('rooms');
   const [isScanning, setIsScanning] = useState(false);
   const [roomData, setRoomData] = useState(null);
