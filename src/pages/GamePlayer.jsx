@@ -424,7 +424,7 @@ const GamePlayer = () => {
                                 {['A', 'B', 'C', 'D'][opt.num - 1]}
                               </span>
                               <span className={`flex-1 text-white font-bold pt-1 break-words ${QUIZ_TEXT}`}>
-                                <MathText text={currentQ.options?.[opt.num - 1] || ''} />
+                                <MathText text={[currentQ.optionA, currentQ.optionB, currentQ.optionC, currentQ.optionD][opt.num - 1] || ''} />
                               </span>
                             </button>
                           ))}
