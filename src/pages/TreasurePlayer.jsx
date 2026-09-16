@@ -228,9 +228,11 @@ const TreasurePlayer = () => {
       await update(ref(db, `treasureRooms/${pin}/players/${playerId}`), {
         diceValue: dice,
         hasRolled: true,
+        fromPosition: my.position || 1,
         position: finalPosition,
         lastJump: jumped,
-        justLanded: true
+        justLanded: true,
+        rolledAt: Date.now()
       });
     }, 950);
   };
@@ -674,6 +676,11 @@ const TreasurePlayer = () => {
             }));
             const myIndex = roomData.teams?.[playerId]?.index || 1;
 
+            // Xếp nhóm đã gieo lên trước để cả lớp theo dõi được lượt đi
+            const luotGieo = Object.values(roomData.players || {})
+              .filter(p => p.canRoll || p.hasRolled)
+              .sort((a, b) => Number(b.hasRolled) - Number(a.hasRolled) || (b.rolledAt || 0) - (a.rolledAt || 0));
+
             return (
               <div className="w-full max-w-md flex flex-col items-center gap-4 px-4">
                 {/* Chưa gieo thì nút là chính nên bản đồ thu nhỏ; gieo xong mới phóng to xem mình đi tới đâu */}
@@ -735,6 +742,45 @@ const TreasurePlayer = () => {
                     <div className="text-5xl mb-2">😔</div>
                     <p className="text-gray-300 font-bold text-lg">Chưa đúng nên lượt này đứng yên</p>
                     <p className="text-gray-500 text-sm mt-1">Cố lên ở câu sau nhé!</p>
+                  </div>
+                )}
+
+                {/* Lượt gieo của cả lớp — để nhóm nào cũng theo dõi được ai đi mấy bước */}
+                {luotGieo.length > 0 && (
+                  <div className="w-full bg-black/40 border border-amber-500/40 rounded-2xl p-3">
+                    <p className="text-amber-300 text-xs font-black uppercase tracking-widest text-center mb-2">
+                      Lượt gieo của các nhóm ({luotGieo.filter(p => p.hasRolled).length}/{luotGieo.length})
+                    </p>
+                    <div className="flex flex-col gap-1.5 max-h-[28vh] overflow-y-auto">
+                      {luotGieo.map(p => {
+                        const idx = roomData.teams?.[p.id]?.index || 1;
+                        const isMe = p.id === playerId;
+                        const tu = p.fromPosition ?? Math.max(1, (p.position || 1) - (p.diceValue || 0) - (p.lastJump || 0));
+                        return (
+                          <div key={p.id} className={`flex items-center gap-2 px-2.5 py-2 rounded-xl ${isMe ? 'bg-emerald-500/20 border border-emerald-500' : 'bg-slate-800/70'}`}>
+                            <div
+                              className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center font-black text-white text-[10px] shrink-0"
+                              style={{ backgroundColor: getTeamColor(idx) }}
+                            >
+                              {idx}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="truncate font-bold text-white text-sm">{p.name}{isMe && ' (nhóm em)'}</div>
+                              {p.hasRolled && (
+                                <div className="text-[11px] font-bold text-white/60">
+                                  ô {tu} → ô {p.position || 1}
+                                  {p.lastJump > 0 && <span className="text-emerald-400 ml-1.5">⚡ +{p.lastJump}</span>}
+                                  {p.lastJump < 0 && <span className="text-red-400 ml-1.5">💀 {p.lastJump}</span>}
+                                </div>
+                              )}
+                            </div>
+                            <span className={`shrink-0 font-black text-lg w-12 text-right ${p.hasRolled ? 'text-amber-300' : 'text-gray-500'}`}>
+                              {p.hasRolled ? `🎲${p.diceValue}` : '…'}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>

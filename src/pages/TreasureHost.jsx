@@ -234,9 +234,11 @@ const TreasureHost = () => {
       update(ref(db, `treasureRooms/${roomCode}/players/${p.id}`), {
         diceValue: dice,
         hasRolled: true,
+        fromPosition: p.position || 1,
         position: finalPosition,
         lastJump: jumped,
-        justLanded: true
+        justLanded: true,
+        rolledAt: Date.now()
       });
     }, 400 + i * gap));
 
@@ -473,12 +475,16 @@ const TreasureHost = () => {
          updates[`players/${playerId}/canRoll`] = isCorrect;
          updates[`players/${playerId}/hasRolled`] = false;
          updates[`players/${playerId}/diceValue`] = null;
+         updates[`players/${playerId}/justLanded`] = false;
+         updates[`players/${playerId}/lastJump`] = 0;
       } else {
          wrongCount++;
          updates[`players/${playerId}/starActive`] = false;
          updates[`players/${playerId}/canRoll`] = false;
          updates[`players/${playerId}/hasRolled`] = false;
          updates[`players/${playerId}/diceValue`] = null;
+         updates[`players/${playerId}/justLanded`] = false;
+         updates[`players/${playerId}/lastJump`] = 0;
       }
     });
 
@@ -1332,25 +1338,6 @@ const TreasureHost = () => {
           })()}
 
           {/* Mini bản đồ luôn hiện khi đang hỏi / xem đáp án để lớp không mất mạch cục diện */}
-          {roomData.settings?.boardEnabled && !roomData.boardOpen && (roomData.status === 'QUESTION' || roomData.status === 'REVEAL') && (
-            <button
-              onClick={() => toggleBoard(true)}
-              className="fixed bottom-4 right-4 w-40 md:w-52 z-30 opacity-90 hover:opacity-100 hover:scale-105 transition-all"
-              title="Mở bản đồ toàn màn hình (dừng đồng hồ)"
-            >
-              <div className="bg-black/60 backdrop-blur-md rounded-2xl p-2 border border-amber-500/40">
-                <TreasureBoard
-                  size={activeBoardSize}
-                  bgUrl={roomData.settings?.boardBgUrl}
-                  specialCells={roomData.settings?.specialCells || {}}
-                  teams={boardTeams}
-                  compact
-                />
-                <p className="text-center text-amber-300 text-[10px] font-bold mt-1.5">🗺️ Bấm để mở bản đồ</p>
-              </div>
-            </button>
-          )}
-
           {!roomData.boardOpen && roomData.status === 'STAR_PICK' && (() => {
             const starPickers = playersList.filter(p => p.starActive);
             const remainQ = (roomData.questions?.length || 0) - roomData.currentQuestionIndex;
@@ -1503,7 +1490,11 @@ const TreasureHost = () => {
           {!roomData.boardOpen && roomData.status === 'DICE_ROLL' && (() => {
             const eligible = playersList.filter(p => p.canRoll);
             const rolled = eligible.filter(p => p.hasRolled);
-            const lastMover = playersList.find(p => p.hasRolled && p.justLanded);
+            // Nhóm vừa gieo GẦN NHẤT — trước đây dùng find() nên luôn lấy nhóm
+            // đầu danh sách, khiến bản đồ tô sáng nhầm ô.
+            const lastMover = playersList
+              .filter(p => p.hasRolled && p.justLanded)
+              .sort((a, b) => (b.rolledAt || 0) - (a.rolledAt || 0))[0];
             return (
               <div className="animate-fade-in grid lg:grid-cols-[minmax(0,2fr)_minmax(300px,1fr)] gap-6 items-start">
                 {/* Bản đồ — nhân vật chính, giới hạn theo chiều cao màn chiếu */}
@@ -1529,6 +1520,12 @@ const TreasureHost = () => {
                       {timeLeft}
                     </div>
                     <p className="text-gray-400 text-sm mt-1">{rolled.length}/{eligible.length} nhóm đã gieo</p>
+                    {eligible.length > 0 && rolled.length === eligible.length && (
+                      <p className="text-emerald-400 font-black mt-2 animate-pulse">✅ Cả {eligible.length} nhóm đã gieo xong</p>
+                    )}
+                    {eligible.length === 0 && (
+                      <p className="text-gray-400 font-bold mt-2">Không nhóm nào trả lời đúng — bỏ qua lượt gieo</p>
+                    )}
                   </div>
 
                   <div className="flex-1 overflow-y-auto flex flex-col gap-2 max-h-[45vh]">
@@ -1550,22 +1547,39 @@ const TreasureHost = () => {
                           >
                             {idx}
                           </div>
-                          <span className="flex-1 min-w-0 truncate font-bold text-white">{p.name}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="truncate font-bold text-white">{p.name}</div>
+                            {p.hasRolled ? (
+                              <div className="text-xs font-bold mt-0.5">
+                                <span className="text-white/70">Ô {p.fromPosition ?? Math.max(1, (p.position || 1) - (p.diceValue || 0) - (p.lastJump || 0))} → Ô {p.position || 1}</span>
+                                {p.lastJump > 0 && <span className="text-emerald-400 ml-2">⚡ Ô thần kỳ +{p.lastJump}</span>}
+                                {p.lastJump < 0 && <span className="text-red-400 ml-2">💀 Bẫy {p.lastJump}</span>}
+                              </div>
+                            ) : p.canRoll ? (
+                              <div className="text-emerald-400 text-xs font-bold mt-0.5">Trả lời đúng — đang chờ gieo…</div>
+                            ) : (
+                              <div className="text-gray-500 text-xs mt-0.5">Chưa đúng — lượt này đứng yên</div>
+                            )}
+                          </div>
                           {p.hasRolled ? (
-                            <span className="text-2xl font-black text-amber-300 shrink-0">🎲 {p.diceValue}</span>
+                            <span className="text-3xl font-black text-amber-300 shrink-0 w-16 text-right">🎲{p.diceValue}</span>
                           ) : p.canRoll ? (
-                            <span className="text-emerald-400 text-sm font-bold shrink-0">Đang chờ gieo…</span>
+                            <span className="text-2xl shrink-0 w-16 text-center animate-bounce">🎲</span>
                           ) : (
-                            <span className="text-gray-500 text-sm shrink-0">Sai — không gieo</span>
+                            <span className="text-gray-600 text-2xl shrink-0 w-16 text-center">—</span>
                           )}
-                          <span className="text-white/70 text-sm font-bold shrink-0">Ô {p.position || 1}</span>
                         </div>
                       );
                     })}
                   </div>
 
-                  <button onClick={nextQuestion} className="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-lg transition-colors">
-                    Bỏ qua chờ → Câu tiếp theo
+                  {/* Chốt lượt gieo: mở bản đồ toàn màn hình để cả lớp nhìn kết quả,
+                      rồi giáo viên mới bấm sang câu tiếp theo. */}
+                  <button onClick={openBoardSummary} className="bg-amber-500 hover:bg-amber-400 text-slate-900 py-4 rounded-xl font-black text-lg transition-colors">
+                    🗺️ Chốt → Cho cả lớp xem bản đồ
+                  </button>
+                  <button onClick={nextQuestion} className="bg-slate-800 hover:bg-slate-700 text-gray-300 py-2.5 rounded-xl font-bold transition-colors">
+                    Bỏ qua, sang câu tiếp theo
                   </button>
                 </div>
               </div>
