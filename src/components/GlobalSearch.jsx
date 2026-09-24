@@ -34,7 +34,7 @@ const GlobalSearch = () => {
       { title: 'Công cụ: Vòng Quay Gọi Tên', path: '/tool/vong-quay', category: 'Công cụ' },
       { title: 'Công Cụ Toán Học', path: `/tools/view/external/${encodeURIComponent('https://www.congcutoanhoc.com/')}`, category: 'Công cụ' },
       { title: 'Máy Tính Mathda', path: 'https://mathda.com/calculator/vi', category: 'Công cụ', isExternal: true },
-      { title: 'Lớp Học Dojo', path: `/students/view/external/${encodeURIComponent('https://dojovtl.vercel.app')}`, category: 'Tiện ích dạy học' },
+      { title: 'Lớp Học Dojo', path: `/students/view/external/${encodeURIComponent('https://dojotienluc.vercel.app')}`, category: 'Tiện ích dạy học' },
       { title: 'Quản Lý Nhận Xét Điểm', path: `/students/view/external/${encodeURIComponent('https://bangdiem-delta.vercel.app')}`, category: 'Tiện ích dạy học' },
       { title: 'Phím Tắt iMac', path: `/students/view/external/${encodeURIComponent('https://phimtatimac.vercel.app/')}`, category: 'Tiện ích dạy học' },
       { title: 'Vòng Quay Học Tập', path: `/students/view/external/${encodeURIComponent('https://sheetpdf.vercel.app/')}`, category: 'Tiện ích dạy học' },

@@ -37,9 +37,9 @@ const StudentsMenu = () => {
     'khac': [
       ...parsedStudents.filter(m => m.grade === 'khac'),
       {
-        id: 'dojovtl',
+        id: 'dojotienluc',
         title: 'LỚP HỌC DOJO',
-        path: `/students/view/external/${encodeURIComponent('https://dojovtl.vercel.app')}`,
+        path: `/students/view/external/${encodeURIComponent('https://dojotienluc.vercel.app')}`,
         isExternal: false
       },
       {
